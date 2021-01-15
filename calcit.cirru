@@ -3241,4 +3241,4 @@
                           |j $ {} (:type :leaf) (:id |Skf8VsizgI3b) (:text |reel) (:by |root) (:at 1507357346880)
                           |r $ {} (:type :leaf) (:text |nil) (:id |SJWS9hYY6W) (:by |root) (:at 1508641933970)
         :proc $ {} (:type :expr) (:id |rkf74ssGxUnb) (:by nil) (:at 1507357346880) (:data $ {})
-  :configs $ {} (:storage-key |calcit.cirru) (:extension |.cljs) (:output |src) (:port 6001) (:compact-output? true) (:init-fn |reel.main/main!) (:reload-fn |reel.main/reload!) (:modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru)
+  :configs $ {} (:reload-fn |reel.main/reload!) (:modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru) (:output |src) (:port 6001) (:extension |.cljs) (:init-fn |reel.main/main!) (:compact-output? true) (:storage-key |calcit.cirru) (:version |0.4.0)
