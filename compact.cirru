@@ -1,6 +1,6 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.main/main!) (:reload-fn |reel.main/reload!) (:modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru) (:version |0.5.0)
+  :configs $ {} (:init-fn |reel.main/main!) (:reload-fn |reel.main/reload!) (:modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru) (:version |0.5.1)
   :files $ {}
     |reel.comp.reel $ {}
       :ns $ quote
@@ -149,12 +149,12 @@
       :proc $ quote ()
     |reel.comp.records $ {}
       :ns $ quote
-        ns reel.comp.records $ :require ([] respo.core :refer $ [] defcomp <> div span style list->) ([] respo-ui.core :as ui) ([] respo.comp.space :refer $ [] =<) ([] reel.style :as styl) ([] respo.util.format :refer $ [] hsl)
+        ns reel.comp.records $ :require ([] respo.core :refer $ [] defcomp <> div span style list->) ([] respo-ui.core :as ui) ([] respo.comp.space :refer $ [] =<) ([] reel.style :as reel-style) ([] respo.util.format :refer $ [] hsl)
       :defs $ {}
         |comp-records $ quote
           defcomp comp-records (records pointer)
             div
-              {} $ :style (merge styl/code style-container)
+              {} $ :style (merge reel-style/code style-container)
               style $ {} (:innerHTML "|.record-item:hover{\n  background-color: #eee;\n}")
               list-> ({})
                 ->> (prepend records $ [] :base nil :base)
@@ -240,13 +240,16 @@
                 reset! *reel new-reel
         |main! $ quote
           defn main! () (if ssr? $ render-app! realize-ssr!) (render-app! render!)
-            add-watch *reel :changes $ fn () (render-app! render!)
+            add-watch *reel :changes $ fn (reel prev) (render-app! render!)
             listen-devtools! |a dispatch!
             dispatch! :reel/toggle nil
             println "|App started!"
         |mount-target $ quote (def mount-target $ .querySelector js/document |.app)
         |reload! $ quote
-          defn reload! () (clear-cache!) (reset! *reel $ refresh-reel @*reel schema/store updater) (println "|code update.")
+          defn reload! () (clear-cache!) (remove-watch *reel :changes)
+            add-watch *reel :changes $ fn (reel prev) (render-app! render!)
+            reset! *reel $ refresh-reel @*reel schema/store updater
+            println "|code update."
         |render-app! $ quote
           defn render-app! (renderer)
             renderer mount-target (comp-container @*reel) dispatch!
@@ -326,19 +329,19 @@
                           {} (:store base) (:pointer 0)
                       , nil
                     :reel/merge $ if stopped?
-                      if (zero? pointer) ({})
+                      if (&= 0 pointer) ({})
                         let
                             new-store $ play-records base records updater pointer
-                          {} (:store new-store) (:base new-store) (:pointer 0) (:records $ subvec records pointer) (:merged? true)
+                          {} (:store new-store) (:base new-store) (:pointer 0) (:records $ slice records pointer) (:merged? true)
                       {} (:base $ :store reel) (:pointer nil) (:records $ []) (:merged? true)
                     :reel/reset $ if stopped?
-                      {} $ :records (subvec records 0 pointer)
+                      {} $ :records (slice records 0 pointer)
                       {} (:store $ :base reel) (:pointer nil) (:records $ []) (:stopped? false)
                     :reel/remove $ let
                         idx op-data
-                      if (zero? idx) reel $ -> reel (update :pointer dec)
+                      if (&= 0 idx) reel $ -> reel (update :pointer dec)
                         update :records $ fn (records)
-                          vec $ concat (subvec records 0 $ dec idx) (subvec records idx)
+                          concat (slice records 0 $ dec idx) (slice records idx)
                         assoc :store $ play-records base records updater (dec idx)
                     op $ do (.warn js/console "|Unknown reel/ op:" op) nil
                 let

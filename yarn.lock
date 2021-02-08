@@ -2,6 +2,24 @@
 # yarn lockfile v1
 
 
+"@calcit/procs@^0.2.56":
+  version "0.2.56"
+  resolved "https://registry.yarnpkg.com/@calcit/procs/-/procs-0.2.56.tgz#048817074244247b15f739b4fc46e9f25ff713c4"
+  integrity sha512-Bl0Ev+snJMtSXbBJMhhWWK3NNXEQf9DExumaUe8x3Lyv7feM4TN+lczQKPwpNhBaXxW9Jq9CEvd0KrgFjTRqwg==
+  dependencies:
+    "@calcit/ternary-tree" "0.0.7"
+    "@cirru/parser.ts" "^0.0.1"
+
+"@calcit/ternary-tree@0.0.7":
+  version "0.0.7"
+  resolved "https://registry.yarnpkg.com/@calcit/ternary-tree/-/ternary-tree-0.0.7.tgz#ae41e3b02cc51f6ff08aa11c7db4cbd4c55440d5"
+  integrity sha512-7MCgpJ36yVvObQYE+budozGLtvHzZU50bh3PyCa2j/B9fcpdRaDESyrZu7DEPaaE+FDAS/ivAzNIXKLBPImqug==
+
+"@cirru/parser.ts@^0.0.1":
+  version "0.0.1"
+  resolved "https://registry.yarnpkg.com/@cirru/parser.ts/-/parser.ts-0.0.1.tgz#0870b051bd9f56626759ec22d7a0d5c51b19fe9c"
+  integrity sha512-FlUWZ2VqIUK/5cG926CVw9fQ7IGQzRDz8NL2Zc1lK2NyvOltAyZEDxxj/ztWjGOOnetVtM5mDx8rsbsr/SLYhg==
+
 colorette@^1.2.1:
   version "1.2.1"
   resolved "https://registry.npm.taobao.org/colorette/download/colorette-1.2.1.tgz#4d0b921325c14faf92633086a536db6e89564b1b"
