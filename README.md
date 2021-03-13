@@ -7,3 +7,9 @@ Reel for Calcit
 ### Usages
 
 _TODO_
+
+Keyboard shortcut set to "Command Option Shift k" for toggling.
+
+### License
+
+MIT
