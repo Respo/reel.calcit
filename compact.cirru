@@ -2,7 +2,7 @@
 {} (:package |reel)
   :configs $ {} (:init-fn |reel.main/main!) (:reload-fn |reel.main/reload!)
     :modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru
-    :version |0.5.2
+    :version |0.5.3
   :files $ {}
     |reel.comp.reel $ {}
       :ns $ quote
@@ -141,28 +141,22 @@
                   prepend tasks $ {} (:id op-id) (:done? false) (:text op-data)
               :task/remove $ update store :tasks
                 fn (tasks)
-                  filter
-                    fn (task)
-                      /= (:id task) op-data
-                    , tasks
+                  filter tasks $ fn (task)
+                    /= (:id task) op-data
               :task/toggle $ update store :tasks
                 fn (tasks)
-                  map
-                    fn (task)
-                      if
-                        = (:id task) op-data
-                        update task :done? not
-                        , task
-                    , tasks
+                  map tasks $ fn (task)
+                    if
+                      = (:id task) op-data
+                      update task :done? not
+                      , task
               :task/edit $ update store :tasks
                 fn (tasks)
-                  map
-                    fn (task)
-                      let[] ([] task-id text) op-data $ if
-                        = (:id task) task-id
-                        assoc task :text text
-                        , task
-                    , tasks
+                  map tasks $ fn (task)
+                    let[] (task-id text) op-data $ if
+                      = (:id task) task-id
+                      assoc task :text text
+                      , task
               op store
       :proc $ quote ()
     |reel.schema $ {}
@@ -197,7 +191,7 @@
               {} $ :style (merge reel-style/code style-container)
               style $ {} (:innerHTML "|.record-item:hover{\n  background-color: #eee;\n}")
               list-> ({})
-                ->>
+                ->
                   prepend records $ [] :base nil :base
                   map-indexed $ fn (idx record)
                     [] (last record)
@@ -250,7 +244,7 @@
                       :on-click $ fn (e d!) (d! :task/add state) (d! cursor |)
                     <> |Add
                 list-> ({})
-                  ->> tasks $ map
+                  -> tasks $ map
                     fn (task)
                       [] (:id task) (comp-task task)
         |style-container $ quote
