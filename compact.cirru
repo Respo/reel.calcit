@@ -2,7 +2,7 @@
 {} (:package |reel)
   :configs $ {} (:init-fn |reel.main/main!) (:reload-fn |reel.main/reload!)
     :modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru
-    :version |0.5.3
+    :version |0.5.4
   :files $ {}
     |reel.comp.reel $ {}
       :ns $ quote
@@ -97,10 +97,11 @@
                   {} $ :user-select :none
                   if (not enabled?)
                     {} $ :color (hsl 0 0 90)
-                :on-click $ if enabled? on-click identity
+                :on-click $ if enabled? on-click
+                  fn $ e d!
               <> guide
         |style-reel $ quote
-          def style-reel $ {} (:width |60%) (:height |80%) (:right 0) (:bottom 0) (:position :fixed)
+          def style-reel $ {} (:width |60%) (:height |80%) (:right "\"0px") (:bottom "\"0px") (:position :fixed)
             :background-color $ hsl 0 0 100 0.7
             :border $ str "|1px solid " (hsl 0 0 90)
             :font-size 14
@@ -134,7 +135,8 @@
       :defs $ {}
         |updater $ quote
           defn updater (store op op-data op-id op-time)
-            case op
+            case-default op
+              do (js/console.log "\"unknown op" op) store
               :states $ update-states store op-data
               :task/add $ update store :tasks
                 fn (tasks)
@@ -157,7 +159,6 @@
                       = (:id task) task-id
                       assoc task :text text
                       , task
-              op store
       :proc $ quote ()
     |reel.schema $ {}
       :ns $ quote (ns reel.schema)
@@ -256,11 +257,11 @@
       :defs $ {}
         |listen-devtools! $ quote
           defn listen-devtools! (keyboard dispatch!)
-            .addEventListener js/window |keydown $ fn (event)
+            .!addEventListener js/window |keydown $ fn (event)
               if
                 and (.-shiftKey event) (.-metaKey event) (.-altKey event)
                   =
-                    .charCodeAt $ .toUpperCase keyboard
+                    .!charCodeAt $ .!toUpperCase keyboard
                     .-keyCode event
                 dispatch! :reel/toggle nil
       :proc $ quote ()
@@ -291,7 +292,7 @@
                 ; println |Reel: new-reel
                 reset! *reel new-reel
         |main! $ quote
-          defn main! ()
+          defn main! () (load-console-formatter!)
             if ssr? $ render-app! realize-ssr!
             render-app! render!
             add-watch *reel :changes $ fn (reel prev) (render-app! render!)
@@ -348,7 +349,7 @@
                     d! :task/remove $ :id task
                 <> |Remove
         |style-container $ quote
-          def style-container $ {} (:margin "|8px 0") (:height 32)
+          def style-container $ {} (:margin "|8px 0") (:height "\"32px")
         |style-done $ quote
           def style-done $ {} (:width 32) (:height 32) (:display :inline-block)
             :background-color $ hsl 220 100 76
@@ -366,20 +367,20 @@
                 recur next-store (rest records) updater $ dec pointer
         |reel-updater $ quote
           defn reel-updater (updater reel op op-data)
-            ; println |Name: $ name op
+            ; println |Name: $ turn-string op
             let
-                op-id $ turn-string
-                  .valueOf $ "js/new Date"
-                op-time $ .valueOf ("js/new Date")
+                op-id $ generate-id!
+                op-time $ js/Date.now
               if
-                starts-with? (str op) |:reel/
+                .starts-with? (str op) |:reel/
                 merge reel $ let
-                    pointer $ :pointer reel
-                    records $ :records reel
-                    base $ :base reel
-                    store $ :store reel
-                    stopped? $ :stopped? reel
-                  case op
+                    pointer $ &map:get reel :pointer
+                    records $ &map:get reel :records
+                    base $ &map:get reel :base
+                    store $ &map:get reel :base
+                    stopped? $ &map:get reel :stopped?
+                  case-default op
+                    do (js/console.warn "|Unknown reel/ op:" op) nil
                     :reel/toggle $ {}
                       :display? $ not (:display? reel)
                     :reel/recall $ let
@@ -406,7 +407,7 @@
                         let
                             new-store $ play-records base records updater pointer
                           {} (:store new-store) (:base new-store) (:pointer 0)
-                            :records $ slice records pointer
+                            :records $ .slice records pointer
                             :merged? true
                       {}
                         :base $ :store reel
@@ -414,7 +415,7 @@
                         :records $ []
                         :merged? true
                     :reel/reset $ if stopped?
-                      {} $ :records (slice records 0 pointer)
+                      {} $ :records (.slice records 0 pointer)
                       {}
                         :store $ :base reel
                         :pointer nil
@@ -425,13 +426,12 @@
                       if (&= 0 idx) reel $ -> reel (update :pointer dec)
                         update :records $ fn (records)
                           concat
-                            slice records 0 $ dec idx
-                            slice records idx
+                            .slice records 0 $ dec idx
+                            .slice records idx
                         assoc :store $ play-records base records updater (dec idx)
-                    op $ do (.warn js/console "|Unknown reel/ op:" op) nil
                 let
                     data-pack $ [] op op-data op-id op-time
-                  if (:stopped? reel)
+                  if (&map:get reel :stopped?)
                     -> reel $ update :records
                       fn (records) (conj records data-pack)
                     -> reel
