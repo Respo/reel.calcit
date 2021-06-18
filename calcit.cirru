@@ -704,16 +704,14 @@
                                         :data $ {}
                                           |T $ {} (:type :expr) (:by |Oj4l0GxFU) (:at 1593101159115)
                                             :data $ {}
-                                              |T $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1610609933392) (:text |to-cirru-edn) (:id |ma5TitI2MP)
+                                              |T $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1624008566540) (:text |format-cirru-edn) (:id |ma5TitI2MP)
                                               |j $ {} (:type :expr) (:by |Oj4l0GxFU) (:at 1593101161154)
                                                 :data $ {}
                                                   |T $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1593101162953) (:text |:store) (:id |Zl6qnYLIgo)
                                                   |j $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1593101164587) (:text |reel) (:id |LsjEmKw9P)
                                                 :id |6TLUW-1eC
                                             :id |HPEUhIA6c
-                                          |D $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1610609940919) (:text |js/JSON.stringify)
-                                          |j $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1610609945797) (:text |nil)
-                                          |r $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1610609946207) (:text |2)
+                                          |D $ {} (:type :leaf) (:by |Oj4l0GxFU) (:at 1624008572724) (:text |.trim)
                                     :id |5oE6GmMu4u
                                 :id |fMNbtZVp4U
                   |v $ {} (:type :expr) (:id |Hke7fvDh-) (:by |root) (:at 1507451416170)
@@ -3187,4 +3185,4 @@
     :init-fn |reel.app.main/main!
     :compact-output? true
     :storage-key |calcit.cirru
-    :version |0.5.5
+    :version |0.5.6

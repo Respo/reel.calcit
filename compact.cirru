@@ -2,7 +2,7 @@
 {} (:package |reel)
   :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!)
     :modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru
-    :version |0.5.5
+    :version |0.5.6
   :files $ {}
     |reel.comp.reel $ {}
       :ns $ quote
@@ -85,9 +85,8 @@
                       {} $ :style
                         merge ui/expand style/code $ {} (:font-size 12) (:white-space :pre) (:padding "\"16px 0px 200px 0px") (:line-height "\"20px") (:overflow :auto)
                           :border-top $ str "\"1px solid " (hsl 0 0 94)
-                      <> $ js/JSON.stringify
-                        to-cirru-edn $ :store reel
-                        , nil 2
+                      <> $ .trim
+                        format-cirru-edn $ :store reel
               span $ {}
         |render-button $ quote
           defn render-button (guide on-click enabled?)
