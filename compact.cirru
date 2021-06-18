@@ -1,8 +1,8 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.main/main!) (:reload-fn |reel.main/reload!)
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!)
     :modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru
-    :version |0.5.4
+    :version |0.5.5
   :files $ {}
     |reel.comp.reel $ {}
       :ns $ quote
@@ -108,120 +108,13 @@
             :backdrop-filter "|blur(2px)"
             :z-index 9999
       :proc $ quote ()
-    |reel.config $ {}
-      :ns $ quote (ns reel.config)
-      :defs $ {}
-        |cdn? $ quote
-          def cdn? $ cond
-              exists? js/window
-              , false
-            (exists? js/process) (= "\"true" js/process.env.cdn)
-            :else false
-        |dev? $ quote
-          def dev? $ let
-              debug? $ do ^boolean js/goog.DEBUG
-            cond
-                exists? js/window
-                , debug?
-              (exists? js/process) (not= "\"true" js/process.env.release)
-              :else true
-        |site $ quote
-          def site $ {} (:dev-ui "\"http://localhost:8100/main-fonts.css") (:release-ui "\"http://cdn.tiye.me/favored-fonts/main-fonts.css") (:cdn-url "\"http://cdn.tiye.me/reel/") (:cdn-folder "\"tiye.me:cdn/reel") (:title "\"Reel") (:icon "\"http://cdn.tiye.me/logo/respo.png") (:storage-key "\"reel") (:upload-folder "\"tiye.me:repo/Respo/reel/")
-      :proc $ quote ()
-    |reel.updater $ {}
+    |reel.app.comp.todolist $ {}
       :ns $ quote
-        ns reel.updater $ :require
-          [] respo.cursor :refer $ [] update-states
-      :defs $ {}
-        |updater $ quote
-          defn updater (store op op-data op-id op-time)
-            case-default op
-              do (js/console.log "\"unknown op" op) store
-              :states $ update-states store op-data
-              :task/add $ update store :tasks
-                fn (tasks)
-                  prepend tasks $ {} (:id op-id) (:done? false) (:text op-data)
-              :task/remove $ update store :tasks
-                fn (tasks)
-                  filter tasks $ fn (task)
-                    /= (:id task) op-data
-              :task/toggle $ update store :tasks
-                fn (tasks)
-                  map tasks $ fn (task)
-                    if
-                      = (:id task) op-data
-                      update task :done? not
-                      , task
-              :task/edit $ update store :tasks
-                fn (tasks)
-                  map tasks $ fn (task)
-                    let[] (task-id text) op-data $ if
-                      = (:id task) task-id
-                      assoc task :text text
-                      , task
-      :proc $ quote ()
-    |reel.schema $ {}
-      :ns $ quote (ns reel.schema)
-      :defs $ {}
-        |reel $ quote
-          def reel $ {}
-            :records $ []
-            :base nil
-            :store nil
-            :pointer nil
-            :stopped? false
-            :display? false
-            :merged? false
-        |store $ quote
-          def store $ {}
-            :states $ {}
-            :tasks $ []
-      :proc $ quote ()
-    |reel.comp.records $ {}
-      :ns $ quote
-        ns reel.comp.records $ :require
-          [] respo.core :refer $ [] defcomp <> div span style list->
-          [] respo-ui.core :as ui
-          [] respo.comp.space :refer $ [] =<
-          [] reel.style :as reel-style
-          [] respo.util.format :refer $ [] hsl
-      :defs $ {}
-        |comp-records $ quote
-          defcomp comp-records (records pointer)
-            div
-              {} $ :style (merge reel-style/code style-container)
-              style $ {} (:innerHTML "|.record-item:hover{\n  background-color: #eee;\n}")
-              list-> ({})
-                ->
-                  prepend records $ [] :base nil :base
-                  map-indexed $ fn (idx record)
-                    [] (last record)
-                      div
-                        {} (:class-name |record-item)
-                          :style $ merge style-record
-                            if (= pointer idx)
-                              {}
-                                :background-color $ hsl 220 100 76
-                                :color :white
-                          :on-click $ on-recall idx
-                        <> $ pr-str (first record)
-        |on-recall $ quote
-          defn on-recall (idx)
-            fn (e dispatch!) (dispatch! :reel/recall idx)
-        |style-container $ quote
-          def style-container $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 160) (:font-size 12)
-        |style-data $ quote
-          def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
-        |style-record $ quote
-          def style-record $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
-      :proc $ quote ()
-    |reel.comp.todolist $ {}
-      :ns $ quote
-        ns reel.comp.todolist $ :require
+        ns reel.app.comp.todolist $ :require
           [] respo.core :refer $ [] defcomp <> div span button input list->
           [] respo.comp.space :refer $ [] =<
           [] respo-ui.core :as ui
-          [] reel.comp.task :refer $ [] comp-task
+          [] reel.app.comp.task :refer $ [] comp-task
       :defs $ {}
         |comp-todolist $ quote
           defcomp comp-todolist (states tasks)
@@ -251,35 +144,15 @@
         |style-container $ quote
           def style-container $ {} (:padding 8) (:overflow :auto)
       :proc $ quote ()
-    |reel.util $ {}
+    |reel.app.main $ {}
       :ns $ quote
-        ns reel.util $ :require
-      :defs $ {}
-        |listen-devtools! $ quote
-          defn listen-devtools! (keyboard dispatch!)
-            .!addEventListener js/window |keydown $ fn (event)
-              if
-                and (.-shiftKey event) (.-metaKey event) (.-altKey event)
-                  =
-                    .!charCodeAt $ .!toUpperCase keyboard
-                    .-keyCode event
-                dispatch! :reel/toggle nil
-      :proc $ quote ()
-    |reel.style $ {}
-      :ns $ quote (ns reel.style)
-      :defs $ {}
-        |code $ quote
-          def code $ {} (:font-family "|Source Code Pro, Menlo, monospace")
-      :proc $ quote ()
-    |reel.main $ {}
-      :ns $ quote
-        ns reel.main $ :require
+        ns reel.app.main $ :require
           [] respo.core :refer $ [] render! clear-cache! realize-ssr!
-          [] reel.comp.container :refer $ [] comp-container
+          [] reel.app.comp.container :refer $ [] comp-container
           [] reel.core :refer $ [] reel-updater refresh-reel
           [] reel.util :refer $ [] listen-devtools!
           [] reel.schema :as schema
-          [] reel.updater :refer $ [] updater
+          [] reel.app.updater :refer $ [] updater
       :defs $ {}
         |*reel $ quote
           defatom *reel $ -> schema/reel (assoc :base schema/store) (assoc :store schema/store) (assoc :display? false)
@@ -312,9 +185,26 @@
         |ssr? $ quote
           def ssr? $ some? (.querySelector js/document |meta.respo-ssr)
       :proc $ quote ()
-    |reel.comp.task $ {}
+    |reel.schema $ {}
+      :ns $ quote (ns reel.schema)
+      :defs $ {}
+        |reel $ quote
+          def reel $ {}
+            :records $ []
+            :base nil
+            :store nil
+            :pointer nil
+            :stopped? false
+            :display? false
+            :merged? false
+        |store $ quote
+          def store $ {}
+            :states $ {}
+            :tasks $ []
+      :proc $ quote ()
+    |reel.app.comp.task $ {}
       :ns $ quote
-        ns reel.comp.task $ :require
+        ns reel.app.comp.task $ :require
           [] respo.core :refer $ [] defcomp <> div button input
           [] respo.util.format :refer $ [] hsl
           [] respo.comp.space :refer $ [] =<
@@ -354,6 +244,64 @@
           def style-done $ {} (:width 32) (:height 32) (:display :inline-block)
             :background-color $ hsl 220 100 76
             :cursor :pointer
+      :proc $ quote ()
+    |reel.comp.records $ {}
+      :ns $ quote
+        ns reel.comp.records $ :require
+          [] respo.core :refer $ [] defcomp <> div span style list->
+          [] respo-ui.core :as ui
+          [] respo.comp.space :refer $ [] =<
+          [] reel.style :as reel-style
+          [] respo.util.format :refer $ [] hsl
+      :defs $ {}
+        |comp-records $ quote
+          defcomp comp-records (records pointer)
+            div
+              {} $ :style (merge reel-style/code style-container)
+              style $ {} (:innerHTML "|.record-item:hover{\n  background-color: #eee;\n}")
+              list-> ({})
+                ->
+                  prepend records $ [] :base nil :base
+                  map-indexed $ fn (idx record)
+                    [] (last record)
+                      div
+                        {} (:class-name |record-item)
+                          :style $ merge style-record
+                            if (= pointer idx)
+                              {}
+                                :background-color $ hsl 220 100 76
+                                :color :white
+                          :on-click $ on-recall idx
+                        <> $ pr-str (first record)
+        |on-recall $ quote
+          defn on-recall (idx)
+            fn (e dispatch!) (dispatch! :reel/recall idx)
+        |style-container $ quote
+          def style-container $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 160) (:font-size 12)
+        |style-data $ quote
+          def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
+        |style-record $ quote
+          def style-record $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
+      :proc $ quote ()
+    |reel.util $ {}
+      :ns $ quote
+        ns reel.util $ :require
+      :defs $ {}
+        |listen-devtools! $ quote
+          defn listen-devtools! (keyboard dispatch!)
+            .!addEventListener js/window |keydown $ fn (event)
+              if
+                and (.-shiftKey event) (.-metaKey event) (.-altKey event)
+                  =
+                    .!charCodeAt $ .!toUpperCase keyboard
+                    .-keyCode event
+                dispatch! :reel/toggle nil
+      :proc $ quote ()
+    |reel.style $ {}
+      :ns $ quote (ns reel.style)
+      :defs $ {}
+        |code $ quote
+          def code $ {} (:font-family "|Source Code Pro, Menlo, monospace")
       :proc $ quote ()
     |reel.core $ {}
       :ns $ quote
@@ -446,15 +394,15 @@
                 assoc :store $ play-records next-base records updater
                   if (:stopped? reel) (:pointer reel) (count records)
       :proc $ quote ()
-    |reel.comp.container $ {}
+    |reel.app.comp.container $ {}
       :ns $ quote
-        ns reel.comp.container $ :require
+        ns reel.app.comp.container $ :require
           [] respo.util.format :refer $ [] hsl
           [] respo-ui.core :as ui
           [] respo.core :refer $ [] defcomp <> >> div span
           [] respo.comp.space :refer $ [] =<
           [] reel.comp.reel :refer $ [] comp-reel
-          [] reel.comp.todolist :refer $ [] comp-todolist
+          [] reel.app.comp.todolist :refer $ [] comp-todolist
       :defs $ {}
         |comp-container $ quote
           defcomp comp-container (reel)
@@ -465,4 +413,36 @@
                 {} $ :style (merge ui/global)
                 comp-todolist (>> states :todolist) (:tasks store)
                 comp-reel (>> states :reel) reel nil
+      :proc $ quote ()
+    |reel.app.updater $ {}
+      :ns $ quote
+        ns reel.app.updater $ :require
+          [] respo.cursor :refer $ [] update-states
+      :defs $ {}
+        |updater $ quote
+          defn updater (store op op-data op-id op-time)
+            case-default op
+              do (js/console.log "\"unknown op" op) store
+              :states $ update-states store op-data
+              :task/add $ update store :tasks
+                fn (tasks)
+                  prepend tasks $ {} (:id op-id) (:done? false) (:text op-data)
+              :task/remove $ update store :tasks
+                fn (tasks)
+                  filter tasks $ fn (task)
+                    /= (:id task) op-data
+              :task/toggle $ update store :tasks
+                fn (tasks)
+                  map tasks $ fn (task)
+                    if
+                      = (:id task) op-data
+                      update task :done? not
+                      , task
+              :task/edit $ update store :tasks
+                fn (tasks)
+                  map tasks $ fn (task)
+                    let[] (task-id text) op-data $ if
+                      = (:id task) task-id
+                      assoc task :text text
+                      , task
       :proc $ quote ()
