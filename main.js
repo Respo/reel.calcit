@@ -1,10 +1,10 @@
 
-import { main_BANG_ } from "./js-out/reel.main.js"
+import { main_$x_ } from "./js-out/reel.app.main.js"
 
-main_BANG_()
+main_$x_()
 
 if (import.meta.hot) {
-  import.meta.hot.accept('./js-out/reel.main.js', (main) => {
-    main.reload_BANG_()
+  import.meta.hot.accept('./js-out/reel.app.main.js', (main) => {
+    main.reload_$x_()
   })
 }
