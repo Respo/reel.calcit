@@ -1,7 +1,7 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.5.7)
-    :modules $ [] |respo.calcit/compact.cirru |lilac/compact.cirru |memof/compact.cirru |respo-ui.calcit/compact.cirru
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.5.8)
+    :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/
   :entries $ {}
   :files $ {}
     |reel.app.comp.container $ {}
@@ -60,11 +60,11 @@
           def style-container $ {} (:margin "|8px 0") (:height "\"32px")
       :ns $ quote
         ns reel.app.comp.task $ :require
-          [] respo.core :refer $ [] defcomp <> div button input
+          respo.core :refer $ [] defcomp <> div button input
           respo.css :refer $ defstyle
-          [] respo.util.format :refer $ [] hsl
-          [] respo.comp.space :refer $ [] =<
-          [] respo-ui.core :as ui
+          respo.util.format :refer $ [] hsl
+          respo.comp.space :refer $ [] =<
+          respo-ui.core :as ui
           respo-ui.css :as css
     |reel.app.comp.todolist $ {}
       :defs $ {}
@@ -260,9 +260,9 @@
                           last records
                       if (some? record)
                         let[] (action op-data op-id op-time) record $ div
-                          {} (:class-name css/font-code)
-                            :style $ merge ui/column
-                              {} $ :font-size 12
+                          {}
+                            :class-name $ str-spaced css/font-code css/column
+                            :style $ {} (:font-size 12)
                           div
                             {} (:class-name css/row-parted)
                               :style $ {}
@@ -274,9 +274,9 @@
                               =< 8 nil
                               <> op-time
                             if
-                              and (some? pointer) (/= pointer 0)
-                              span $ {} (:inner-text |Remove)
-                                :style $ {} (:cursor :pointer) (:font-size 12) (:font-family ui/font-fancy)
+                              and (some? pointer) (not= pointer 0)
+                              span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
+                                :style $ {} (:cursor :pointer) (:font-size 12)
                                   :color $ hsl 200 100 84
                                 :on-click $ fn (e d!)
                                   d! :reel/remove $ :pointer reel
