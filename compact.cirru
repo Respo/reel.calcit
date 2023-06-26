@@ -40,7 +40,7 @@
               input $ {} (:placeholder "|Content of task") (:class-name css/input)
                 :value $ :text task
                 :on-input $ fn (e d!)
-                  d! :task/edit $ [] (:id task) (:value e)
+                  d! $ :: :task/edit (:id task) (:value e)
               =< 8 nil
               button
                 {} (:class-name css/button)
@@ -49,7 +49,7 @@
                     :color :white
                     :border :none
                   :on-click $ fn (e d!)
-                    d! :task/remove $ :id task
+                    d! $ :: :task/remove (:id task)
                 <> |Remove
         |css-done $ quote
           defstyle css-done $ {}
@@ -109,18 +109,20 @@
         |*reel $ quote
           defatom *reel $ -> schema/reel (assoc :base schema/store) (assoc :store schema/store) (assoc :display? false)
         |dispatch! $ quote
-          defn dispatch! (op op-data) (println |Dispatch! op op-data)
+          defn dispatch! (op ? op-data) (println |Dispatch! op op-data)
             if (list? op)
-              recur :states $ [] op op-data
-              let
-                  new-reel $ reel-updater updater @*reel op op-data
-                ; println |Reel: new-reel
-                reset! *reel new-reel
+              recur $ : state op op-data
+              if (tag? op)
+                recur $ :: op op-data
+                let
+                    new-reel $ reel-updater updater @*reel op
+                  ; println |Reel: new-reel
+                  reset! *reel new-reel
         |main! $ quote
           defn main! () (load-console-formatter!) (render-app!)
             add-watch *reel :changes $ fn (reel prev) (render-app!)
             listen-devtools! |k dispatch!
-            dispatch! :reel/toggle nil
+            dispatch! $ :: :reel/toggle
             println "|App started!"
         |mount-target $ quote
           def mount-target $ .querySelector js/document |.app
@@ -146,31 +148,32 @@
     |reel.app.updater $ {}
       :defs $ {}
         |updater $ quote
-          defn updater (store op op-data op-id op-time)
-            case-default op
-              do (js/console.log "\"unknown op" op) store
-              :states $ update-states store op-data
-              :task/add $ update store :tasks
-                fn (tasks)
-                  prepend tasks $ {} (:id op-id) (:done? false) (:text op-data)
-              :task/remove $ update store :tasks
-                fn (tasks)
+          defn updater (store op op-id op-time)
+            tag-match op
+                :states cursor s
+                update-states store cursor s
+              (:task/add text)
+                update store :tasks $ fn (tasks)
+                  prepend tasks $ {} (:id op-id) (:done? false) (:text text)
+              (:task/remove id)
+                update store :tasks $ fn (tasks)
                   filter tasks $ fn (task)
-                    /= (:id task) op-data
-              :task/toggle $ update store :tasks
-                fn (tasks)
+                    /= (:id task) id
+              (:task/toggle id)
+                update store :tasks $ fn (tasks)
                   map tasks $ fn (task)
                     if
-                      = (:id task) op-data
+                      = (:id task) id
                       update task :done? not
                       , task
-              :task/edit $ update store :tasks
-                fn (tasks)
+              (:task/edit task-id text)
+                update store :tasks $ fn (tasks)
                   map tasks $ fn (task)
-                    let[] (task-id text) op-data $ if
+                    if
                       = (:id task) task-id
                       assoc task :text text
                       , task
+              _ $ do (js/console.log "\"Unknown op" op) store
       :ns $ quote
         ns reel.app.updater $ :require
           [] respo.cursor :refer $ [] update-states
@@ -329,81 +332,87 @@
       :defs $ {}
         |play-records $ quote
           defn play-records (store records updater pointer)
-            if (&= 0 pointer) store $ let[] (op op-data op-id op-time) (first records)
+            if (&= 0 pointer) store $ let[] (op op-id op-time) (first records)
               &let
-                next-store $ updater store op op-data op-id op-time
+                next-store $ updater store op op-id op-time
                 recur next-store (rest records) updater $ dec pointer
         |reel-updater $ quote
-          defn reel-updater (updater reel op op-data)
+          defn reel-updater (updater reel op)
             ; println |Name: $ turn-string op
             let
                 op-id $ generate-id!
                 op-time $ js/Date.now
               if
-                .starts-with? (str op) |:reel/
+                .starts-with?
+                  str $ nth op 0
+                  , |:reel/
                 merge reel $ let
                     pointer $ &map:get reel :pointer
                     records $ &map:get reel :records
                     base $ &map:get reel :base
                     store $ &map:get reel :base
                     stopped? $ &map:get reel :stopped?
-                  case-default op
-                    do (js/console.warn "|Unknown reel/ op:" op) nil
-                    :reel/toggle $ {}
-                      :display? $ not (:display? reel)
-                    :reel/recall $ let
-                        idx op-data
-                        new-store $ play-records base records updater idx
-                      {} (:pointer idx) (:stopped? true) (:store new-store)
-                    :reel/run $ let
-                        new-store $ play-records base records updater (count records)
-                      {} (:store new-store) (:stopped? false) (:pointer nil)
-                    :reel/step $ if stopped?
-                      if
-                        < (count records) 2
-                        , nil $ if
-                          < pointer $ count records
+                  tag-match op
+                      :reel/toggle
+                      {} $ :display?
+                        not $ :display? reel
+                    (:reel/recall idx)
+                      let
+                          new-store $ play-records base records updater idx
+                        {} (:pointer idx) (:stopped? true) (:store new-store)
+                    (:reel/run)
+                      let
+                          new-store $ play-records base records updater (count records)
+                        {} (:store new-store) (:stopped? false) (:pointer nil)
+                    (:reel/step)
+                      if stopped?
+                        if
+                          < (count records) 2
+                          , nil $ if
+                            < pointer $ count records
+                            let
+                                next-pointer $ inc pointer
+                                next-record $ get records pointer
+                              let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
+                                :store $ updater (:store reel) old-op old-id old-time
+                            {} (:store base) (:pointer 0)
+                        , nil
+                    (:reel/merge)
+                      if stopped?
+                        if (&= 0 pointer) ({})
                           let
-                              next-pointer $ inc pointer
-                              next-record $ get records pointer
-                            let[] (old-op old-data old-id old-time) next-record $ {} (:pointer next-pointer)
-                              :store $ updater (:store reel) old-op old-data old-id old-time
-                          {} (:store base) (:pointer 0)
-                      , nil
-                    :reel/merge $ if stopped?
-                      if (&= 0 pointer) ({})
-                        let
-                            new-store $ play-records base records updater pointer
-                          {} (:store new-store) (:base new-store) (:pointer 0)
-                            :records $ .slice records pointer
-                            :merged? true
-                      {}
-                        :base $ :store reel
-                        :pointer nil
-                        :records $ []
-                        :merged? true
-                    :reel/reset $ if stopped?
-                      {} $ :records (.slice records 0 pointer)
-                      {}
-                        :store $ :base reel
-                        :pointer nil
-                        :records $ []
-                        :stopped? false
-                    :reel/remove $ let
-                        idx op-data
+                              new-store $ play-records base records updater pointer
+                            {} (:store new-store) (:base new-store) (:pointer 0)
+                              :records $ .slice records pointer
+                              :merged? true
+                        {}
+                          :base $ :store reel
+                          :pointer nil
+                          :records $ []
+                          :merged? true
+                    (:reel/reset)
+                      if stopped?
+                        {} $ :records (.slice records 0 pointer)
+                        {}
+                          :store $ :base reel
+                          :pointer nil
+                          :records $ []
+                          :stopped? false
+                    (:reel/remove idx)
                       if (&= 0 idx) reel $ -> reel (update :pointer dec)
                         update :records $ fn (records)
                           concat
                             .slice records 0 $ dec idx
                             .slice records idx
                         assoc :store $ play-records base records updater (dec idx)
+                    _ $ do (js/console.warn "|Unknown reel/ op:" op) nil
                 let
-                    data-pack $ [] op op-data op-id op-time
+                    data-pack $ [] op op-id op-time
                   if (&map:get reel :stopped?)
                     -> reel $ update :records
                       fn (records) (conj records data-pack)
                     -> reel
-                      assoc :store $ updater (:store reel) op op-data op-id op-time
+                      assoc :store $ updater (:store reel) op op-id op-time
                       update :records $ fn (records) (conj records data-pack)
         |refresh-reel $ quote
           defn refresh-reel (reel base updater)
