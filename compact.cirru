@@ -1,6 +1,6 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.5.9)
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.5.10)
     :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/
   :entries $ {}
   :files $ {}
@@ -35,7 +35,7 @@
                 :style $ if (:done? task)
                   {} $ :background-color (hsl 42 100 60)
                 :on-click $ fn (e d!)
-                  d! :task/toggle $ :id task
+                  d! $ :: :task/toggle (:id task)
               =< 8 nil
               input $ {} (:placeholder "|Content of task") (:class-name css/input)
                 :value $ :text task
@@ -78,16 +78,19 @@
                 div ({})
                   input $ {} (:placeholder "|Task to add...") (:value state) (:class-name css/input)
                     :on-input $ fn (e d!)
-                      d! cursor $ :value e
+                      d! $ :: :states cursor (:value e)
                     :on-keydown $ fn (e d!)
                       if
                         = (:keycode e) 13
-                        do (d! :task/add state)
-                          d! ([]) |
+                        do
+                          d! $ :: :task/add state
+                          d! $ :: :states ([]) |
                   =< 8 nil
                   button
                     {} (:class-name css/button)
-                      :on-click $ fn (e d!) (d! :task/add state) (d! cursor |)
+                      :on-click $ fn (e d!)
+                        d! $ :: :task/add state
+                        d! $ :: :states cursor |
                     <> |Add
                 list-> ({})
                   -> tasks $ map
@@ -109,15 +112,11 @@
         |*reel $ quote
           defatom *reel $ -> schema/reel (assoc :base schema/store) (assoc :store schema/store) (assoc :display? false)
         |dispatch! $ quote
-          defn dispatch! (op ? op-data) (println |Dispatch! op op-data)
-            if (list? op)
-              recur $ : state op op-data
-              if (tag? op)
-                recur $ :: op op-data
-                let
-                    new-reel $ reel-updater updater @*reel op
-                  ; println |Reel: new-reel
-                  reset! *reel new-reel
+          defn dispatch! (op) (println |Dispatch! op)
+            let
+                new-reel $ reel-updater updater @*reel op
+              ; println |Reel: new-reel
+              reset! *reel new-reel
         |main! $ quote
           defn main! () (load-console-formatter!) (render-app!)
             add-watch *reel :changes $ fn (reel prev) (render-app!)
@@ -202,10 +201,11 @@
             "\"$0:hover" $ {} (:background-color "\"#eee")
         |css-records $ quote
           defstyle css-records $ {}
-            "\"$0" $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 160) (:font-size 12)
+            "\"&" $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
         |on-recall $ quote
           defn on-recall (idx)
-            fn (e dispatch!) (dispatch! :reel/recall idx)
+            fn (e dispatch!)
+              dispatch! $ :: :reel/recall idx
         |style-data $ quote
           def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
       :ns $ quote
@@ -231,19 +231,24 @@
                     {} $ :border-bottom
                       str "\"1px solid " $ hsl 0 0 90
                   render-button |Merge
-                    fn (e d!) (d! :reel/merge nil)
+                    fn (e d!)
+                      d! $ :: :reel/merge
                     , true
                   render-button |Reset
-                    fn (e d!) (d! :reel/reset nil)
+                    fn (e d!)
+                      d! $ :: :reel/reset
                     , true
                   render-button |Step
-                    fn (e d!) (d! :reel/step nil)
+                    fn (e d!)
+                      d! $ :: :reel/step
                     :stopped? reel
                   render-button |Run
-                    fn (e d!) (d! :reel/run nil)
+                    fn (e d!)
+                      d! $ :: :reel/run
                     :stopped? reel
                   render-button |Close
-                    fn (e d!) (d! :reel/toggle nil)
+                    fn (e d!)
+                      d! $ :: :reel/toggle
                     not $ :stopped? reel
                 div
                   {} $ :class-name (str-spaced css/expand css/row)
@@ -282,7 +287,7 @@
                                 :style $ {} (:cursor :pointer) (:font-size 12)
                                   :color $ hsl 200 100 84
                                 :on-click $ fn (e d!)
-                                  d! :reel/remove $ :pointer reel
+                                  d! $ :: :reel/remove (:pointer reel)
                           div
                             {} (:class-name css/expand)
                               :style $ {} (:max-height "\"200px")
@@ -453,6 +458,6 @@
                   =
                     .!charCodeAt $ .!toUpperCase keyboard
                     .-keyCode event
-                dispatch! :reel/toggle nil
+                dispatch! $ :: :reel/toggle
       :ns $ quote
         ns reel.util $ :require
