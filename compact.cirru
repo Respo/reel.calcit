@@ -1,12 +1,12 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.0-a1)
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.0-a2)
     :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/
   :entries $ {}
   :files $ {}
-    |reel.app.comp.container $ {}
+    |reel.app.comp.container $ %{} :FileEntry
       :defs $ {}
-        |comp-container $ %{} :CodeEntry
+        |comp-container $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-container (reel)
               let
@@ -16,8 +16,7 @@
                   {} $ :class-name css/global
                   comp-todolist (>> states :todolist) (:tasks store)
                   comp-reel (>> states :reel) reel nil
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.app.comp.container $ :require
             respo.util.format :refer $ hsl
@@ -28,10 +27,9 @@
             respo.comp.space :refer $ =<
             reel.comp.reel :refer $ comp-reel
             reel.app.comp.todolist :refer $ comp-todolist
-        :doc |
-    |reel.app.comp.task $ {}
+    |reel.app.comp.task $ %{} :FileEntry
       :defs $ {}
-        |comp-task $ %{} :CodeEntry
+        |comp-task $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-task (task)
               div
@@ -56,19 +54,16 @@
                     :on-click $ fn (e d!)
                       d! $ :: :task/remove (:id task)
                   <> |Remove
-          :doc |
-        |css-done $ %{} :CodeEntry
+        |css-done $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-done $ {}
               "\"$0" $ {} (:width 32) (:height 32) (:display :inline-block)
                 :background-color $ hsl 220 100 76
                 :cursor :pointer
-          :doc |
-        |style-container $ %{} :CodeEntry
+        |style-container $ %{} :CodeEntry (:doc |)
           :code $ quote
             def style-container $ {} (:margin "|8px 0") (:height "\"32px")
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.app.comp.task $ :require
             respo.core :refer $ [] defcomp <> div button input
@@ -77,10 +72,9 @@
             respo.comp.space :refer $ [] =<
             respo-ui.core :as ui
             respo-ui.css :as css
-        :doc |
-    |reel.app.comp.todolist $ {}
+    |reel.app.comp.todolist $ %{} :FileEntry
       :defs $ {}
-        |comp-todolist $ %{} :CodeEntry
+        |comp-todolist $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-todolist (states tasks)
               let
@@ -109,13 +103,11 @@
                     -> tasks $ map
                       fn (task)
                         [] (:id task) (comp-task task)
-          :doc |
-        |css-container $ %{} :CodeEntry
+        |css-container $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-container $ {}
               "\"$0" $ {} (:padding 8) (:overflow :auto)
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.app.comp.todolist $ :require
             respo.core :refer $ defcomp <> div span button input list->
@@ -124,34 +116,29 @@
             respo-ui.core :as ui
             respo-ui.css :as css
             reel.app.comp.task :refer $ comp-task
-        :doc |
-    |reel.app.main $ {}
+    |reel.app.main $ %{} :FileEntry
       :defs $ {}
-        |*reel $ %{} :CodeEntry
+        |*reel $ %{} :CodeEntry (:doc |)
           :code $ quote
             defatom *reel $ -> schema/reel (assoc :base schema/store) (assoc :store schema/store) (assoc :display? false)
-          :doc |
-        |dispatch! $ %{} :CodeEntry
+        |dispatch! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn dispatch! (op) (println |Dispatch! op)
               let
                   new-reel $ reel-updater updater @*reel op
                 ; println |Reel: new-reel
                 reset! *reel new-reel
-          :doc |
-        |main! $ %{} :CodeEntry
+        |main! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn main! () (load-console-formatter!) (render-app!)
               add-watch *reel :changes $ fn (reel prev) (render-app!)
               listen-devtools! |k dispatch!
               dispatch! $ :: :reel/toggle
               println "|App started!"
-          :doc |
-        |mount-target $ %{} :CodeEntry
+        |mount-target $ %{} :CodeEntry (:doc |)
           :code $ quote
             def mount-target $ .querySelector js/document |.app
-          :doc |
-        |reload! $ %{} :CodeEntry
+        |reload! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if (nil? build-errors)
               do (remove-watch *reel :changes) (clear-cache!)
@@ -159,12 +146,10 @@
                 reset! *reel $ refresh-reel @*reel schema/store updater
                 hud! "\"ok~" "\"Ok"
               hud! "\"error" build-errors
-          :doc |
-        |render-app! $ %{} :CodeEntry
+        |render-app! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn render-app! () $ render! mount-target (comp-container @*reel) dispatch!
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.app.main $ :require
             respo.core :refer $ render! clear-cache!
@@ -175,10 +160,9 @@
             reel.app.updater :refer $ updater
             "\"./calcit.build-errors" :default build-errors
             "\"bottom-tip" :default hud!
-        :doc |
-    |reel.app.updater $ {}
+    |reel.app.updater $ %{} :FileEntry
       :defs $ {}
-        |updater $ %{} :CodeEntry
+        |updater $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn updater (store op op-id op-time)
               tag-match op
@@ -206,15 +190,13 @@
                         assoc task :text text
                         , task
                 _ $ do (js/console.log "\"Unknown op" op) store
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.app.updater $ :require
             [] respo.cursor :refer $ [] update-states
-        :doc |
-    |reel.comp.records $ {}
+    |reel.comp.records $ %{} :FileEntry
       :defs $ {}
-        |comp-records $ %{} :CodeEntry
+        |comp-records $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-records (records pointer)
               div
@@ -231,30 +213,25 @@
                                 :background-color $ hsl 220 100 76
                                 :color :white
                             :on-click $ on-recall idx
-                          <> $ pr-str (first record)
-          :doc |
-        |css-record $ %{} :CodeEntry
+                          <> $ to-lispy-string (first record)
+        |css-record $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-record $ {}
               "\"$0" $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
               "\"$0:hover" $ {} (:background-color "\"#eee")
-          :doc |
-        |css-records $ %{} :CodeEntry
+        |css-records $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-records $ {}
               "\"&" $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
-          :doc |
-        |on-recall $ %{} :CodeEntry
+        |on-recall $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-recall (idx)
               fn (e dispatch!)
                 dispatch! $ :: :reel/recall idx
-          :doc |
-        |style-data $ %{} :CodeEntry
+        |style-data $ %{} :CodeEntry (:doc |)
           :code $ quote
             def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.comp.records $ :require
             respo.core :refer $ defcomp <> div span style list->
@@ -264,10 +241,9 @@
             respo.comp.space :refer $ =<
             reel.style :as reel-style
             respo.util.format :refer $ hsl
-        :doc |
-    |reel.comp.reel $ {}
+    |reel.comp.reel $ %{} :FileEntry
       :defs $ {}
-        |comp-reel $ %{} :CodeEntry
+        |comp-reel $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-reel (states reel user-styles)
               if (:display? reel)
@@ -340,15 +316,14 @@
                             div
                               {} (:class-name css/expand)
                                 :style $ {} (:max-height "\"200px")
-                              <> $ pr-str op-data
+                              <> $ to-lispy-string op-data
                           <> "\"nil"
                       div
                         {} $ :class-name (str-spaced css/expand css/font-code css-snippet)
                         <> $ .trim
                           format-cirru-edn $ :store reel
                 span $ {}
-          :doc |
-        |css-reel $ %{} :CodeEntry
+        |css-reel $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-reel $ {}
               "\"$0" $ {} (:width |60%) (:height |80%) (:right "\"0px") (:bottom "\"0px") (:position :fixed)
@@ -357,14 +332,12 @@
                 :font-size 14
                 :backdrop-filter "|blur(2px)"
                 :z-index 9999
-          :doc |
-        |css-snippet $ %{} :CodeEntry
+        |css-snippet $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-snippet $ {}
               "\"$0" $ {} (:font-size 12) (:white-space :pre) (:padding "\"16px 0px 200px 0px") (:line-height "\"20px") (:overflow :auto)
                 :border-top $ str "\"1px solid " (hsl 0 0 94)
-          :doc |
-        |render-button $ %{} :CodeEntry
+        |render-button $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn render-button (guide on-click enabled?)
               div
@@ -376,8 +349,7 @@
                   :on-click $ if enabled? on-click
                     fn $ e d!
                 <> guide
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.comp.reel $ :require
             respo.core :refer $ defcomp <> >> div button span
@@ -390,18 +362,16 @@
             reel.comp.records :refer $ comp-records
             respo-value.comp.value :refer $ comp-value
             reel.style :as style
-        :doc |
-    |reel.core $ {}
+    |reel.core $ %{} :FileEntry
       :defs $ {}
-        |play-records $ %{} :CodeEntry
+        |play-records $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn play-records (store records updater pointer)
               if (&= 0 pointer) store $ let[] (op op-id op-time) (first records)
                 &let
                   next-store $ updater store op op-id op-time
                   recur next-store (rest records) updater $ dec pointer
-          :doc |
-        |reel-updater $ %{} :CodeEntry
+        |reel-updater $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reel-updater (updater reel op)
               ; println |Name: $ turn-string op
@@ -480,8 +450,7 @@
                       -> reel
                         assoc :store $ updater (:store reel) op op-id op-time
                         update :records $ fn (records) (conj records data-pack)
-          :doc |
-        |refresh-reel $ %{} :CodeEntry
+        |refresh-reel $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn refresh-reel (reel base updater)
               let
@@ -490,14 +459,12 @@
                 -> reel (assoc :base next-base)
                   assoc :store $ play-records next-base records updater
                     if (:stopped? reel) (:pointer reel) (count records)
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.core $ :require
-        :doc |
-    |reel.schema $ {}
+    |reel.schema $ %{} :FileEntry
       :defs $ {}
-        |reel $ %{} :CodeEntry
+        |reel $ %{} :CodeEntry (:doc |)
           :code $ quote
             def reel $ {}
               :records $ []
@@ -507,24 +474,20 @@
               :stopped? false
               :display? false
               :merged? false
-          :doc |
-        |store $ %{} :CodeEntry
+        |store $ %{} :CodeEntry (:doc |)
           :code $ quote
             def store $ {}
               :states $ {}
               :tasks $ []
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote (ns reel.schema)
-        :doc |
-    |reel.style $ {}
+    |reel.style $ %{} :FileEntry
       :defs $ {}
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote (ns reel.style)
-        :doc |
-    |reel.util $ {}
+    |reel.util $ %{} :FileEntry
       :defs $ {}
-        |listen-devtools! $ %{} :CodeEntry
+        |listen-devtools! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn listen-devtools! (keyboard dispatch!)
               .!addEventListener js/window |keydown $ fn (event)
@@ -534,8 +497,6 @@
                       .!charCodeAt $ .!toUpperCase keyboard
                       .-keyCode event
                   dispatch! $ :: :reel/toggle
-          :doc |
-      :ns $ %{} :CodeEntry
+      :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.util $ :require
-        :doc |
