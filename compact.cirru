@@ -1,6 +1,6 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.0-a2)
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.1)
     :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/
   :entries $ {}
   :files $ {}
@@ -137,7 +137,7 @@
               println "|App started!"
         |mount-target $ %{} :CodeEntry (:doc |)
           :code $ quote
-            def mount-target $ .querySelector js/document |.app
+            def mount-target $ js/document.querySelector |.app
         |reload! $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if (nil? build-errors)
@@ -210,7 +210,7 @@
                           {} (:class-name css-record)
                             :style $ if (= pointer idx)
                               {}
-                                :background-color $ hsl 220 100 76
+                                :background-color $ hsl 220 20 56
                                 :color :white
                             :on-click $ on-recall idx
                           <> $ to-lispy-string (first record)
@@ -292,7 +292,7 @@
                               , nil
                             last records
                         if (some? record)
-                          let[] (action op-data op-id op-time) record $ div
+                          let[] (action op-id op-time) record $ div
                             {}
                               :class-name $ str-spaced css/font-code css/column
                               :style $ {} (:font-size 12)
@@ -300,27 +300,22 @@
                               {} (:class-name css/row-parted)
                                 :style $ {}
                                   :border-bottom $ str "\"1px solid " (hsl 0 0 94)
-                              div ({})
-                                <> $ str action
-                                =< 24 nil
-                                <> op-id
-                                =< 8 nil
-                                <> op-time
+                              div ({}) (<> op-time) (=< 8 nil) (<> op-id)
                               if
                                 and (some? pointer) (not= pointer 0)
                                 span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
                                   :style $ {} (:cursor :pointer) (:font-size 12)
-                                    :color $ hsl 200 100 84
+                                    :color $ hsl 20 100 70
                                   :on-click $ fn (e d!)
                                     d! $ :: :reel/remove (:pointer reel)
                             div
                               {} (:class-name css/expand)
-                                :style $ {} (:max-height "\"200px")
-                              <> $ to-lispy-string op-data
+                                :style $ {} (:padding "\"8px 0")
+                              <> $ trim (format-cirru-edn action)
                           <> "\"nil"
                       div
                         {} $ :class-name (str-spaced css/expand css/font-code css-snippet)
-                        <> $ .trim
+                        <> $ trim
                           format-cirru-edn $ :store reel
                 span $ {}
         |css-reel $ %{} :CodeEntry (:doc |)
