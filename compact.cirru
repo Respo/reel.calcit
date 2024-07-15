@@ -1,6 +1,6 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.1)
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.2)
     :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/
   :entries $ {}
   :files $ {}
@@ -99,6 +99,13 @@
                           d! $ :: :task/add state
                           d! $ :: :states cursor |
                       <> |Add
+                    =< 8 nil
+                    button $ {} (:inner-text "\"Try") (:class-name css/button)
+                      :on-click $ fn (e d!)
+                        d! $ :: :try
+                          {}
+                            :a $ [] :b :w
+                            :c $ {} (:d :e)
                   list-> ({})
                     -> tasks $ map
                       fn (task)
@@ -189,13 +196,50 @@
                         = (:id task) task-id
                         assoc task :text text
                         , task
-                _ $ do (js/console.log "\"Unknown op" op) store
+                (:try _) store
+                _ $ do (js/console.warn "\"Unknown op" op) store
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.app.updater $ :require
             [] respo.cursor :refer $ [] update-states
     |reel.comp.records $ %{} :FileEntry
       :defs $ {}
+        |comp-action $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defcomp comp-action (action)
+              if (literal? action)
+                <> $ str action
+                if (tuple? action)
+                  let
+                      tag $ nth action 0
+                      params $ &tuple:params action
+                    div
+                      {} $ :class-name css/row-middle
+                      <> $ str tag
+                      =< 8 nil
+                      list-> ({})
+                        -> params $ map-indexed
+                          fn (idx item)
+                            [] idx $ if (shallow-data? item)
+                              <> $ to-lispy-string item
+                              div
+                                {} (:class-name style-type-tag)
+                                  :style $ {} (:display :inline-block)
+                                  :on-click $ fn (e d!) (tab-echo! item)
+                                <> $ str (type-of item)
+                  str action
+        |comp-record-item $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn comp-record-item (record pointed? idx)
+              div
+                {} (:class-name css-record)
+                  :style $ if pointed?
+                    {}
+                      :background-color $ hsl 220 20 56
+                      :color :white
+                  :on-click $ on-recall idx
+                ; <> $ to-lispy-string (first record)
+                comp-action $ first record
         |comp-records $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-records (records pointer)
@@ -206,14 +250,7 @@
                     prepend records $ [] :base nil :base
                     map-indexed $ fn (idx record)
                       [] (last record)
-                        div
-                          {} (:class-name css-record)
-                            :style $ if (= pointer idx)
-                              {}
-                                :background-color $ hsl 220 20 56
-                                :color :white
-                            :on-click $ on-recall idx
-                          <> $ to-lispy-string (first record)
+                        memof1-call comp-record-item record (= pointer idx) idx
         |css-record $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-record $ {}
@@ -223,14 +260,33 @@
           :code $ quote
             defstyle css-records $ {}
               "\"&" $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
+        |literal? $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn literal? (x)
+              or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
         |on-recall $ %{} :CodeEntry (:doc |)
           :code $ quote
             defn on-recall (idx)
               fn (e dispatch!)
                 dispatch! $ :: :reel/recall idx
+        |shallow-data? $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn shallow-data? (item)
+              or (literal? item)
+                and (list? item) (every? item literal?)
+                and (map? item) (every? item shallow-data?)
         |style-data $ %{} :CodeEntry (:doc |)
           :code $ quote
             def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
+        |style-type-tag $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defstyle style-type-tag $ {}
+              "\"&" $ {}
+                :border $ str "\"1px solid " (hsl 0 0 80)
+                :border-radius "\"4px"
+                :padding "\"0 8px"
+                :line-height "\"1.4"
+                :cursor :pointer
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.comp.records $ :require
@@ -241,8 +297,37 @@
             respo.comp.space :refer $ =<
             reel.style :as reel-style
             respo.util.format :refer $ hsl
+            respo-ui.util :refer $ tab-echo!
+            memof.once :refer $ memof1-call
     |reel.comp.reel $ %{} :FileEntry
       :defs $ {}
+        |comp-operations $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defn comp-operations (stopped?)
+              div
+                {} $ :style
+                  {} $ :border-bottom
+                    str "\"1px solid " $ hsl 0 0 90
+                render-button |Merge
+                  fn (e d!)
+                    d! $ :: :reel/merge
+                  , true
+                render-button |Reset
+                  fn (e d!)
+                    d! $ :: :reel/reset
+                  , true
+                render-button |Step
+                  fn (e d!)
+                    d! $ :: :reel/step
+                  , stopped?
+                render-button |Run
+                  fn (e d!)
+                    d! $ :: :reel/run
+                  , stopped?
+                render-button |Close
+                  fn (e d!)
+                    d! $ :: :reel/toggle
+                  not stopped?
         |comp-reel $ %{} :CodeEntry (:doc |)
           :code $ quote
             defcomp comp-reel (states reel user-styles)
@@ -251,30 +336,7 @@
                   {}
                     :class-name $ str-spaced css/flex css/column css-reel
                     :style user-styles
-                  div
-                    {} $ :style
-                      {} $ :border-bottom
-                        str "\"1px solid " $ hsl 0 0 90
-                    render-button |Merge
-                      fn (e d!)
-                        d! $ :: :reel/merge
-                      , true
-                    render-button |Reset
-                      fn (e d!)
-                        d! $ :: :reel/reset
-                      , true
-                    render-button |Step
-                      fn (e d!)
-                        d! $ :: :reel/step
-                      :stopped? reel
-                    render-button |Run
-                      fn (e d!)
-                        d! $ :: :reel/run
-                      :stopped? reel
-                    render-button |Close
-                      fn (e d!)
-                        d! $ :: :reel/toggle
-                      not $ :stopped? reel
+                  memof1-call comp-operations $ :stopped? reel
                   div
                     {} $ :class-name (str-spaced css/expand css/row)
                     comp-records (:records reel) (:pointer reel)
@@ -310,8 +372,9 @@
                                     d! $ :: :reel/remove (:pointer reel)
                             div
                               {} (:class-name css/expand)
-                                :style $ {} (:padding "\"8px 0")
-                              <> $ trim (format-cirru-edn action)
+                                :style $ {} (:padding "\"8px 0") (:white-space :pre)
+                              ; <> $ trim (format-cirru-edn action)
+                              comp-action action
                           <> "\"nil"
                       div
                         {} $ :class-name (str-spaced css/expand css/font-code css-snippet)
@@ -347,7 +410,7 @@
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.comp.reel $ :require
-            respo.core :refer $ defcomp <> >> div button span
+            respo.core :refer $ defcomp <> >> div button span list->
             respo.css :refer $ defstyle
             respo.util.format :refer $ hsl
             respo.comp.inspect :refer $ comp-inspect
@@ -357,6 +420,8 @@
             reel.comp.records :refer $ comp-records
             respo-value.comp.value :refer $ comp-value
             reel.style :as style
+            memof.once :refer $ memof1-call
+            reel.comp.records :refer $ comp-action
     |reel.core $ %{} :FileEntry
       :defs $ {}
         |play-records $ %{} :CodeEntry (:doc |)

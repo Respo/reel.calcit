@@ -19,11 +19,11 @@ jobs:
 
     - uses: calcit-lang/setup-cr@0.0.3
       with:
-        version: "0.8.44"
+        version: "0.9.0-a1"
 
     - name: "compiles to js"
       run: >
-        caps --ci && cr --emit-js -1
+        caps --ci && cr -1 js
         && yarn && yarn vite build --base=./
 
     - name: Deploy to server
