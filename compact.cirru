@@ -1,6 +1,6 @@
 
 {} (:package |reel)
-  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.2)
+  :configs $ {} (:init-fn |reel.app.main/main!) (:reload-fn |reel.app.main/reload!) (:version |0.6.3)
     :modules $ [] |respo.calcit/ |lilac/ |memof/ |respo-ui.calcit/
   :entries $ {}
   :files $ {}
@@ -103,6 +103,9 @@
                     button $ {} (:inner-text "\"Try") (:class-name css/button)
                       :on-click $ fn (e d!)
                         d! $ :: :try
+                          {}
+                            :a $ [] :b :w
+                            :c $ {} (:d :e)
                           {}
                             :a $ [] :b :w
                             :c $ {} (:d :e)
@@ -216,12 +219,12 @@
                     div
                       {} $ :class-name css/row-middle
                       <> $ str tag
-                      =< 8 nil
+                      =< 2 nil
                       list-> ({})
                         -> params $ map-indexed
                           fn (idx item)
                             [] idx $ if (shallow-data? item)
-                              <> $ to-lispy-string item
+                              <> (to-lispy-string item) style-action-sep
                               div
                                 {} (:class-name style-type-tag)
                                   :style $ {} (:display :inline-block)
@@ -275,6 +278,10 @@
               or (literal? item)
                 and (list? item) (every? item literal?)
                 and (map? item) (every? item shallow-data?)
+        |style-action-sep $ %{} :CodeEntry (:doc |)
+          :code $ quote
+            defstyle style-action-sep $ {}
+              "\"&" $ {} (:margin "\"0 4px")
         |style-data $ %{} :CodeEntry (:doc |)
           :code $ quote
             def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
@@ -287,6 +294,9 @@
                 :padding "\"0 8px"
                 :line-height "\"1.4"
                 :cursor :pointer
+                :margin "\"0 4px"
+              "\"&:hover" $ {}
+                :box-shadow $ str "\"0px 0px 2px 2px " (hsl 0 0 0 0.06)
       :ns $ %{} :CodeEntry (:doc |)
         :code $ quote
           ns reel.comp.records $ :require
@@ -306,8 +316,9 @@
             defn comp-operations (stopped?)
               div
                 {} $ :style
-                  {} $ :border-bottom
-                    str "\"1px solid " $ hsl 0 0 90
+                  {}
+                    :border-bottom $ str "\"1px solid " (hsl 0 0 90)
+                    :padding "\"0 4px"
                 render-button |Merge
                   fn (e d!)
                     d! $ :: :reel/merge
@@ -390,6 +401,7 @@
                 :font-size 14
                 :backdrop-filter "|blur(2px)"
                 :z-index 9999
+                :border-radius "\"6px"
         |css-snippet $ %{} :CodeEntry (:doc |)
           :code $ quote
             defstyle css-snippet $ {}
