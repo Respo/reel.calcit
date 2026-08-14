@@ -66,12 +66,12 @@
                 :background-color $ hsl 220 100 76
                 :cursor :pointer
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |style-container $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def style-container $ {} (:margin "|8px 0") (:height |32px)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.app.comp.task $ :require
@@ -129,7 +129,7 @@
             defstyle css-container $ {}
               |$0 $ {} (:padding 8) (:overflow :auto)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.app.comp.todolist $ :require
@@ -295,13 +295,13 @@
               |$0 $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
               |$0:hover $ {} (:background-color |#eee)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |css-records $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-records $ {}
               |& $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |literal? $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn literal? (x)
@@ -328,12 +328,12 @@
             defstyle style-action-sep $ {}
               |& $ {} (:margin "|0 4px")
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |style-data $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |style-type-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle style-type-tag $ {}
@@ -347,7 +347,7 @@
               |&:hover $ {}
                 :box-shadow $ str "|0px 0px 2px 2px " (hsl 0 0 0 0.06)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.comp.records $ :require
@@ -390,7 +390,9 @@
                     d! $ :: :reel/toggle
                   not stopped?
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'respo.schema/Component)
+              :args $ [] 'Bool
         |comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-reel (states reel user-styles)
@@ -457,14 +459,14 @@
                 :z-index 9999
                 :border-radius |6px
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |css-snippet $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-snippet $ {}
               |$0 $ {} (:font-size 12) (:white-space :pre) (:padding "|16px 0px 200px 0px") (:line-height |20px) (:overflow :auto)
                 :border-top $ str "|1px solid " (hsl 0 0 94)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'String
         |render-button $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn render-button (guide on-click enabled?)
@@ -639,17 +641,22 @@
         |listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn listen-devtools! (keyboard dispatch!)
-              .!addEventListener (unsafe-coerce js/window 'JsObject) |keydown $ fn (event)
-                if
-                  and (.-shiftKey event) (.-metaKey event) (.-altKey event)
-                    =
-                      .!charCodeAt $ unsafe-coerce
-                        .!toUpperCase $ unsafe-coerce keyboard 'JsObject
-                        , 'JsObject
-                      .-keyCode event
-                  dispatch! $ :: :reel/toggle
+              do
+                .!addEventListener (unsafe-coerce js/window 'JsObject) |keydown $ fn (event)
+                  if
+                    and (.-shiftKey event) (.-metaKey event) (.-altKey event)
+                      =
+                        .!charCodeAt $ unsafe-coerce
+                          .!toUpperCase $ unsafe-coerce keyboard 'JsObject
+                          , 'JsObject
+                        .-keyCode event
+                    dispatch! $ :: :reel/toggle
+                , nil
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Unit)
+              :args $ [] 'Dynamic 'Dynamic
+              :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.util $ :require
