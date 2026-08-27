@@ -95,30 +95,38 @@
                   div ({})
                     input $ {} (:placeholder "|Task to add...") (:value state) (:class-name css/input)
                       :on-input $ fn (e d!)
-                        d! $ :: :states cursor (reel.schema/read-field e :value)
+                        do
+                          d! $ :: :states cursor (reel.schema/read-field e :value)
+                          , &unit
                       :on-keydown $ fn (e d!)
-                        if
-                          = (reel.schema/read-field e :keycode) 13
-                          do
-                            d! $ :: :task/add state
-                            d! $ :: :states ([]) |
+                        do
+                          if
+                            = (reel.schema/read-field e :keycode) 13
+                            do
+                              d! $ :: :task/add state
+                              d! $ :: :states ([]) |
+                          , &unit
                     =< 8 nil
                     button
                       {} (:class-name css/button)
                         :on-click $ fn (e d!)
-                          d! $ :: :task/add state
-                          d! $ :: :states cursor |
+                          do
+                            d! $ :: :task/add state
+                            d! $ :: :states cursor |
+                            , &unit
                       <> |Add
                     =< 8 nil
                     button $ {} (:inner-text |Try) (:class-name css/button)
                       :on-click $ fn (e d!)
-                        d! $ :: :try
-                          {}
-                            :a $ [] :b :w
-                            :c $ {} (:d :e)
-                          {}
-                            :a $ [] :b :w
-                            :c $ {} (:d :e)
+                        do
+                          d! $ :: :try
+                            {}
+                              :a $ [] :b :w
+                              :c $ {} (:d :e)
+                            {}
+                              :a $ [] :b :w
+                              :c $ {} (:d :e)
+                          , &unit
                   list-> ({})
                     -> tasks $ map
                       fn (task)
