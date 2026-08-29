@@ -15,13 +15,20 @@ jobs:
     - uses: actions/setup-node@v6
       with:
         node-version: 24
-        cache: 'yarn'
 
-    - uses: calcit-lang/setup-calcit@6a2e53ae41e4f0d5856a424b9ed4470d90ea6876
+    - name: Enable Corepack
+      run: |
+        corepack enable
+        corepack prepare yarn@4.12.0 --activate
+        yarn --version
+
+    - uses: calcit-lang/setup-calcit@v1
+      with:
+        tools: calcit,caps
 
     - name: Validate Calcit snapshot and type baseline
       run: |
-        caps --ci
+        caps --strict --ci
         yarn install --immutable
         calcit calcit.cirru edit format
         git diff --exit-code -- calcit.cirru
@@ -32,7 +39,7 @@ jobs:
 
     - name: "compiles to js"
       run: >
-        caps --ci && calcit calcit.cirru js
+        caps --strict --ci && calcit calcit.cirru js
         && yarn install --immutable && yarn vite build --base=./
 
     - name: Deploy to server

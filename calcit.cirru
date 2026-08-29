@@ -6,9 +6,9 @@
       :modules $ [] |respo.calcit/ |respo-ui.calcit/
       :type-slots $ {}
   :files $ {}
-    |reel.app.comp.container $ %{} 'FileEntry
+    'reel.app.comp.container $ %{} 'FileEntry
       :defs $ {}
-        |comp-container $ %{} 'CodeEntry (:doc |)
+        'comp-container $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-container (reel)
               let
@@ -31,9 +31,9 @@
             respo.comp.space :refer $ =<
             reel.comp.reel :refer $ comp-reel
             reel.app.comp.todolist :refer $ comp-todolist
-    |reel.app.comp.task $ %{} 'FileEntry
+    'reel.app.comp.task $ %{} 'FileEntry
       :defs $ {}
-        |comp-task $ %{} 'CodeEntry (:doc |)
+        'comp-task $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-task (task)
               div
@@ -60,7 +60,7 @@
                   <> |Remove
           :examples $ []
           :schema $ :: 'Dynamic
-        |css-done $ %{} 'CodeEntry (:doc |)
+        'css-done $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-done $ {}
               |$0 $ {} (:width 32) (:height 32) (:display :inline-block)
@@ -68,7 +68,7 @@
                 :cursor :pointer
           :examples $ []
           :schema $ :: 'Dynamic
-        |style-container $ %{} 'CodeEntry (:doc |)
+        'style-container $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def style-container $ {} (:margin "|8px 0") (:height |32px)
           :examples $ []
@@ -82,9 +82,9 @@
             respo.comp.space :refer $ [] =<
             respo-ui.core :as ui
             respo-ui.css :as css
-    |reel.app.comp.todolist $ %{} 'FileEntry
+    'reel.app.comp.todolist $ %{} 'FileEntry
       :defs $ {}
-        |comp-todolist $ %{} 'CodeEntry (:doc |)
+        'comp-todolist $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-todolist (states tasks)
               let
@@ -133,7 +133,7 @@
                         [] (reel.schema/read-field task :id) (comp-task task)
           :examples $ []
           :schema $ :: 'Dynamic
-        |css-container $ %{} 'CodeEntry (:doc |)
+        'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-container $ {}
               |$0 $ {} (:padding 8) (:overflow :auto)
@@ -148,14 +148,14 @@
             respo-ui.core :as ui
             respo-ui.css :as css
             reel.app.comp.task :refer $ comp-task
-    |reel.app.main $ %{} 'FileEntry
+    'reel.app.main $ %{} 'FileEntry
       :defs $ {}
-        |*reel $ %{} 'CodeEntry (:doc |)
+        '*reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defatom *reel $ -> schema/reel (assoc :base schema/store) (assoc :store schema/store) (assoc :display? false)
           :examples $ []
           :schema $ :: 'Dynamic
-        |dispatch! $ %{} 'CodeEntry (:doc |)
+        'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn dispatch! (op) (println |Dispatch! op)
               let
@@ -164,7 +164,7 @@
                 reset! *reel new-reel
           :examples $ []
           :schema $ :: 'Dynamic
-        |main! $ %{} 'CodeEntry (:doc |)
+        'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn main! () (load-console-formatter!) (render-app!)
               add-watch *reel :changes $ fn (reel prev) (render-app!)
@@ -176,12 +176,12 @@
             {} (:return 'Unit)
               :args $ []
               :features $ #{} :js-ffi
-        |mount-target $ %{} 'CodeEntry (:doc |)
+        'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def mount-target $ js/document.querySelector |.app
           :examples $ []
           :schema $ :: 'Dynamic
-        |reload! $ %{} 'CodeEntry (:doc |)
+        'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn reload! () $ if (nil? build-errors)
               do (remove-watch *reel :changes) (clear-cache!)
@@ -191,7 +191,7 @@
               hud! |error build-errors
           :examples $ []
           :schema $ :: 'Dynamic
-        |render-app! $ %{} 'CodeEntry (:doc |)
+        'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn render-app! () $ render! mount-target (comp-container @*reel) dispatch!
           :examples $ []
@@ -207,12 +207,12 @@
             reel.app.updater :refer $ updater
             |./calcit.build-errors :default build-errors
             |bottom-tip :default hud!
-    |reel.app.updater $ %{} 'FileEntry
+    'reel.app.updater $ %{} 'FileEntry
       :defs $ {}
-        |updater $ %{} 'CodeEntry (:doc |)
+        'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn updater (store op op-id op-time)
-              tag-match op
+              match op
                 (:states cursor s) (update-states store cursor s)
                 (:task/add text)
                   update store :tasks $ fn (tasks)
@@ -243,9 +243,9 @@
         :code $ quote
           ns reel.app.updater $ :require
             [] respo.cursor :refer $ [] update-states
-    |reel.comp.records $ %{} 'FileEntry
+    'reel.comp.records $ %{} 'FileEntry
       :defs $ {}
-        |comp-action $ %{} 'CodeEntry (:doc |)
+        'comp-action $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-action (action)
               if (literal? action)
@@ -271,7 +271,7 @@
                   str action
           :examples $ []
           :schema $ :: 'Dynamic
-        |comp-record-item $ %{} 'CodeEntry (:doc |)
+        'comp-record-item $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn comp-record-item (record pointed? idx)
               div
@@ -285,7 +285,7 @@
                 comp-action $ first record
           :examples $ []
           :schema $ :: 'Dynamic
-        |comp-records $ %{} 'CodeEntry (:doc |)
+        'comp-records $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-records (records pointer)
               div
@@ -298,33 +298,33 @@
                         memo-comp-by (last record) comp-record-item record (= pointer idx) idx
           :examples $ []
           :schema $ :: 'Dynamic
-        |css-record $ %{} 'CodeEntry (:doc |)
+        'css-record $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-record $ {}
               |$0 $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
               |$0:hover $ {} (:background-color |#eee)
           :examples $ []
           :schema $ :: 'Dynamic
-        |css-records $ %{} 'CodeEntry (:doc |)
+        'css-records $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-records $ {}
               |& $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
           :examples $ []
           :schema $ :: 'Dynamic
-        |literal? $ %{} 'CodeEntry (:doc |)
+        'literal? $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn literal? (x)
               or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
           :examples $ []
           :schema $ :: 'Dynamic
-        |on-recall $ %{} 'CodeEntry (:doc |)
+        'on-recall $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn on-recall (idx)
               fn (e dispatch!)
                 dispatch! $ :: :reel/recall idx
           :examples $ []
           :schema $ :: 'Dynamic
-        |shallow-data? $ %{} 'CodeEntry (:doc |)
+        'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn shallow-data? (item)
               or (literal? item)
@@ -332,18 +332,18 @@
                 and (map? item) (every? item shallow-data?)
           :examples $ []
           :schema $ :: 'Dynamic
-        |style-action-sep $ %{} 'CodeEntry (:doc |)
+        'style-action-sep $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle style-action-sep $ {}
               |& $ {} (:margin "|0 4px")
           :examples $ []
           :schema $ :: 'Dynamic
-        |style-data $ %{} 'CodeEntry (:doc |)
+        'style-data $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def style-data $ {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
           :examples $ []
           :schema $ :: 'Dynamic
-        |style-type-tag $ %{} 'CodeEntry (:doc |)
+        'style-type-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle style-type-tag $ {}
               |& $ {}
@@ -368,9 +368,9 @@
             reel.style :as reel-style
             respo.util.format :refer $ hsl
             respo-ui.util :refer $ tab-echo!
-    |reel.comp.reel $ %{} 'FileEntry
+    'reel.comp.reel $ %{} 'FileEntry
       :defs $ {}
-        |comp-operations $ %{} 'CodeEntry (:doc |)
+        'comp-operations $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn comp-operations (stopped?)
               div
@@ -400,7 +400,7 @@
                   not stopped?
           :examples $ []
           :schema $ :: 'Dynamic
-        |comp-reel $ %{} 'CodeEntry (:doc |)
+        'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defcomp comp-reel (states reel user-styles)
               if (reel.schema/read-field reel :display?)
@@ -455,7 +455,7 @@
                 span $ {}
           :examples $ []
           :schema $ :: 'Dynamic
-        |css-reel $ %{} 'CodeEntry (:doc |)
+        'css-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-reel $ {}
               |$0 $ {} (:width |60%) (:height |80%) (:right |0px) (:bottom |0px) (:position :fixed)
@@ -467,14 +467,14 @@
                 :border-radius |6px
           :examples $ []
           :schema $ :: 'Dynamic
-        |css-snippet $ %{} 'CodeEntry (:doc |)
+        'css-snippet $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-snippet $ {}
               |$0 $ {} (:font-size 12) (:white-space :pre) (:padding "|16px 0px 200px 0px") (:line-height |20px) (:overflow :auto)
                 :border-top $ str "|1px solid " (hsl 0 0 94)
           :examples $ []
           :schema $ :: 'Dynamic
-        |render-button $ %{} 'CodeEntry (:doc |)
+        'render-button $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn render-button (guide on-click enabled?)
               div
@@ -502,9 +502,9 @@
             respo-value.comp.value :refer $ comp-value
             reel.style :as style
             reel.comp.records :refer $ comp-action
-    |reel.core $ %{} 'FileEntry
+    'reel.core $ %{} 'FileEntry
       :defs $ {}
-        |play-records $ %{} 'CodeEntry (:doc |)
+        'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn play-records (store records updater pointer)
               if (&= 0 pointer) store $ let[] (op op-id op-time) (first records)
@@ -513,7 +513,7 @@
                   recur next-store (rest records) updater $ dec pointer
           :examples $ []
           :schema $ :: 'Dynamic
-        |reel-updater $ %{} 'CodeEntry (:doc |)
+        'reel-updater $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn reel-updater (updater reel op)
               ; println |Name: $ turn-string op
@@ -530,7 +530,7 @@
                       base $ &map:get reel :base
                       store $ &map:get reel :base
                       stopped? $ &map:get reel :stopped?
-                    tag-match op
+                    match op
                       (:reel/toggle)
                         {} $ :display?
                           not $ reel.schema/read-field reel :display?
@@ -594,7 +594,7 @@
                         update :records $ fn (records) (conj records data-pack)
           :examples $ []
           :schema $ :: 'Dynamic
-        |refresh-reel $ %{} 'CodeEntry (:doc |)
+        'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn refresh-reel (reel base updater)
               let
@@ -608,9 +608,9 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.core $ :require
-    |reel.schema $ %{} 'FileEntry
+    'reel.schema $ %{} 'FileEntry
       :defs $ {}
-        |read-field $ %{} 'CodeEntry (:doc |)
+        'read-field $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn read-field (value field)
               if (struct? value) (&struct:get value field) (&map:get value field)
@@ -618,7 +618,7 @@
           :schema $ :: 'Fn
             {} (:return 'Dynamic)
               :args $ [] 'Dynamic 'Tag
-        |reel $ %{} 'CodeEntry (:doc |)
+        'reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def reel $ {}
               :records $ []
@@ -630,7 +630,7 @@
               :merged? false
           :examples $ []
           :schema $ :: 'Dynamic
-        |store $ %{} 'CodeEntry (:doc |)
+        'store $ %{} 'CodeEntry (:doc |)
           :code $ quote
             def store $ {}
               :states $ {}
@@ -639,13 +639,13 @@
           :schema $ :: 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote (ns reel.schema)
-    |reel.style $ %{} 'FileEntry
+    'reel.style $ %{} 'FileEntry
       :defs $ {}
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote (ns reel.style)
-    |reel.util $ %{} 'FileEntry
+    'reel.util $ %{} 'FileEntry
       :defs $ {}
-        |listen-devtools! $ %{} 'CodeEntry (:doc |)
+        'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn listen-devtools! (keyboard dispatch!)
               .!addEventListener (unsafe-coerce js/window 'JsObject) |keydown $ fn (event)
