@@ -479,10 +479,10 @@
             defn render-button (guide on-click enabled?)
               div
                 {} (:class-name css/link)
-                  :style $ merge
+                  :style $ if enabled?
                     {} $ :user-select :none
-                    if (not enabled?)
-                      {} $ :color (hsl 0 0 90)
+                    {} (:user-select :none)
+                      :color $ hsl 0 0 90
                   :on-click $ if enabled? on-click
                     fn $ e d!
                 <> guide
@@ -507,7 +507,8 @@
         'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn play-records (store records updater pointer)
-              if (&= 0 pointer) store $ let[] (op op-id op-time) (first records)
+              if (&= 0 pointer) store $ let[] (op op-id op-time)
+                option:unwrap $ first records
                 &let
                   next-store $ updater store op op-id op-time
                   recur next-store (rest records) updater $ dec pointer
@@ -550,7 +551,7 @@
                               < pointer $ count records
                               let
                                   next-pointer $ inc pointer
-                                  next-record $ get records pointer
+                                  next-record $ option:unwrap (get records pointer)
                                 let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
                                   :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
                               {} (:store base) (:pointer 0)
