@@ -61,6 +61,10 @@ const onePaused = recall(updater, live, 0);
 assert.equal(step(updater, onePaused), onePaused);
 console.log("typed Reel JS: single-operation stepping, wraparound, selected removal, and no-op boundaries passed");
 const control = source => option_$o_unwrap(decode_control(parse_cirru_edn(source)));
+for (const pointer of [-1, 0.5, 4]) {
+  assert.equal(apply_control(updater, three, control(`:: :reel/recall ${pointer}`)), three,
+    "invalid devtools recall must preserve state without throwing");
+}
 for (const [message, expected] of [
   [":: :reel/toggle", toggle_display(paused)],
   [":: :reel/recall 0", recall(updater, paused, 0)],

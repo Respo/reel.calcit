@@ -470,7 +470,7 @@
           :schema $ :: 'Dynamic
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            defn comp-typed-reel (states reel user-styles)
+            defcomp comp-typed-reel (states reel user-styles)
               comp-reel states (typed-compat/view-data reel) user-styles
           :examples $ []
           :schema $ :: 'Fn
@@ -774,7 +774,13 @@
             defn apply-control (updater reel control)
               match control
                 (:toggle) (toggle-display reel)
-                (:recall pointer) (recall updater reel pointer)
+                (:recall pointer)
+                  if
+                    and (>= pointer 0)
+                      <= pointer $ count (:records reel)
+                      = pointer $ floor pointer
+                    recall updater reel pointer
+                    , reel
                 (:run) (resume updater reel)
                 (:step) (step updater reel)
                 (:merge) (merge-reel updater reel)
