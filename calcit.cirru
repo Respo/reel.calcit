@@ -671,20 +671,80 @@
         :code $ quote (ns reel.style)
     'reel.util $ %{} 'FileEntry
       :defs $ {}
+        'BrowserStringHost $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            deftrait BrowserStringHost
+              .toUpperCase $ :: 'Fn
+                {}
+                  :args $ []
+                  :return 'BrowserStringHost
+              .charCodeAt $ :: 'Fn
+                {}
+                  :args $ [] 'Number
+                  :return 'Number
+          :examples $ []
+          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
+          :schema $ :: 'Trait
+        'BrowserWindowHost $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            deftrait BrowserWindowHost $ .addEventListener
+              :: 'Fn $ {}
+                :args $ [] 'String
+                  :: 'Fn $ {} (:return 'Unit)
+                    :args $ [] 'KeyboardEventHost
+                :return 'Unit
+          :examples $ []
+          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
+          :schema $ :: 'Trait
+        'KeyboardEventHost $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            deftrait KeyboardEventHost (:shiftKey 'Bool) (:metaKey 'Bool) (:altKey 'Bool) (:keyCode 'Number)
+          :examples $ []
+          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
+          :schema $ :: 'Trait
+        'browser-window $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn browser-window () $ unsafe-coerce js/window BrowserWindowHost
+          :examples $ []
+          :schema $ :: 'Fn
+            {} (:return 'BrowserWindowHost)
+              :args $ []
+              :features $ #{} :js-ffi
+        'keyboard-code $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn keyboard-code (keyboard)
+              let
+                  text $ unsafe-coerce keyboard BrowserStringHost
+                  upper $ unsafe-coerce (.!toUpperCase text) BrowserStringHost
+                unsafe-coerce (.!charCodeAt upper 0) 'Number
+          :examples $ []
+          :schema $ :: 'Fn
+            {} (:return 'Number)
+              :args $ [] 'String
+              :features $ #{} :js-ffi
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn listen-devtools! (keyboard dispatch!)
-              .!addEventListener (unsafe-coerce js/window 'JsObject) |keydown $ fn (event)
-                if
-                  and (.-shiftKey event) (.-metaKey event) (.-altKey event)
-                    =
-                      .!charCodeAt $ unsafe-coerce
-                        .!toUpperCase $ unsafe-coerce keyboard 'JsObject
-                        , 'JsObject
-                      .-keyCode event
-                  dispatch! $ :: :reel/toggle
+              do
+                .!addEventListener (browser-window) |keydown $ fn (event)
+                  hint-fn $ {}
+                    :args $ [] 'KeyboardEventHost
+                    :return 'Unit
+                  if
+                    and (.-shiftKey event) (.-metaKey event) (.-altKey event)
+                      = (keyboard-code keyboard) (.-keyCode event)
+                    do
+                      dispatch! $ :: :reel/toggle
+                      , &unit
+                    , &unit
+                , &unit
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Unit)
+              :args $ [] 'String
+                :: 'Fn $ {} (:return 'Unit)
+                  :args $ [] 'Enum
+              :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.util $ :require
