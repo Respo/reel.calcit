@@ -680,7 +680,7 @@
                   :return 'BrowserStringHost
               .charCodeAt $ :: 'Fn
                 {}
-                  :args $ []
+                  :args $ [] 'Number
                   :return 'Number
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
@@ -716,7 +716,7 @@
               let
                   text $ unsafe-coerce keyboard BrowserStringHost
                   upper $ unsafe-coerce (.!toUpperCase text) BrowserStringHost
-                unsafe-coerce (.!charCodeAt upper) 'Number
+                unsafe-coerce (.!charCodeAt upper 0) 'Number
           :examples $ []
           :schema $ :: 'Fn
             {} (:return 'Number)
