@@ -707,7 +707,7 @@
             defn browser-window () $ unsafe-coerce js/window BrowserWindowHost
           :examples $ []
           :schema $ :: 'Fn
-            {} (:return 'reel.util/BrowserWindowHost)
+            {} (:return 'BrowserWindowHost)
               :args $ []
               :features $ #{} :js-ffi
         'keyboard-code $ %{} 'CodeEntry (:doc |)
