@@ -546,7 +546,6 @@
                       pointer $ &map:get reel :pointer
                       records $ unsafe-coerce (&map:get reel :records) (:: 'List 'Dynamic)
                       base $ &map:get reel :base
-                      store $ &map:get reel :base
                       stopped? $ &map:get reel :stopped?
                     match op
                       (:reel/toggle)
