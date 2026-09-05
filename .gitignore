@@ -2,6 +2,7 @@
 .calcit-error.cirru
 
 js-out/
+test-js-out/
 node_modules/
 dist/
 

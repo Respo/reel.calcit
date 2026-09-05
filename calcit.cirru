@@ -12,14 +12,16 @@
           :code $ quote
             defcomp comp-container (reel)
               let
-                  store $ reel.schema/read-field reel :store
+                  store $ :store reel
                   states $ reel.schema/read-field store :states
                 div
                   {} $ :class-name css/global
                   comp-todolist (>> states :todolist) (reel.schema/read-field store :tasks)
-                  comp-reel (>> states :reel) reel nil
+                  comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'respo.schema/Component)
+              :args $ [] (:: 'reel.typed/State 'Enum 'Map)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.app.comp.container $ :require
@@ -29,7 +31,7 @@
             respo.core :refer $ defcomp <> >> div span
             respo.css :refer $ defstyle
             respo.comp.space :refer $ =<
-            reel.comp.reel :refer $ comp-reel
+            reel.comp.reel :refer $ comp-typed-reel
             reel.app.comp.todolist :refer $ comp-todolist
     'reel.app.comp.task $ %{} 'FileEntry
       :defs $ {}
@@ -152,18 +154,21 @@
       :defs $ {}
         '*reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            defatom *reel $ -> schema/reel (assoc :base schema/store) (assoc :store schema/store) (assoc :display? false)
+            defatom *reel $ typed/new-reel schema/store
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Ref (:: 'reel.typed/State 'Enum 'Map)
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn dispatch! (op) (println |Dispatch! op)
-              let
-                  new-reel $ reel-updater updater @*reel op
-                ; println |Reel: new-reel
-                reset! *reel new-reel
+              reset! *reel $ match (typed/decode-control op)
+                (:some control) (typed/apply-control updater @*reel control)
+                (:none)
+                  typed/record-op updater @*reel op (generate-id!)
+                    :timestamp $ host/date-now-snapshot
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Unit)
+              :args $ [] 'Enum
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn main! () (load-console-formatter!) (render-app!)
@@ -186,7 +191,7 @@
             defn reload! () $ if (nil? build-errors)
               do (remove-watch *reel :changes) (clear-cache!)
                 add-watch *reel :changes $ fn (reel prev) (render-app!)
-                reset! *reel $ refresh-reel @*reel schema/store updater
+                reset! *reel $ typed/refresh updater @*reel schema/store
                 hud! |ok~ |Ok
               hud! |error build-errors
           :examples $ []
@@ -201,12 +206,13 @@
           ns reel.app.main $ :require
             respo.core :refer $ render! clear-cache!
             reel.app.comp.container :refer $ comp-container
-            reel.core :refer $ reel-updater refresh-reel
             reel.util :refer $ listen-devtools!
             reel.schema :as schema
             reel.app.updater :refer $ updater
             |./calcit.build-errors :default build-errors
             |bottom-tip :default hud!
+            reel.typed :as typed
+            js-ffi.shared :as host
     'reel.app.updater $ %{} 'FileEntry
       :defs $ {}
         'updater $ %{} 'CodeEntry (:doc |)
@@ -238,7 +244,10 @@
                 (:try _) store
                 _ $ do (js/console.warn "|Unknown op" op) store
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {} (:return 'Map)
+              :args $ [] 'Map 'Enum 'String 'Number
+              :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.app.updater $ :require
@@ -459,6 +468,15 @@
                 span $ {}
           :examples $ []
           :schema $ :: 'Dynamic
+        'comp-typed-reel $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defcomp comp-typed-reel (states reel user-styles)
+              comp-reel states (typed-compat/view-data reel) user-styles
+          :examples $ []
+          :schema $ :: 'Fn
+            {} (:return 'respo.schema/Component)
+              :args $ [] 'Map (:: 'reel.typed/State 'Op 'Store) 'Map
+              :generics $ [] 'Op 'Store
         'css-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defstyle css-reel $ {}
@@ -506,6 +524,7 @@
             respo-value.comp.value :refer $ comp-value
             reel.style :as style
             reel.comp.records :refer $ comp-action
+            reel.typed-compat :as typed-compat
     'reel.core $ %{} 'FileEntry
       :defs $ {}
         'play-records $ %{} 'CodeEntry (:doc |)
@@ -691,13 +710,613 @@
               :states $ {}
               :tasks $ []
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Map 'Tag 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote (ns reel.schema)
     'reel.style $ %{} 'FileEntry
       :defs $ {}
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote (ns reel.style)
+    'reel.test-typed $ %{} 'FileEntry
+      :defs $ {}
+        'main! $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn main! () $ let
+                updater $ fn (store op id time)
+                  hint-fn $ {}
+                    :args $ [] 'String 'Number 'String 'Number
+                    :return 'String
+                  str store op
+                initial $ typed/new-reel |base
+                live $ typed/record-op updater initial 5 |one 10
+                queued $ typed/record-op updater (typed/recall updater live 0) 7 |two 20
+                running $ typed/resume updater queued
+              assert= |base $ :store queued
+              assert= |base57 $ :store running
+              assert= false $ :stopped? running
+              assert= true $ option:none? (:pointer running)
+              assert=
+                [] (typed/new-record 5 |one 10) (typed/new-record 7 |two 20)
+                :records running
+              assert= |base5 $ typed/play-records updater |base (:records running) 1
+              , &unit
+          :examples $ []
+          :schema $ :: 'Fn
+            {} (:return 'Unit)
+              :args $ []
+      :ns $ %{} 'NsEntry (:doc |)
+        :code $ quote
+          ns reel.test-typed $ :require (reel.typed :as typed)
+    'reel.typed $ %{} 'FileEntry
+      :defs $ {}
+        'Control $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defenum Control (:toggle) (:recall 'Number) (:run) (:step) (:merge) (:reset) (:remove 'Number)
+          :examples $ []
+          :schema $ :: 'EnumDef
+        'Record $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defstruct Record ([] 'Op) (:op 'Op) (:id 'String) (:time 'Number)
+          :examples $ []
+          :schema $ :: 'StructDef
+        'State $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defstruct State ([] 'Op 'Store) (:base 'Store) (:store 'Store)
+              :records $ :: 'List (:: 'reel.typed/Record 'Op)
+              :pointer $ :: 'Option 'Number
+              :stopped? 'Bool
+              :display? 'Bool
+              :merged? 'Bool
+          :examples $ []
+          :schema $ :: 'StructDef
+        'apply-control $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn apply-control (updater reel control)
+              match control
+                (:toggle) (toggle-display reel)
+                (:recall pointer)
+                  if
+                    and (>= pointer 0)
+                      <= pointer $ count (:records reel)
+                      = pointer $ floor pointer
+                    recall updater reel pointer
+                    , reel
+                (:run) (resume updater reel)
+                (:step) (step updater reel)
+                (:merge) (merge-reel updater reel)
+                (:reset) (reset-reel reel)
+                (:remove pointer)
+                  if
+                    = (:pointer reel) (%some pointer)
+                    remove-current updater reel
+                    , reel
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+                , 'reel.typed/Control
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |dispatch-equivalence)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    live $ record-op updater
+                      record-op updater (new-reel |base) 5 |one 10
+                      , 7 |two 20
+                    paused $ recall updater live 1
+                  do
+                    assert= (toggle-display live)
+                      apply-control updater live $ %:: Control :toggle
+                    assert= paused $ apply-control updater live (%:: Control :recall 1)
+                    assert= (resume updater paused)
+                      apply-control updater paused $ %:: Control :run
+                    assert= (step updater paused)
+                      apply-control updater paused $ %:: Control :step
+                    assert= (merge-reel updater paused)
+                      apply-control updater paused $ %:: Control :merge
+                    assert= (reset-reel paused)
+                      apply-control updater paused $ %:: Control :reset
+                    assert= (remove-current updater paused)
+                      apply-control updater paused $ %:: Control :remove 1
+                    assert= paused $ apply-control updater paused (%:: Control :remove 2)
+        'decode-control $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn decode-control (op)
+              match op
+                (:reel/toggle)
+                  %some $ %:: Control :toggle
+                (:reel/recall pointer)
+                  if (number? pointer)
+                    %some $ %:: Control :recall pointer
+                    %none
+                (:reel/run)
+                  %some $ %:: Control :run
+                (:reel/step)
+                  %some $ %:: Control :step
+                (:reel/merge)
+                  %some $ %:: Control :merge
+                (:reel/reset)
+                  %some $ %:: Control :reset
+                (:reel/remove pointer)
+                  if (number? pointer)
+                    %some $ %:: Control :remove pointer
+                    %none
+                _ $ %none
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] 'Enum
+              :return $ :: 'Option 'reel.typed/Control
+          :tests $ []
+            %{} 'TestEntry (:name |control-decoding)
+              :code $ quote
+                do
+                  assert=
+                    %some $ %:: Control :toggle
+                    decode-control $ :: :reel/toggle
+                  assert=
+                    %some $ %:: Control :recall 2
+                    decode-control $ :: :reel/recall 2
+                  assert=
+                    %some $ %:: Control :run
+                    decode-control $ :: :reel/run
+                  assert=
+                    %some $ %:: Control :step
+                    decode-control $ :: :reel/step
+                  assert=
+                    %some $ %:: Control :merge
+                    decode-control $ :: :reel/merge
+                  assert=
+                    %some $ %:: Control :reset
+                    decode-control $ :: :reel/reset
+                  assert=
+                    %some $ %:: Control :remove 1
+                    decode-control $ :: :reel/remove 1
+                  assert= (%none)
+                    decode-control $ :: :app/update |text
+                  assert= (%none)
+                    decode-control $ :: :reel/recall |bad
+                  assert= (%none)
+                    decode-control $ :: :reel/remove |bad
+        'merge-reel $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn merge-reel (updater reel)
+              if (:stopped? reel)
+                let
+                    pointer $ option:unwrap (:pointer reel)
+                  if (= pointer 0) reel $ let
+                      base $ play-records updater (:base reel) (:records reel) pointer
+                    struct-with reel (:base base) (:store base)
+                      :records $ .slice (:records reel) pointer
+                        count $ :records reel
+                      :pointer $ %some 0
+                      :merged? true
+                struct-with reel
+                  :base $ :store reel
+                  :records $ []
+                  :pointer $ %none
+                  :merged? true
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |paused-and-live-merge)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    live $ record-op updater
+                      record-op updater (new-reel |base) 5 |one 10
+                      , 7 |two 20
+                    paused $ recall updater live 1
+                    merged $ merge-reel updater paused
+                    merged-live $ merge-reel updater live
+                  do
+                    assert= |base5 $ :base merged
+                    assert= |base5 $ :store merged
+                    assert= (%some 0) (:pointer merged)
+                    assert=
+                      [] $ new-record 7 |two 20
+                      :records merged
+                    assert= |base57 $ :store (resume updater merged)
+                    assert= |base5 $ :store (refresh updater merged |ignored)
+                    assert= |base57 $ :base merged-live
+                    assert= 0 $ count (:records merged-live)
+                    assert= true $ :merged? merged-live
+                    let
+                        zero $ recall updater live 0
+                      assert= zero $ merge-reel updater zero
+        'new-record $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn new-record (op id time)
+              %{} Record (:op op) (:id id) (:time time)
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] 'Op 'String 'Number
+              :generics $ [] 'Op
+              :return $ :: 'reel.typed/Record 'Op
+        'new-reel $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn new-reel (base)
+              %{} State (:base base) (:store base)
+                :records $ []
+                :pointer $ %none
+                :stopped? false
+                :display? false
+                :merged? false
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] 'Store
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |empty-typed-state)
+              :code $ quote
+                let
+                    reel $ new-reel |initial
+                  do
+                    assert= |initial $ :base reel
+                    assert= |initial $ :store reel
+                    assert= 0 $ count (:records reel)
+                    assert= true $ option:none? (:pointer reel)
+                    assert= false $ :stopped? reel
+                    assert= false $ :display? reel
+                    assert= false $ :merged? reel
+        'play-records $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn play-records (updater base records limit)
+              .foldl (.take records limit) base $ fn (store record)
+                hint-fn $ {}
+                  :generics $ [] 'Op 'Store
+                  :args $ [] 'Store (:: 'reel.typed/Record 'Op)
+                  :return 'Store
+                updater store (:op record) (:id record) (:time record)
+          :examples $ []
+          :schema $ :: 'Fn
+            {} (:return 'Store)
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                , 'Store
+                  :: 'List $ :: 'reel.typed/Record 'Op
+                  , 'Number
+              :generics $ [] 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |replay-prefix)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    records $ [] (new-record 5 |id-1 100) (new-record 7 |id-2 200)
+                  do
+                    assert= |base $ play-records updater |base records 0
+                    assert= |base5 $ play-records updater |base records 1
+                    assert= |base57 $ play-records updater |base records 2
+        'recall $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn recall (updater reel pointer)
+              assert "|Reel pointer must be an integer within the record range" $ and (>= pointer 0)
+                <= pointer $ count (:records reel)
+                = pointer $ floor pointer
+              struct-with reel
+                :store $ play-records updater (:base reel) (:records reel) pointer
+                :pointer $ %some pointer
+                :stopped? true
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+                , 'Number
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |recall-queue-resume)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    live $ record-op updater (new-reel |base) 5 |one 10
+                    stopped $ recall updater live 0
+                    queued $ record-op updater stopped 7 |two 20
+                    running $ resume updater queued
+                  do
+                    assert= |base $ :store stopped
+                    assert= true $ :stopped? stopped
+                    assert= (%some 0) (:pointer stopped)
+                    assert= |base $ :store queued
+                    assert= 2 $ count (:records queued)
+                    assert= |base57 $ :store running
+                    assert= false $ :stopped? running
+                    assert= true $ option:none? (:pointer running)
+                    assert= |base5 $ :store (recall updater running 1)
+                    assert= |base57 $ :store (recall updater running 2)
+        'record-op $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn record-op (updater reel op op-id op-time)
+              let
+                  record $ new-record op op-id op-time
+                  records $ .append (:records reel) record
+                if (:stopped? reel) (assoc reel :records records)
+                  struct-with reel (:records records)
+                    :store $ updater (:store reel) op op-id op-time
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+                , 'Op 'String 'Number
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |live-and-paused)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    initial $ new-reel |base
+                    live $ record-op updater initial 5 |id-1 100
+                    paused $ record-op updater (assoc live :stopped? true) 7 |id-2 200
+                  do
+                    assert= |base $ :base live
+                    assert= |base5 $ :store live
+                    assert= |base5 $ :store paused
+                    assert=
+                      [] (new-record 5 |id-1 100) (new-record 7 |id-2 200)
+                      :records paused
+                    assert= 0 $ count (:records initial)
+        'refresh $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn refresh (updater reel base)
+              let
+                  next-base $ if (:merged? reel) (:base reel) base
+                  limit $ if (:stopped? reel)
+                    option:unwrap $ :pointer reel
+                    count $ :records reel
+                struct-with reel (:base next-base)
+                  :store $ play-records updater next-base (:records reel) limit
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+                , 'Store
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+        'remove-current $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn remove-current (updater reel)
+              if (:stopped? reel)
+                let
+                    pointer $ option:unwrap (:pointer reel)
+                  if (= pointer 0) reel $ let
+                      records $ .concat
+                        .slice (:records reel) 0 $ dec pointer
+                        .slice (:records reel) pointer $ count (:records reel)
+                      next $ assoc reel :records records
+                    recall updater next $ dec pointer
+                , reel
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+        'reset-reel $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn reset-reel (reel)
+              if (:stopped? reel)
+                assoc reel :records $ .slice (:records reel) 0
+                  option:unwrap $ :pointer reel
+                struct-with reel
+                  :store $ :base reel
+                  :records $ []
+                  :pointer $ %none
+                  :stopped? false
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] (:: 'reel.typed/State 'Op 'Store)
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |reset-and-refresh)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    initial $ new-reel |base
+                    live $ record-op updater (record-op updater initial 5 |one 10) 7 |two 20
+                    paused $ recall updater live 1
+                    reset-paused $ reset-reel paused
+                    reset-live $ reset-reel live
+                  do
+                    assert= |base5 $ :store reset-paused
+                    assert= 1 $ count (:records reset-paused)
+                    assert= (%some 1) (:pointer reset-paused)
+                    assert= |base $ :store reset-live
+                    assert= 0 $ count (:records reset-live)
+                    assert= |next57 $ :store (refresh updater live |next)
+                    assert= |next5 $ :store (refresh updater paused |next)
+                    assert= |base57 $ :store
+                      refresh updater (assoc live :merged? true) |ignored
+                    assert= true $ :display? (toggle-display initial)
+                    assert= initial $ toggle-display (toggle-display initial)
+        'resume $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn resume (updater reel)
+              struct-with reel
+                :store $ play-records updater (:base reel) (:records reel)
+                  count $ :records reel
+                :pointer $ %none
+                :stopped? false
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+        'step $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn step (updater reel)
+              if
+                and (:stopped? reel)
+                  >=
+                    count $ :records reel
+                    , 2
+                let
+                    pointer $ option:unwrap (:pointer reel)
+                  if
+                    < pointer $ count (:records reel)
+                    struct-with reel
+                      :pointer $ %some (inc pointer)
+                      :store $ play-records updater (:store reel)
+                        .slice (:records reel) pointer $ inc pointer
+                        , 1
+                    struct-with reel
+                      :pointer $ %some 0
+                      :store $ :base reel
+                , reel
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Store)
+                  :args $ [] 'Store 'Op 'String 'Number
+                :: 'reel.typed/State 'Op 'Store
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+          :tests $ []
+            %{} 'TestEntry (:name |stepping-and-removal)
+              :code $ quote
+                let
+                    updater $ fn (store op id time)
+                      hint-fn $ {}
+                        :args $ [] 'String 'Number 'String 'Number
+                        :return 'String
+                      str store op
+                    one $ record-op updater (new-reel |base) 5 |one 10
+                    live $ record-op updater (record-op updater one 7 |two 20) 9 |three 30
+                    zero $ recall updater live 0
+                    step-one $ step updater zero
+                    step-two $ step updater step-one
+                    removed $ remove-current updater step-two
+                  do
+                    assert= live $ step updater live
+                    assert= |base5 $ :store step-one
+                    assert= |base57 $ :store step-two
+                    assert= |base $ :store
+                      step updater $ step updater step-two
+                    assert= |base5 $ :store removed
+                    assert= (%some 1) (:pointer removed)
+                    assert=
+                      [] (new-record 5 |one 10) (new-record 9 |three 30)
+                      :records removed
+                    assert= |base59 $ :store (resume updater removed)
+                    assert= live $ remove-current updater live
+                    assert= zero $ remove-current updater zero
+                    let
+                        one-paused $ recall updater one 0
+                      assert= one-paused $ step updater one-paused
+        'toggle-display $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn toggle-display (reel)
+              assoc reel :display? $ not (:display? reel)
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] (:: 'reel.typed/State 'Op 'Store)
+              :generics $ [] 'Op 'Store
+              :return $ :: 'reel.typed/State 'Op 'Store
+      :ns $ %{} 'NsEntry (:doc |)
+        :code $ quote (ns reel.typed)
+    'reel.typed-compat $ %{} 'FileEntry
+      :defs $ {}
+        'view-data $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn view-data (reel)
+              {}
+                :base $ :base reel
+                :store $ :store reel
+                :records $ .map (:records reel)
+                  fn (record)
+                    hint-fn $ {}
+                      :generics $ [] 'Op
+                      :args $ [] (:: 'reel.typed/Record 'Op)
+                      :return $ :: 'List 'Dynamic
+                    [] (:op record) (:id record) (:time record)
+                :pointer $ match (:pointer reel)
+                  (:some pointer) pointer
+                  (:none) nil
+                :stopped? $ :stopped? reel
+                :display? $ :display? reel
+                :merged? $ :merged? reel
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] (:: 'reel.typed/State 'Op 'Store)
+              :generics $ [] 'Op 'Store
+              :return $ :: 'Map 'Tag 'Dynamic
+          :tests $ []
+            %{} 'TestEntry (:name |legacy-view-shape)
+              :code $ quote
+                let
+                    initial $ typed/new-reel |base
+                  assert=
+                    {} (:base |base) (:store |base)
+                      :records $ []
+                      :pointer nil
+                      :stopped? false
+                      :display? false
+                      :merged? false
+                    view-data initial
+      :ns $ %{} 'NsEntry (:doc |)
+        :code $ quote
+          ns reel.typed-compat $ :require (reel.typed :as typed)
     'reel.util $ %{} 'FileEntry
       :defs $ {}
         'BrowserStringHost $ %{} 'CodeEntry (:doc |)

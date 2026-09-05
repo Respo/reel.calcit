@@ -38,12 +38,21 @@ jobs:
         calcit calcit.cirru analyze weak-types --only schema-dynamic,code-dynamic --intent unresolved --summary-only --format json
         calcit calcit.cirru analyze deprecated --summary-only --format json
 
+    - name: Verify typed Reel native and JS behavior
+      run: |
+        calcit test reel.typed --require-match
+        calcit test reel.typed-compat --require-match
+        calcit --init-fn reel.test-typed/main! --reload-fn reel.test-typed/main!
+        calcit --init-fn reel.test-typed/main! --reload-fn reel.test-typed/main! --emit-path test-js-out js
+        yarn node tests/typed-reel.mjs
+
     - name: "compiles to js"
       run: >
         caps --strict --ci && calcit calcit.cirru js
         && yarn install --immutable && yarn vite build --base=./
 
     - name: Deploy to server
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       id: deploy
       uses: Pendect/action-rsyncer@v2.0.0
       env:
@@ -56,4 +65,5 @@ jobs:
         dest: 'rsync-user@tiye.me:/web-assets/repo/${{ github.repository }}'
 
     - name: Display status from deploy
+      if: github.event_name == 'push' && github.ref == 'refs/heads/main'
       run: echo "${{ steps.deploy.outputs.status }}"

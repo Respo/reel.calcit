@@ -72,6 +72,32 @@ listen-devtools! "k" dispatch!
 ```
 
 
+### Typed state API (unreleased)
+
+`reel.typed` adds `State<Op,Store>` and `Record<Op>` without changing the
+existing map-based APIs. Generic parameters are ordered `Op,Store` to match
+Calcit 0.13.77's canonical ordering. Create state with `new-reel initial-store`;
+`record-op updater reel op id time` records application operations using a
+caller-supplied identifier and timestamp. The updater receives store, operation,
+identifier, and timestamp and returns the new store.
+
+Route legacy devtools messages through `decode-control`, which returns
+`Option<Control>`. Pass recognized controls to `apply-control updater reel control`;
+pass application operations to `record-op`. `refresh updater reel initial-store`
+replays history after hot reload. `recall`, `resume`, `step`, `merge-reel`,
+`reset-reel`, `remove-current`, and `toggle-display` are also available directly.
+Recall pointers are integer prefix lengths from zero through the record count.
+
+Render with `reel.comp.reel/comp-typed-reel states reel styles`. Its explicit
+`reel.typed-compat/view-data` adapter converts records and the Option pointer for
+the existing devtools UI. That legacy UI boundary still contains Dynamic/nil;
+this addition does not claim strict-zero coverage for the whole Reel project.
+The demo uses typed Reel state while retaining its legacy map-based application
+store. See `reel.app.main/dispatch!` for the control/application routing example.
+
+Run `calcit test --require-match`, then compile `reel.test-typed/main!` to
+`test-js-out` and run `yarn node tests/typed-reel.mjs` for native/JS coverage.
+
 ### License
 
 MIT
