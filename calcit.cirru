@@ -544,7 +544,7 @@
                 if (reel-control-op? op)
                   merge reel $ let
                       pointer $ &map:get reel :pointer
-                      records $ &map:get reel :records
+                      records $ unsafe-coerce (&map:get reel :records) (:: 'List 'Dynamic)
                       base $ &map:get reel :base
                       store $ &map:get reel :base
                       stopped? $ &map:get reel :stopped?
@@ -579,7 +579,7 @@
                             let
                                 new-store $ play-records base records updater pointer
                               {} (:store new-store) (:base new-store) (:pointer 0)
-                                :records $ .slice records pointer
+                                :records $ slice-records-from records pointer
                                 :merged? true
                           {}
                             :base $ reel.schema/read-field reel :store
@@ -588,7 +588,7 @@
                             :merged? true
                       (:reel/reset)
                         if stopped?
-                          {} $ :records (.slice records 0 pointer)
+                          {} $ :records (slice-records-until records pointer)
                           {}
                             :store $ reel.schema/read-field reel :base
                             :pointer nil
@@ -597,9 +597,9 @@
                       (:reel/remove idx)
                         if (&= 0 idx) reel $ -> reel (update :pointer dec)
                           update :records $ fn (records)
-                            concat
-                              .slice records 0 $ dec idx
-                              .slice records idx
+                            remove-record-at
+                              unsafe-coerce records $ :: 'List 'Dynamic
+                              , idx
                           assoc :store $ play-records base records updater (dec idx)
                       _ $ do (js/console.warn "|Unknown reel/ op:" op) nil
                   let
@@ -631,6 +631,36 @@
                     if (reel.schema/read-field reel :stopped?) (reel.schema/read-field reel :pointer) (count records)
           :examples $ []
           :schema $ :: 'Dynamic
+        'remove-record-at $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn remove-record-at (records idx)
+              concat
+                slice-records-until records $ dec idx
+                slice-records-from records idx
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] (:: 'List 'T) 'Number
+              :generics $ [] 'T
+              :return $ :: 'List 'T
+        'slice-records-from $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn slice-records-from (records start) (.slice records start)
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] (:: 'List 'T) 'Number
+              :generics $ [] 'T
+              :return $ :: 'List 'T
+        'slice-records-until $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn slice-records-until (records end) (.slice records 0 end)
+          :examples $ []
+          :schema $ :: 'Fn
+            {}
+              :args $ [] (:: 'List 'T) 'Number
+              :generics $ [] 'T
+              :return $ :: 'List 'T
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote
           ns reel.core $ :require
