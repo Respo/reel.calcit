@@ -252,7 +252,7 @@
                 <> $ str action
                 if (enum? action)
                   let
-                      tag $ nth action 0
+                      tag $ option:unwrap (nth action 0)
                       params $ &enum:params action
                     div
                       {} $ :class-name css/row-middle
@@ -273,7 +273,7 @@
           :schema $ :: 'Dynamic
         'comp-record-item $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            defn comp-record-item (record pointed? idx)
+            defcomp comp-record-item (record pointed? idx)
               div
                 {} (:class-name css-record)
                   :style $ if pointed?
@@ -282,7 +282,7 @@
                       :color :white
                   :on-click $ on-recall idx
                 ; <> $ to-lispy-string (first record)
-                comp-action $ first record
+                comp-action $ option:unwrap (first record)
           :examples $ []
           :schema $ :: 'Dynamic
         'comp-records $ %{} 'CodeEntry (:doc |)
@@ -294,8 +294,11 @@
                   ->
                     prepend records $ [] :base nil :base
                     map-indexed $ fn (idx record)
-                      [] (last record)
-                        memo-comp-by (last record) comp-record-item record (= pointer idx) idx
+                      []
+                        option:unwrap $ last record
+                        memo-comp-by
+                          option:unwrap $ last record
+                          , comp-record-item record (= pointer idx) idx
           :examples $ []
           :schema $ :: 'Dynamic
         'css-record $ %{} 'CodeEntry (:doc |)
@@ -372,7 +375,7 @@
       :defs $ {}
         'comp-operations $ %{} 'CodeEntry (:doc |)
           :code $ quote
-            defn comp-operations (stopped?)
+            defcomp comp-operations (stopped?)
               div
                 {} $ :style
                   {}
@@ -423,30 +426,31 @@
                           record $ if (reel.schema/read-field reel :stopped?)
                             if (> pointer 0)
                               get records $ dec pointer
-                              , nil
+                              %none
                             last records
-                        if (some? record)
-                          let[] (action op-id op-time) record $ div
-                            {}
-                              :class-name $ str-spaced css/font-code css/column
-                              :style $ {} (:font-size 12)
+                        if (option:some? record)
+                          let[] (action op-id op-time) (option:unwrap record)
                             div
-                              {} (:class-name css/row-parted)
-                                :style $ {}
-                                  :border-bottom $ str "|1px solid " (hsl 0 0 94)
-                              div ({}) (<> op-time) (=< 8 nil) (<> op-id)
-                              if
-                                and (some? pointer) (not= pointer 0)
-                                span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
-                                  :style $ {} (:cursor :pointer) (:font-size 12)
-                                    :color $ hsl 20 100 70
-                                  :on-click $ fn (e d!)
-                                    d! $ :: :reel/remove (reel.schema/read-field reel :pointer)
-                            div
-                              {} (:class-name css/expand)
-                                :style $ {} (:padding "|8px 0") (:white-space :pre)
-                              ; <> $ trim (format-cirru-edn action)
-                              comp-action action
+                              {}
+                                :class-name $ str-spaced css/font-code css/column
+                                :style $ {} (:font-size 12)
+                              div
+                                {} (:class-name css/row-parted)
+                                  :style $ {}
+                                    :border-bottom $ str "|1px solid " (hsl 0 0 94)
+                                div ({}) (<> op-time) (=< 8 nil) (<> op-id)
+                                if
+                                  and (some? pointer) (not= pointer 0)
+                                  span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
+                                    :style $ {} (:cursor :pointer) (:font-size 12)
+                                      :color $ hsl 20 100 70
+                                    :on-click $ fn (e d!)
+                                      d! $ :: :reel/remove (reel.schema/read-field reel :pointer)
+                              div
+                                {} (:class-name css/expand)
+                                  :style $ {} (:padding "|8px 0") (:white-space :pre)
+                                ; <> $ trim (format-cirru-edn action)
+                                comp-action action
                           <> |nil
                       div
                         {} $ :class-name (str-spaced css/expand css/font-code css-snippet)
@@ -514,6 +518,22 @@
                   recur next-store (rest records) updater $ dec pointer
           :examples $ []
           :schema $ :: 'Dynamic
+        'reel-control-op? $ %{} 'CodeEntry (:doc |)
+          :code $ quote
+            defn reel-control-op? (op)
+              .starts-with?
+                str $ option:unwrap (nth op 0)
+                , |:reel/
+          :examples $ []
+          :schema $ :: 'Fn
+            {} (:return 'Bool)
+              :args $ [] 'Enum
+          :tests $ []
+            %{} 'TestEntry (:name |classifies-reel-control-ops)
+              :code $ quote
+                do
+                  assert= true $ reel-control-op? (:: :reel/toggle)
+                  assert= false $ reel-control-op? (:: :task/add)
         'reel-updater $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn reel-updater (updater reel op)
@@ -521,10 +541,7 @@
               let
                   op-id $ generate-id!
                   op-time $ js/Date.now
-                if
-                  .starts-with?
-                    str $ nth op 0
-                    , |:reel/
+                if (reel-control-op? op)
                   merge reel $ let
                       pointer $ &map:get reel :pointer
                       records $ &map:get reel :records
