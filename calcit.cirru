@@ -611,7 +611,15 @@
                         assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
                         update :records $ fn (records) (conj records data-pack)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn
+            {}
+              :args $ []
+                :: 'Fn $ {} (:return 'Dynamic)
+                  :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+                :: 'Map 'Tag 'Dynamic
+                , 'Dynamic
+              :features $ #{} :js-ffi
+              :return $ :: 'Map 'Tag 'Dynamic
         'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote
             defn refresh-reel (reel base updater)
