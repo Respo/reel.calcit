@@ -30,6 +30,7 @@ jobs:
       run: |
         caps --strict --ci
         yarn install --immutable
+        caps verify --toolchain
         calcit calcit.cirru edit format
         git diff --exit-code -- calcit.cirru
         calcit calcit.cirru --check-only
