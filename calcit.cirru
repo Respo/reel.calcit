@@ -577,7 +577,8 @@
       :defs $ {}
         'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn play-records (store records updater pointer)
-            if (&= 0 pointer) store $ let[] (op op-id op-time) (&list:first records)
+            if (&= 0 pointer) store $ let[] (op op-id op-time)
+              or (&list:first records) ([])
               &let
                 next-store $ updater store op op-id op-time
                 recur next-store (rest records) updater $ dec pointer
