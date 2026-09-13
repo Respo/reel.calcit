@@ -3,10 +3,7 @@
   :about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `calcit query` to inspect and `calcit edit`/`calcit tree` to modify. Run `calcit docs agents --contract` before mutations; use `--full` for first orientation or changed contract digest. Manual edits must follow format and schema conventions, then run `calcit edit format`."
   :package |reel
   :entries $ {} $ :default
-    {} (:description |)
-      :init-fn 'reel.app.main/main!
-      :mode :native
-      :reload-fn 'reel.app.main/reload!
+    {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :native) (:reload-fn 'reel.app.main/reload!)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/
       :type-slots $ {}
@@ -20,12 +17,10 @@
                 states $ reel.schema/read-field store :states
               div
                 {} $ :class-name css/global
-                comp-todolist (>> states :todolist)
-                  reel.schema/read-field store :tasks
+                comp-todolist (>> states :todolist) (reel.schema/read-field store :tasks)
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :return 'respo.schema/Component
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.container
@@ -45,8 +40,7 @@
             div
               {} $ :style style-container
               div $ {} (:class-name css-done)
-                :style $ if
-                  reel.schema/read-field task :done?
+                :style $ if (reel.schema/read-field task :done?)
                   {} $ :background-color $ hsl 42 100 60
                 :on-click $ fn (e d!)
                   d! $ :: :task/toggle $ reel.schema/read-field task :id
@@ -54,9 +48,7 @@
               input $ {} (:placeholder "|Content of task") (:class-name css/input)
                 :value $ reel.schema/read-field task :text
                 :on-input $ fn (e d!)
-                  d! $ :: :task/edit
-                    reel.schema/read-field task :id
-                    reel.schema/read-field e :value
+                  d! $ :: :task/edit (reel.schema/read-field task :id) (reel.schema/read-field e :value)
               =< 8 nil
               button
                 {} (:class-name css/button)
@@ -96,9 +88,7 @@
           :code $ quote $ defcomp comp-todolist (states tasks)
             let
                 cursor $ reel.schema/read-field states :cursor
-                state $ either
-                  reel.schema/read-field states :data
-                  , |
+                state $ either (reel.schema/read-field states :data) |
               div
                 {} $ :class-name $ str-spaced css/fullscreen css-container
                 div ({})
@@ -110,9 +100,7 @@
                     :on-keydown $ fn (e d!)
                       do
                         if
-                          =
-                            reel.schema/read-field e :keycode
-                            , 13
+                          = (reel.schema/read-field e :keycode) 13
                           do
                             d! $ :: :task/add state
                             d! $ :: :states ([]) |
@@ -140,9 +128,7 @@
                         , &unit
                 list-> ({})
                   -> tasks $ map $ fn (task)
-                    []
-                      reel.schema/read-field task :id
-                      comp-task task
+                    [] (reel.schema/read-field task :id) (comp-task task)
           :examples $ []
           :schema $ :: 'Dynamic
         'css-container $ %{} 'CodeEntry (:doc |)
@@ -167,8 +153,7 @@
           :schema $ :: 'Ref $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
-            match
-              typed/decode-control op
+            match (typed/decode-control op)
               (:some control)
                 typed/apply-control updater
                   assert-type @*reel $ :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
@@ -189,9 +174,7 @@
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Enum
         'main! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn main! ()
-            load-console-formatter!
-            render-app!
+          :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch *reel :changes $ fn (reel prev) (render-app!)
             listen-devtools! |k dispatch!
             dispatch! $ :: :reel/toggle
@@ -201,8 +184,7 @@
             :args $ []
             :features $ #{} :js-ffi
         'mount-target $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def mount-target
-            js/document.querySelector |.app
+          :code $ quote $ def mount-target (js/document.querySelector |.app)
           :examples $ []
           :schema $ :: 'Dynamic
         'reload! $ %{} 'CodeEntry (:doc |)
@@ -258,18 +240,14 @@
                   filter
                     assert-type tasks $ :: 'List 'Map
                     fn (task)
-                      not $ &=
-                        reel.schema/read-field task :id
-                        , id
+                      not $ &= (reel.schema/read-field task :id) id
               (:task/toggle id)
                 reel.util/update-map-dynamic store :tasks $ fn (tasks)
                   map
                     assert-type tasks $ :: 'List 'Map
                     fn (task)
                       if
-                        &=
-                          reel.schema/read-field task :id
-                          , id
+                        &= (reel.schema/read-field task :id) id
                         &map:assoc task :done? $ not $ &map:get task :done?
                         , task
               (:task/edit task-id text)
@@ -278,9 +256,7 @@
                     assert-type tasks $ :: 'List 'Map
                     fn (task)
                       if
-                        &=
-                          reel.schema/read-field task :id
-                          , task-id
+                        &= (reel.schema/read-field task :id) task-id
                         &map:assoc task :text text
                         , task
               (:try _) store
@@ -307,8 +283,7 @@
                     {} $ :class-name css/row-middle
                     <> $ str tag
                     =< 2 nil
-                    list-> ({})
-                      reel.util/map-indexed-dynamic params render-action-item
+                    list-> ({}) (reel.util/map-indexed-dynamic params render-action-item)
                 <> $ str action
           :examples $ []
           :schema $ :: 'Dynamic
@@ -451,8 +426,7 @@
           :schema $ :: 'Dynamic
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles)
-            if
-              reel.schema/read-field reel :display?
+            if (reel.schema/read-field reel :display?)
               div
                 {}
                   :class-name $ str-spaced css/flex css/column css-reel
@@ -460,9 +434,7 @@
                 memo-comp-by :operations comp-operations $ reel.schema/read-field reel :stopped?
                 div
                   {} $ :class-name $ str-spaced css/expand css/row
-                  comp-records
-                    reel.schema/read-field reel :records
-                    reel.schema/read-field reel :pointer
+                  comp-records (reel.schema/read-field reel :records) (reel.schema/read-field reel :pointer)
                   div
                     {}
                       :class-name $ str-spaced css/column css/expand
@@ -471,15 +443,13 @@
                     let
                         records $ reel.schema/read-field reel :records
                         pointer $ reel.schema/read-field reel :pointer
-                        record $ if
-                          reel.schema/read-field reel :stopped?
+                        record $ if (reel.schema/read-field reel :stopped?)
                           if (> pointer 0)
                             get records $ dec pointer
                             %none
                           last records
                       if (option:some? record)
-                        let[] (action op-id op-time)
-                          reel.util/unwrap-option record
+                        let[] (action op-id op-time) (reel.util/unwrap-option record)
                           div
                             {}
                               :class-name $ str-spaced css/font-code css/column
@@ -505,24 +475,18 @@
                         <> |nil
                     div
                       {} $ :class-name $ str-spaced css/expand css/font-code css-snippet
-                      <> $ trim $ format-cirru-edn
-                        reel.schema/read-field reel :store
+                      <> $ trim $ format-cirru-edn (reel.schema/read-field reel :store)
               span $ {}
           :examples $ []
           :schema $ :: 'Dynamic
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-typed-reel (states reel user-styles)
             assert-type
-              comp-reel states
-                typed-compat/view-data reel
-                , user-styles
+              comp-reel states (typed-compat/view-data reel) user-styles
               , Struct
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :return 'respo.schema/Component
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic)
-              :: 'reel.typed/State 'Op 'Store
-              :: 'Map 'Dynamic 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] (:: 'Map 'Dynamic 'Dynamic) (:: 'reel.typed/State 'Op 'Store) (:: 'Map 'Dynamic 'Dynamic)
             :generics $ [] 'Op 'Store
         'css-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-reel
@@ -537,10 +501,7 @@
           :schema $ :: 'Dynamic
         'css-snippet $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-snippet
-            {} $ |$0 $ {} (:font-size 12) (:white-space :pre)
-              :padding "|16px 0px 200px 0px"
-              :line-height |20px
-              :overflow :auto
+            {} $ |$0 $ {} (:font-size 12) (:white-space :pre) (:padding "|16px 0px 200px 0px") (:line-height |20px) (:overflow :auto)
               :border-top $ str "|1px solid " $ hsl 0 0 94
           :examples $ []
           :schema $ :: 'Dynamic
@@ -594,8 +555,7 @@
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Bool)
             :args $ [] 'Enum
-          :tests $ [] $ %{} 'TestEntry
-            :name |classifies-reel-control-ops
+          :tests $ [] $ %{} 'TestEntry (:name |classifies-reel-control-ops)
             :code $ quote $ do
               assert= true $ reel-control-op? $ :: :reel/toggle
               assert= false $ reel-control-op? $ :: :task/add
@@ -613,8 +573,7 @@
                     stopped? $ &map:get reel :stopped?
                   match op
                     (:reel/toggle)
-                      {} $ :display? $ not
-                        reel.schema/read-field reel :display?
+                      {} $ :display? $ not (reel.schema/read-field reel :display?)
                     (:reel/recall idx)
                       let
                           new-store $ play-records base records updater idx
@@ -633,9 +592,7 @@
                                 next-pointer $ inc pointer
                                 next-record $ &list:nth records pointer
                               let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
-                                :store $ updater
-                                  reel.schema/read-field reel :store
-                                  , old-op old-id old-time
+                                :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
                             {} (:store base) (:pointer 0)
                         , nil
                     (:reel/merge)
@@ -666,17 +623,13 @@
                             unsafe-coerce records $ :: 'List 'Dynamic
                             , idx
                         assoc :store $ play-records base records updater $ dec idx
-                    _ $ do
-                      js/console.warn "|Unknown reel/ op:" op
-                      , nil
+                    _ $ do (js/console.warn "|Unknown reel/ op:" op) nil
                 let
                     data-pack $ [] op op-id op-time
                   if (&map:get reel :stopped?)
                     -> reel $ update :records $ fn (records) (conj records data-pack)
                     -> reel
-                      assoc :store $ updater
-                        reel.schema/read-field reel :store
-                        , op op-id op-time
+                      assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
                       update :records $ fn (records) (conj records data-pack)
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -690,16 +643,10 @@
         'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-reel (reel base updater)
             let
-                next-base $ if
-                  reel.schema/read-field reel :merged?
-                  reel.schema/read-field reel :base
-                  , base
+                next-base $ if (reel.schema/read-field reel :merged?) (reel.schema/read-field reel :base) base
                 records $ reel.schema/read-field reel :records
               -> reel (assoc :base next-base)
-                assoc :store $ play-records next-base records updater $ if
-                  reel.schema/read-field reel :stopped?
-                  reel.schema/read-field reel :pointer
-                  count records
+                assoc :store $ play-records next-base records updater $ if (reel.schema/read-field reel :stopped?) (reel.schema/read-field reel :pointer) (count records)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
@@ -776,8 +723,7 @@
                     :args $ [] 'String 'Number 'String 'Number
                     :return 'String
                   str store op
-                initial $ assert-type (typed/new-reel |base)
-                  :: 'reel.typed/State 'Number 'String
+                initial $ assert-type (typed/new-reel |base) (:: 'reel.typed/State 'Number 'String)
                 live $ typed/record-op updater initial 5 |one 10
                 queued $ typed/record-op updater (typed/recall updater live 0) 7 |two 20
                 running $ typed/resume updater queued
@@ -844,8 +790,7 @@
               , 'reel.typed/Control
             :generics $ [] 'Op 'Store
             :return $ :: 'reel.typed/State 'Op 'Store
-          :tests $ [] $ %{} 'TestEntry
-            :name |dispatch-equivalence
+          :tests $ [] $ %{} 'TestEntry (:name |dispatch-equivalence)
             :code $ quote $ let
                 updater $ fn (store op id time)
                   hint-fn $ {}
@@ -854,8 +799,7 @@
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base)
-                      :: 'reel.typed/State 'Number 'String
+                    assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -900,8 +844,7 @@
           :schema $ :: 'Fn $ {}
             :args $ [] 'Enum
             :return $ :: 'Option 'reel.typed/Control
-          :tests $ [] $ %{} 'TestEntry
-            :name |control-decoding
+          :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
                 %some $ %:: Control :toggle
@@ -954,8 +897,7 @@
               :: 'reel.typed/State 'Op 'Store
             :generics $ [] 'Op 'Store
             :return $ :: 'reel.typed/State 'Op 'Store
-          :tests $ [] $ %{} 'TestEntry
-            :name |paused-and-live-merge
+          :tests $ [] $ %{} 'TestEntry (:name |paused-and-live-merge)
             :code $ quote $ let
                 updater $ fn (store op id time)
                   hint-fn $ {}
@@ -964,8 +906,7 @@
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base)
-                      :: 'reel.typed/State 'Number 'String
+                    assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1007,11 +948,9 @@
             :args $ [] 'Store
             :generics $ [] 'Op 'Store
             :return $ :: 'reel.typed/State 'Op 'Store
-          :tests $ [] $ %{} 'TestEntry
-            :name |empty-typed-state
+          :tests $ [] $ %{} 'TestEntry (:name |empty-typed-state)
             :code $ quote $ let
-                reel $ assert-type (new-reel |initial)
-                  :: 'reel.typed/State 'Number 'String
+                reel $ assert-type (new-reel |initial) (:: 'reel.typed/State 'Number 'String)
               do
                 assert= |initial $ :base reel
                 assert= |initial $ :store reel
@@ -1067,8 +1006,7 @@
               , 'Number
             :generics $ [] 'Op 'Store
             :return $ :: 'reel.typed/State 'Op 'Store
-          :tests $ [] $ %{} 'TestEntry
-            :name |recall-queue-resume
+          :tests $ [] $ %{} 'TestEntry (:name |recall-queue-resume)
             :code $ quote $ let
                 updater $ fn (store op id time)
                   hint-fn $ {}
@@ -1076,8 +1014,7 @@
                     :return 'String
                   str store op
                 live $ record-op updater
-                  assert-type (new-reel |base)
-                    :: 'reel.typed/State 'Number 'String
+                  assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                   , 5 |one 10
                 stopped $ recall updater live 0
                 queued $ record-op updater stopped 7 |two 20
@@ -1117,8 +1054,7 @@
                     :args $ [] 'String 'Number 'String 'Number
                     :return 'String
                   str store op
-                initial $ assert-type (new-reel |base)
-                  :: 'reel.typed/State 'Number 'String
+                initial $ assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                 live $ record-op updater initial 5 |id-1 100
                 paused $ record-op updater (assoc live :stopped? true) 7 |id-2 200
               do
@@ -1181,16 +1117,14 @@
             :args $ [] $ :: 'reel.typed/State 'Op 'Store
             :generics $ [] 'Op 'Store
             :return $ :: 'reel.typed/State 'Op 'Store
-          :tests $ [] $ %{} 'TestEntry
-            :name |reset-and-refresh
+          :tests $ [] $ %{} 'TestEntry (:name |reset-and-refresh)
             :code $ quote $ let
                 updater $ fn (store op id time)
                   hint-fn $ {}
                     :args $ [] 'String 'Number 'String 'Number
                     :return 'String
                   str store op
-                initial $ assert-type (new-reel |base)
-                  :: 'reel.typed/State 'Number 'String
+                initial $ assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                 live $ record-op updater (record-op updater initial 5 |one 10) 7 |two 20
                 paused $ recall updater live 1
                 reset-paused $ reset-reel paused
@@ -1249,8 +1183,7 @@
               :: 'reel.typed/State 'Op 'Store
             :generics $ [] 'Op 'Store
             :return $ :: 'reel.typed/State 'Op 'Store
-          :tests $ [] $ %{} 'TestEntry
-            :name |stepping-and-removal
+          :tests $ [] $ %{} 'TestEntry (:name |stepping-and-removal)
             :code $ quote $ let
                 updater $ fn (store op id time)
                   hint-fn $ {}
@@ -1258,8 +1191,7 @@
                     :return 'String
                   str store op
                 one $ record-op updater
-                  assert-type (new-reel |base)
-                    :: 'reel.typed/State 'Number 'String
+                  assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                   , 5 |one 10
                 live $ record-op updater (record-op updater one 7 |two 20) 9 |three 30
                 zero $ recall updater live 0
@@ -1317,11 +1249,9 @@
             :args $ [] $ :: 'reel.typed/State 'Op 'Store
             :generics $ [] 'Op 'Store
             :return $ :: 'Map 'Tag 'Dynamic
-          :tests $ [] $ %{} 'TestEntry
-            :name |legacy-view-shape
+          :tests $ [] $ %{} 'TestEntry (:name |legacy-view-shape)
             :code $ quote $ let
-                initial $ assert-type (typed/new-reel |base)
-                  :: 'reel.typed/State 'Number 'String
+                initial $ assert-type (typed/new-reel |base) (:: 'reel.typed/State 'Number 'String)
               assert=
                 {} (:base |base) (:store |base)
                   :records $ []
@@ -1362,11 +1292,9 @@
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
           :schema $ :: 'Trait
         'browser-window $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn browser-window ()
-            unsafe-coerce js/window 'BrowserWindowHost
+          :code $ quote $ defn browser-window () (unsafe-coerce js/window 'BrowserWindowHost)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :return 'BrowserWindowHost
+          :schema $ :: 'Fn $ {} (:return 'BrowserWindowHost)
             :args $ []
             :features $ #{} :js-ffi
         'keyboard-code $ %{} 'CodeEntry (:doc |)
