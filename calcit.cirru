@@ -352,7 +352,7 @@
           :code $ quote $ defn literal? (x)
             or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'Bool)
             :args $ [] 'Dynamic
             :features $ #{} :js-ffi
         'on-recall $ %{} 'CodeEntry (:doc |)
@@ -381,7 +381,7 @@
               and (list? item) (every? item literal?)
               and (map? item) (every? item shallow-data?)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'Bool)
             :args $ [] 'Dynamic
             :features $ #{} :js-ffi
         'style-action-sep $ %{} 'CodeEntry (:doc |)
