@@ -94,38 +94,34 @@
                 div ({})
                   input $ {} (:placeholder "|Task to add...") (:value state) (:class-name css/input)
                     :on-input $ fn (e d!)
-                      do
-                        d! $ :: :states cursor $ reel.schema/read-field e :value
-                        , &unit
+                      d! $ :: :states cursor $ reel.schema/read-field e :value
+                      , &unit
                     :on-keydown $ fn (e d!)
-                      do
-                        if
-                          = (reel.schema/read-field e :keycode) 13
-                          do
-                            d! $ :: :task/add state
-                            d! $ :: :states ([]) |
-                        , &unit
+                      if
+                        = (reel.schema/read-field e :keycode) 13
+                        do
+                          d! $ :: :task/add state
+                          d! $ :: :states ([]) |
+                      , &unit
                   =< 8 nil
                   button
                     {} (:class-name css/button)
                       :on-click $ fn (e d!)
-                        do
-                          d! $ :: :task/add state
-                          d! $ :: :states cursor |
-                          , &unit
+                        d! $ :: :task/add state
+                        d! $ :: :states cursor |
+                        , &unit
                     <> |Add
                   =< 8 nil
                   button $ {} (:inner-text |Try) (:class-name css/button)
                     :on-click $ fn (e d!)
-                      do
-                        d! $ :: :try
-                          {}
-                            :a $ [] :b :w
-                            :c $ {} $ :d :e
-                          {}
-                            :a $ [] :b :w
-                            :c $ {} $ :d :e
-                        , &unit
+                      d! $ :: :try
+                        {}
+                          :a $ [] :b :w
+                          :c $ {} $ :d :e
+                        {}
+                          :a $ [] :b :w
+                          :c $ {} $ :d :e
+                      , &unit
                 list-> ({})
                   -> tasks $ map $ fn (task)
                     [] (reel.schema/read-field task :id) (comp-task task)
@@ -617,8 +613,8 @@
                           :records $ []
                           :stopped? false
                     (:reel/remove idx)
-                      if (&= 0 idx) reel $ -> reel (update :pointer dec)
-                        update :records $ fn (records)
+                      if (&= 0 idx) reel $ -> reel (reel.util/update-map-dynamic :pointer dec)
+                        reel.util/update-map-dynamic :records $ fn (records)
                           remove-record-at
                             unsafe-coerce records $ :: 'List 'Dynamic
                             , idx
@@ -627,10 +623,16 @@
                 let
                     data-pack $ [] op op-id op-time
                   if (&map:get reel :stopped?)
-                    -> reel $ update :records $ fn (records) (conj records data-pack)
+                    -> reel $ reel.util/update-map-dynamic :records $ fn (records)
+                      conj
+                        unsafe-coerce records $ :: 'List 'Dynamic
+                        , data-pack
                     -> reel
                       assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
-                      update :records $ fn (records) (conj records data-pack)
+                      reel.util/update-map-dynamic :records $ fn (records)
+                        conj
+                          unsafe-coerce records $ :: 'List 'Dynamic
+                          , data-pack
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ []
@@ -822,28 +824,28 @@
           :code $ quote $ defn decode-control (op)
             match op
               (:reel/toggle)
-                %some $ %:: Control :toggle
+                %some $ Control :toggle
               (:reel/recall pointer)
                 if (number? pointer)
-                  %some $ %:: Control :recall pointer
+                  %some $ Control :recall pointer
                   %none
               (:reel/run)
-                %some $ %:: Control :run
+                %some $ Control :run
               (:reel/step)
-                %some $ %:: Control :step
+                %some $ Control :step
               (:reel/merge)
-                %some $ %:: Control :merge
+                %some $ Control :merge
               (:reel/reset)
-                %some $ %:: Control :reset
+                %some $ Control :reset
               (:reel/remove pointer)
                 if (number? pointer)
-                  %some $ %:: Control :remove pointer
+                  %some $ Control :remove pointer
                   %none
               _ $ %none
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Enum
-            :return $ :: 'Option 'reel.typed/Control
+            :return $ :: 'calcit.core/Option 'reel.typed/Control
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
@@ -928,8 +930,7 @@
                     zero $ recall updater live 0
                   assert= zero $ merge-reel updater zero
         'new-record $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn new-record (op id time)
-            %{} Record (:op op) (:id id) (:time time)
+          :code $ quote $ defn new-record (op id time) (Record :op op :id id :time time)
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Op 'String 'Number
@@ -937,12 +938,7 @@
             :return $ :: 'reel.typed/Record 'Op
         'new-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn new-reel (base)
-            %{} State (:base base) (:store base)
-              :records $ []
-              :pointer $ %none
-              :stopped? false
-              :display? false
-              :merged? false
+            State :base base :store base :records ([]) :pointer (%none) :stopped? false :display? false :merged? false
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Store
@@ -1309,19 +1305,18 @@
             :features $ #{} :js-ffi
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn listen-devtools! (keyboard dispatch!)
-            do
-              .!addEventListener (browser-window) |keydown $ fn (event)
-                hint-fn $ {}
-                  :args $ [] 'KeyboardEventHost
-                  :return 'Unit
-                if
-                  and (.-shiftKey event) (.-metaKey event) (.-altKey event)
-                    = (keyboard-code keyboard) (.-keyCode event)
-                  do
-                    dispatch! $ :: :reel/toggle
-                    , &unit
+            .!addEventListener (browser-window) |keydown $ fn (event)
+              hint-fn $ {}
+                :args $ [] 'KeyboardEventHost
+                :return 'Unit
+              if
+                and (.-shiftKey event) (.-metaKey event) (.-altKey event)
+                  = (keyboard-code keyboard) (.-keyCode event)
+                do
+                  dispatch! $ :: :reel/toggle
                   , &unit
-              , &unit
+                , &unit
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'String $ :: 'Fn
@@ -1348,7 +1343,7 @@
             if (option:some? o) (&enum:nth o 1) (raise "|unexpected none")
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] $ :: 'Option 'Dynamic
+            :args $ [] $ :: 'calcit.core/Option 'Dynamic
         'update-map-dynamic $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn update-map-dynamic (m k f)
             &map:assoc m k $ f $ &map:get m k
