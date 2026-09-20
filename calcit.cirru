@@ -180,7 +180,10 @@
             :args $ []
             :features $ #{} :js-ffi
         'mount-target $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def mount-target (js/document.querySelector |.app)
+          :code $ quote $ def mount-target
+            unsafe-coerce
+              option:unwrap $ browser/query-selector |.app
+              , 'Dynamic
           :examples $ []
           :schema $ :: 'Dynamic
         'reload! $ %{} 'CodeEntry (:doc |)
@@ -220,43 +223,16 @@
             |bottom-tip :default hud!
             reel.typed :as typed
             js-ffi.shared :as host
+            js-ffi.browser :as browser
     'reel.app.updater $ %{} 'FileEntry
       :defs $ {} $ 'updater
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
               (:states cursor s) (update-states store cursor s)
-              (:task/add text)
-                reel.util/update-map-dynamic store :tasks $ fn (tasks)
-                  prepend
-                    assert-type tasks $ :: 'List 'Map
-                    {} (:id op-id) (:done? false) (:text text)
-              (:task/remove id)
-                reel.util/update-map-dynamic store :tasks $ fn (tasks)
-                  filter
-                    assert-type tasks $ :: 'List 'Map
-                    fn (task)
-                      not $ &= (reel.schema/read-field task :id) id
-              (:task/toggle id)
-                reel.util/update-map-dynamic store :tasks $ fn (tasks)
-                  map
-                    assert-type tasks $ :: 'List 'Map
-                    fn (task)
-                      if
-                        &= (reel.schema/read-field task :id) id
-                        &map:assoc task :done? $ not $ &map:get task :done?
-                        , task
-              (:task/edit task-id text)
-                reel.util/update-map-dynamic store :tasks $ fn (tasks)
-                  map
-                    assert-type tasks $ :: 'List 'Map
-                    fn (task)
-                      if
-                        &= (reel.schema/read-field task :id) task-id
-                        &map:assoc task :text text
-                        , task
-              (:try _) store
-              _ $ do (js/console.warn "|Unknown op" op) store
+              _ $ do
+                host/console-warn! $ str "|Unknown op" op
+                , store
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] (:: 'Map 'Dynamic 'Dynamic) 'Enum 'String 'Number
@@ -264,7 +240,9 @@
             :return $ :: 'Map 'Dynamic 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.updater
-          :require $ [] respo.cursor :refer $ [] update-states
+          :require
+            [] respo.cursor :refer $ [] update-states
+            js-ffi.shared :as host
     'reel.comp.records $ %{} 'FileEntry
       :defs $ {}
         'comp-action $ %{} 'CodeEntry (:doc |)
@@ -560,7 +538,7 @@
             ; println |Name: $ turn-string op
             let
                 op-id $ generate-id!
-                op-time $ js/Date.now
+                op-time $ host/now-ms
               if (reel-control-op? op)
                 merge reel $ let
                     pointer $ &map:get reel :pointer
@@ -619,7 +597,9 @@
                             unsafe-coerce records $ :: 'List 'Dynamic
                             , idx
                         assoc :store $ play-records base records updater $ dec idx
-                    _ $ do (js/console.warn "|Unknown reel/ op:" op) nil
+                    _ $ do
+                      host/console-warn! $ str "|Unknown reel/ op:" op
+                      , nil
                 let
                     data-pack $ [] op op-id op-time
                   if (&map:get reel :stopped?)
@@ -679,7 +659,8 @@
             :generics $ [] 'T
             :return $ :: 'List 'T
       :ns $ %{} 'NsEntry (:doc |)
-        :code $ quote $ ns reel.core (:require)
+        :code $ quote $ ns reel.core
+          :require $ js-ffi.shared :as host
     'reel.schema $ %{} 'FileEntry
       :defs $ {}
         'read-field $ %{} 'CodeEntry (:doc |)
@@ -1272,23 +1253,8 @@
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
           :schema $ :: 'Trait
-        'BrowserWindowHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait BrowserWindowHost
-            .addEventListener $ :: 'Fn $ {}
-              :args $ [] 'String $ :: 'Fn
-                {} (:return 'Unit)
-                  :args $ [] 'KeyboardEventHost
-              :return 'Unit
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
-        'KeyboardEventHost $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ deftrait KeyboardEventHost (:shiftKey 'Bool) (:metaKey 'Bool) (:altKey 'Bool) (:keyCode 'Number)
-          :examples $ []
-          :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
         'browser-window $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn browser-window () (unsafe-coerce js/window 'BrowserWindowHost)
+          :code $ quote $ defn browser-window () (browser/window-host)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'BrowserWindowHost)
             :args $ []
@@ -1305,17 +1271,16 @@
             :features $ #{} :js-ffi
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn listen-devtools! (keyboard dispatch!)
-            .!addEventListener (browser-window) |keydown $ fn (event)
-              hint-fn $ {}
-                :args $ [] 'KeyboardEventHost
-                :return 'Unit
-              if
-                and (.-shiftKey event) (.-metaKey event) (.-altKey event)
-                  = (keyboard-code keyboard) (.-keyCode event)
-                do
-                  dispatch! $ :: :reel/toggle
+            browser/add-event-listener! |keydown $ fn (event)
+              let
+                  keyboard-event $ browser/keyboard-event-host event
+                if
+                  and (keyboard-event :shift-key?) (keyboard-event :meta-key?) (keyboard-event :alt-key?)
+                    = (keyboard-code keyboard) (keyboard-event :key-code)
+                  do
+                    dispatch! $ :: :reel/toggle
+                    , &unit
                   , &unit
-                , &unit
             , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
@@ -1351,4 +1316,5 @@
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
       :ns $ %{} 'NsEntry (:doc |)
-        :code $ quote $ ns reel.util (:require)
+        :code $ quote $ ns reel.util
+          :require $ js-ffi.browser :as browser
