@@ -60,7 +60,8 @@
                     d! $ :: :task/remove $ reel.schema/read-field task :id
                 <> |Remove
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Dynamic
         'css-done $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-done
             {} $ |$0 $ {} (:width 32) (:height 32) (:display :inline-block)
@@ -126,7 +127,8 @@
                   -> tasks $ map $ fn (task)
                     [] (reel.schema/read-field task :id) (comp-task task)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Dynamic $ :: 'List 'Dynamic
         'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-container
             {} $ |$0 $ {} (:padding 8) (:overflow :auto)
@@ -260,7 +262,8 @@
                     list-> ({}) (reel.util/map-indexed-dynamic params render-action-item)
                 <> $ str action
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Dynamic
         'comp-record-item $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-record-item (record pointed? idx)
             div
@@ -272,7 +275,8 @@
               ; <> $ to-lispy-string $ first record
               comp-action $ &list:first record
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Dynamic 'Bool 'Number
         'comp-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-records (records pointer)
             div
@@ -284,7 +288,8 @@
                     [] (&list:last record)
                       memo-comp-by (&list:last record) comp-record-item record (&= pointer idx) idx
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] (:: 'List 'Dynamic) 'Dynamic
         'css-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-record
             {}
@@ -397,7 +402,8 @@
                   d! $ :: :reel/toggle
                 not stopped?
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] 'Bool
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles)
             if (reel.schema/read-field reel :display?)
@@ -452,7 +458,8 @@
                       <> $ trim $ format-cirru-edn (reel.schema/read-field reel :store)
               span $ {}
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
+            :args $ [] (:: 'Map 'Dynamic 'Dynamic) (:: 'Map 'Dynamic 'Dynamic) (:: 'Map 'Dynamic 'Dynamic)
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-typed-reel (states reel user-styles)
             assert-type
