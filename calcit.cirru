@@ -1296,20 +1296,22 @@
                 :args $ [] 'Enum
             :features $ #{} :js-ffi
         'map-indexed-dynamic $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn map-indexed-dynamic (xs f)
-            loop
-                i 0
-                acc $ []
-              if
-                >= i $ &list:count xs
-                acc
-                recur (inc i)
-                  &list:append acc $ f i $ &list:nth xs i
+          :code $ quote $ defn map-indexed-dynamic (xs f) (map-indexed xs f)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic $ :: 'Fn
-              {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {}
+            :args $ [] (:: 'List 'Dynamic)
+              :: 'Fn $ {} (:return 'Dynamic)
                 :args $ [] 'Number 'Dynamic
+            :return $ :: 'List 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |indexed-map-empty-and-populated)
+            :code $ quote $ do
+              assert= ([])
+                map-indexed-dynamic ([])
+                  fn (i x) (+ i x)
+              assert= ([] 10 21)
+                map-indexed-dynamic ([] 10 20)
+                  fn (i x) (+ i x)
+            :tags $ #{} :unit
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
             if (option:some? o) (&enum:nth o 1) (raise "|unexpected none")
