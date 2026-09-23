@@ -3,6 +3,9 @@ import { main_$x_ } from "../test-js-out/reel.test-typed.mjs";
 import { new_reel, record_op, recall, resume, reset_reel, refresh, toggle_display, merge_reel, step, remove_current, decode_control, apply_control } from "../test-js-out/reel.typed.mjs";
 import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_ } from "../test-js-out/calcit.core.mjs";
 import { view_data } from "../test-js-out/reel.typed-compat.mjs";
+import { map_indexed_dynamic } from "../test-js-out/reel.util.mjs";
+import { comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
+import { make_string } from "../test-js-out/respo.render.html.mjs";
 
 main_$x_();
 const updater = (store, op) => store + op;
@@ -93,3 +96,14 @@ assert.deepEqual(pausedView.records, [[5, "id", 10], [7, "second", 20]]);
 assert.equal(to_js_data(view_data(toggle_display(paused)))["display?"], true);
 assert.equal(to_js_data(view_data(merged))["merged?"], true);
 console.log("typed Reel JS: legacy devtools view preserves flags, record tuples, store, and pointer semantics");
+
+assert.deepEqual(to_js_data(map_indexed_dynamic(parse_cirru_edn("[]"), () => {
+  assert.fail("empty indexed mapping must not call its callback");
+})), []);
+assert.deepEqual(to_js_data(map_indexed_dynamic(parse_cirru_edn("[] |a |b"), (index, value) => `${index}:${value}`)), ["0:a", "1:b"]);
+for (const reel of [initial, full, paused]) {
+  const html = make_string(comp_typed_reel(parse_cirru_edn("{} (:cursor $ [])"), toggle_display(reel), parse_cirru_edn("{}")));
+  assert.match(html, /Merge/);
+  assert.match(html, /Reset/);
+}
+console.log("typed Reel JS: indexed mapping and open devtools render for empty, live, and paused history");
