@@ -171,6 +171,15 @@
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Enum
+        'get-mount-target $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn get-mount-target ()
+            unsafe-coerce
+              option:unwrap $ browser/query-selector |.app
+              quote Dynamic
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+            :args $ []
+            :features $ #{} :js-ffi
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch *reel :changes $ fn (reel prev) (render-app!)
@@ -182,10 +191,7 @@
             :args $ []
             :features $ #{} :js-ffi
         'mount-target $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def mount-target
-            unsafe-coerce
-              option:unwrap $ browser/query-selector |.app
-              , 'Dynamic
+          :code $ quote $ def mount-target (get-mount-target)
           :examples $ []
           :schema $ :: 'Dynamic
         'reload! $ %{} 'CodeEntry (:doc |)
@@ -426,7 +432,7 @@
                         record $ if (reel.schema/read-field reel :stopped?)
                           if (> pointer 0)
                             get records $ dec pointer
-                            %none
+                            Option :none
                           last records
                       if (option:some? record)
                         let[] (action op-id op-time) (reel.util/unwrap-option record)
@@ -768,7 +774,11 @@
               (:reset) (reset-reel reel)
               (:remove pointer)
                 if
-                  = (:pointer reel) (%some pointer)
+                  and
+                    option:some? $ :pointer reel
+                    =
+                      option:unwrap $ :pointer reel
+                      , pointer
                   remove-current updater reel
                   , reel
           :examples $ []
@@ -812,24 +822,24 @@
           :code $ quote $ defn decode-control (op)
             match op
               (:reel/toggle)
-                %some $ Control :toggle
+                Option :some $ Control :toggle
               (:reel/recall pointer)
                 if (number? pointer)
-                  %some $ Control :recall pointer
-                  %none
+                  Option :some $ Control :recall pointer
+                  Option :none
               (:reel/run)
-                %some $ Control :run
+                Option :some $ Control :run
               (:reel/step)
-                %some $ Control :step
+                Option :some $ Control :step
               (:reel/merge)
-                %some $ Control :merge
+                Option :some $ Control :merge
               (:reel/reset)
-                %some $ Control :reset
+                Option :some $ Control :reset
               (:reel/remove pointer)
                 if (number? pointer)
-                  %some $ Control :remove pointer
-                  %none
-              _ $ %none
+                  Option :some $ Control :remove pointer
+                  Option :none
+              _ $ Option :none
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Enum
@@ -872,12 +882,12 @@
                     base $ play-records updater (:base reel) (:records reel) pointer
                   struct-with reel (:base base) (:store base)
                     :records $ &list:slice (:records reel) pointer $ count (:records reel)
-                    :pointer $ %some 0
+                    :pointer $ Option :some 0
                     :merged? true
               struct-with reel
                 :base $ :store reel
                 :records $ []
-                :pointer $ %none
+                :pointer $ Option :none
                 :merged? true
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -926,7 +936,7 @@
             :return $ :: 'reel.typed/Record 'Op
         'new-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn new-reel (base)
-            State :base base :store base :records ([]) :pointer (%none) :stopped? false :display? false :merged? false
+            State :base base :store base :records ([]) :pointer (Option :none) :stopped? false :display? false :merged? false
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Store
@@ -979,7 +989,7 @@
               = pointer $ floor pointer
             struct-with reel
               :store $ play-records updater (:base reel) (:records reel) pointer
-              :pointer $ %some pointer
+              :pointer $ Option :some pointer
               :stopped? true
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -1094,7 +1104,7 @@
               struct-with reel
                 :store $ :base reel
                 :records $ []
-                :pointer $ %none
+                :pointer $ Option :none
                 :stopped? false
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -1129,7 +1139,7 @@
             struct-with reel
               :store $ play-records updater (:base reel) (:records reel)
                 count $ :records reel
-              :pointer $ %none
+              :pointer $ Option :none
               :stopped? false
           :examples $ []
           :schema $ :: 'Fn $ {}
@@ -1151,12 +1161,12 @@
                 if
                   < pointer $ count $ :records reel
                   struct-with reel
-                    :pointer $ %some $ inc pointer
+                    :pointer $ Option :some $ inc pointer
                     :store $ play-records updater (:store reel)
                       &list:slice (:records reel) pointer $ inc pointer
                       , 1
                   struct-with reel
-                    :pointer $ %some 0
+                    :pointer $ Option :some 0
                     :store $ :base reel
               , reel
           :examples $ []
@@ -1263,7 +1273,7 @@
         'browser-window $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn browser-window () (browser/window-host)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'BrowserWindowHost)
+          :schema $ :: 'Fn $ {} (:return 'js-ffi.browser/WindowHost)
             :args $ []
             :features $ #{} :js-ffi
         'keyboard-code $ %{} 'CodeEntry (:doc |)
