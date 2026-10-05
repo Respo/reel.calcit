@@ -46,16 +46,18 @@ jobs:
         git diff --exit-code -- calcit.cirru
         calcit calcit.cirru --check-only
         calcit calcit.cirru test --require-match --summary-only --format json
+        calcit calcit.cirru analyze check-public --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
         calcit calcit.cirru analyze check-types --summary-only --format json
         calcit calcit.cirru analyze weak-types --only schema-dynamic,code-dynamic --intent unresolved --summary-only --format json
         calcit calcit.cirru analyze deprecated --summary-only --format json | jq -e '.data.summary.calls == 0'
 
     - name: Verify typed Reel native and JS behavior
       run: |
+        set -euo pipefail
         calcit test reel.typed --require-match
         calcit test reel.typed-compat --require-match
         calcit --init-fn reel.test-typed/main! --reload-fn reel.test-typed/main!
-        calcit --init-fn reel.test-typed/main! --reload-fn reel.test-typed/main! --emit-path test-js-out js
+        calcit --init-fn reel.test-typed/main! --reload-fn reel.comp.reel/comp-typed-reel --emit-path test-js-out js
         yarn node tests/typed-reel.mjs
 
     - name: Select CDN asset prefix

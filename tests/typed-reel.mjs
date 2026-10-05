@@ -1,4 +1,8 @@
 import assert from "node:assert/strict";
+import { execFileSync } from "node:child_process";
+import { copyFile, mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promises";
+import { join, resolve } from "node:path";
+import { pathToFileURL } from "node:url";
 import { main_$x_ } from "../test-js-out/reel.test-typed.mjs";
 import { new_reel, record_op, recall, resume, reset_reel, refresh, toggle_display, merge_reel, step, remove_current, decode_control, apply_control } from "../test-js-out/reel.typed.mjs";
 import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_ } from "../test-js-out/calcit.core.mjs";
@@ -7,6 +11,77 @@ import { map_indexed_dynamic } from "../test-js-out/reel.util.mjs";
 import { comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
 import { make_string } from "../test-js-out/respo.render.html.mjs";
 
+// Replay each canonical attached test in its original namespace, without
+// maintaining a second assertion set or editing the consumer's Snapshot.
+async function replayAttachedTests() {
+  const binary = process.env.CALCIT_BIN ?? "calcit";
+  const invoke = (snapshot, ...args) => execFileSync(binary, [snapshot, ...args],
+    { encoding: "utf8", timeout: 60000, maxBuffer: 16 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"] });
+  const canonical = resolve("calcit.cirru");
+  const before = await readFile(canonical);
+  const selected = JSON.parse(invoke(canonical, "test", "--list", "--require-match", "--format", "json"));
+  assert.ok(selected.tests.length > 0, "attached replay must not silently select zero tests");
+  const directory = await mkdtemp(resolve(".calcit/reel-attached-"));
+  const snapshot = join(directory, "calcit.cirru");
+  try {
+    await copyFile(canonical, snapshot);
+    await copyFile("deps.cirru", join(directory, "deps.cirru"));
+    await mkdir(join(directory, ".calcit"));
+    await symlink(resolve(".calcit/modules"), join(directory, ".calcit/modules"), "dir");
+    await symlink(resolve("node_modules"), join(directory, "node_modules"), "dir");
+    invoke(snapshot, "docs", "agents", "--contract");
+    const operations = [];
+    const calls = [];
+    const features = new Set();
+    for (const [index, item] of selected.tests.entries()) {
+      const separator = item.id.indexOf("#");
+      const owner = item.id.slice(0, separator);
+      const name = item.id.slice(separator + 1);
+      const definition = JSON.parse(invoke(snapshot, "query", "def", owner, "--format", "json")).data;
+      const test = definition.tests.find(test => test.name === name);
+      assert.ok(test, `missing canonical AST for ${item.id}`);
+      const target = `${owner.slice(0, owner.indexOf("/"))}/replay-attached-${index}`;
+      const schemaMap = definition.schema?.[0] === "{}" ? definition.schema
+        : definition.schema?.find(node => Array.isArray(node) && node[0] === "{}");
+      const ownerFeatures = schemaMap?.find(node => node[0] === ":features")?.[1]?.slice(1) ?? [];
+      ownerFeatures.forEach(feature => features.add(feature));
+      operations.push(["edit", "def", target, "--input-format", "json-ast", "--code",
+        JSON.stringify(["defn", target.split("/")[1], [], test.code, "&unit"])]);
+      operations.push(["edit", "schema", target, "--input-format", "json-ast", "--code",
+        JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
+          [":features", ["#{}", ...ownerFeatures]]]])]);
+      calls.push([target]);
+    }
+    const entry = "reel.test-typed/replay-attached!";
+    operations.push(["edit", "def", entry, "--input-format", "json-ast", "--code",
+      JSON.stringify(["defn", "replay-attached!", [], ...calls, "&unit"])]);
+    operations.push(["edit", "schema", entry, "--input-format", "json-ast", "--code",
+      JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
+        [":features", ["#{}", ...features]]]])]);
+    const code = JSON.stringify(operations);
+    const preview = JSON.parse(invoke(snapshot, "edit", "transaction", "--code", code, "--dry-run", "--format", "json"));
+    invoke(snapshot, "edit", "transaction", "--code", code, "--expect-revision", preview.original_revision, "--format", "edn");
+    const roots = ["--init-fn", entry, "--reload-fn", entry];
+    invoke(snapshot, ...roots);
+    const output = join(directory, "js");
+    invoke(snapshot, ...roots, "--emit-path", output, "js");
+    // Generated core modules register traits globally; isolate this second graph
+    // so its registration cannot replace implementations used by the main graph.
+    execFileSync(process.execPath, ["--input-type=module", "--eval",
+      `const tests = await import(${JSON.stringify(pathToFileURL(join(output, "reel.test-typed.mjs")).href)}); tests.replay_attached_$x_();`],
+      { timeout: 60000, stdio: "inherit" });
+    console.log(`typed Reel: ${selected.tests.length} canonical attached tests replayed on native/generated JS`);
+  } finally {
+    try {
+      assert.deepEqual(await readFile(canonical), before, "test replay must preserve canonical Snapshot bytes");
+    } finally {
+      await rm(directory, { recursive: true, force: true });
+    }
+  }
+}
+
+await replayAttachedTests();
 main_$x_();
 const updater = (store, op) => store + op;
 const initial = new_reel("base");
