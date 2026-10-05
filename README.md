@@ -36,6 +36,9 @@ runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版�
 - `decode-control message`：将旧 devtools 消息解析为 `Option<Control>`。
   将已识别的控制交给 `apply-control updater reel control`，业务操作交给
   `record-op`；未知或错误的控制 payload 不应冒充业务默认值。
+  **当前 demo 的限制**：`dispatch!` 对 `:none` 一律走 `record-op`，包括
+  payload 错误的 `:reel/` 消息，因此这类消息仍会进入历史。应用接线时应
+  在业务 fallback 前另行拒绝 malformed 控制消息；本次不改变旧路由行为。
 - `recall updater reel pointer`：pointer 是 `[0, records.length]` 范围内的
   整数前缀长度；直接调用的非法 pointer 会报错。通过 `apply-control`
   接收的非法 recall 保持原状态。
