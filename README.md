@@ -98,6 +98,18 @@ store. See `reel.app.main/dispatch!` for the control/application routing example
 Run `calcit test --require-match`, then compile `reel.test-typed/main!` to
 `test-js-out` and run `yarn node tests/typed-reel.mjs` for native/JS coverage.
 
+### COS/CDN 配置
+
+前端使用正式 COS Action v1.2.0 的已审查提交，通过 `public-base-url` 使用
+内置公网校验，不新增上传验证脚本。生产前缀保持 `Respo/reel.calcit/`，PR
+预览使用 `Respo/reel.calcit/pr/<number>/<run-id>/<attempt>/`；Vite 继续读取
+同一 `VITE_BASE_URL`。每个 PR 与生产分别排队，保留等待任务，不取消活跃上传。
+原服务器源、目标、凭据与仅 main push 部署条件不变。
+
+本轮仅改部署配置与说明，保留主线 Calcit/procs 0.27.0、既有模块和原 typed
+Reel 的 native/JS 测试，不改源码、锁文件或类型门禁。独立 0.28.0 候选仍被
+共享 JS-FFI/Respo 合同阻塞，不将 COS 配置验收称为完整 Calcit 升级完成。
+
 ### License
 
 MIT
