@@ -3,7 +3,7 @@
   :about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `calcit query` to inspect and `calcit edit`/`calcit tree` to modify. Run `calcit docs agents --contract` before mutations; use `--full` for first orientation or changed contract digest. Manual edits must follow format and schema conventions, then run `calcit edit format`."
   :package |reel
   :entries $ {} $ :default
-    {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :native) (:reload-fn 'reel.app.main/reload!)
+    {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :native) (:reload-fn 'reel.app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/
       :type-slots $ {}
@@ -182,7 +182,14 @@
             :features $ #{} :js-ffi
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
-            add-watch *reel :changes $ fn (reel prev) (render-app!)
+            add-watch! *reel :changes $ fn (reel prev)
+              hint-fn $ {}
+                :args $ []
+                  :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                  :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                :return 'Unit
+              render-app!
+              , &unit
             listen-devtools! |k dispatch!
             dispatch! $ :: :reel/toggle
             println "|App started!"
@@ -197,8 +204,15 @@
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
-              do (remove-watch *reel :changes) (clear-cache!)
-                add-watch *reel :changes $ fn (reel prev) (render-app!)
+              do (remove-watch! *reel :changes) (clear-cache!)
+                add-watch! *reel :changes $ fn (reel prev)
+                  hint-fn $ {}
+                    :args $ []
+                      :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                      :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                    :return 'Unit
+                  render-app!
+                  , &unit
                 let
                     refreshed $ typed/refresh updater
                       assert-type @*reel $ :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
@@ -291,6 +305,9 @@
                 reel.util/map-indexed-dynamic
                   prepend records $ [] :base nil :base
                   fn (idx record)
+                    hint-fn $ {}
+                      :args $ [] 'Number 'Dynamic
+                      :return $ :: 'List 'Dynamic
                     [] (&list:last record)
                       memo-comp-by (&list:last record) comp-record-item record (&= pointer idx) idx
           :examples $ []
@@ -446,7 +463,7 @@
                                   str "|1px solid " $ hsl 0 0 94
                               div ({}) (<> op-time) (=< 8 nil) (<> op-id)
                               if
-                                and (some? pointer)
+                                and (non-nil? pointer)
                                   not $ &= pointer 0
                                 span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
                                   :style $ {} (:cursor :pointer) (:font-size 12)
@@ -555,7 +572,7 @@
               if (reel-control-op? op)
                 merge reel $ let
                     pointer $ &map:get reel :pointer
-                    records $ unsafe-coerce (&map:get reel :records) (:: 'List 'Dynamic)
+                    records $ reel.schema/checked-records $ &map:get reel :records
                     base $ &map:get reel :base
                     stopped? $ &map:get reel :stopped?
                   match op
@@ -606,9 +623,7 @@
                     (:reel/remove idx)
                       if (&= 0 idx) reel $ -> reel (reel.util/update-map-dynamic :pointer dec)
                         reel.util/update-map-dynamic :records $ fn (records)
-                          remove-record-at
-                            unsafe-coerce records $ :: 'List 'Dynamic
-                            , idx
+                          remove-record-at (reel.schema/checked-records records) idx
                         assoc :store $ play-records base records updater $ dec idx
                     _ $ do
                       host/console-warn! $ str "|Unknown reel/ op:" op
@@ -617,15 +632,11 @@
                     data-pack $ [] op op-id op-time
                   if (&map:get reel :stopped?)
                     -> reel $ reel.util/update-map-dynamic :records $ fn (records)
-                      conj
-                        unsafe-coerce records $ :: 'List 'Dynamic
-                        , data-pack
+                      conj (reel.schema/checked-records records) data-pack
                     -> reel
                       assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
                       reel.util/update-map-dynamic :records $ fn (records)
-                        conj
-                          unsafe-coerce records $ :: 'List 'Dynamic
-                          , data-pack
+                        conj (reel.schema/checked-records records) data-pack
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ []
@@ -639,13 +650,50 @@
           :code $ quote $ defn refresh-reel (reel base updater)
             let
                 next-base $ if (reel.schema/read-field reel :merged?) (reel.schema/read-field reel :base) base
-                records $ reel.schema/read-field reel :records
+                records $ reel.schema/checked-records $ reel.schema/read-field reel :records
               -> reel (assoc :base next-base)
                 assoc :store $ play-records next-base records updater $ if (reel.schema/read-field reel :stopped?) (reel.schema/read-field reel :pointer) (count records)
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
             :features $ #{} :js-ffi
+          :tests $ [] $ %{} 'TestEntry (:name |legacy-refresh-checks-record-container)
+            :code $ quote $ let
+                updater $ fn (store op id time)
+                  hint-fn $ {}
+                    :args $ [] 'String 'Number 'String 'Number
+                    :return 'String
+                  str store op
+              assert= |next $ reel.schema/read-field
+                refresh-reel
+                  {} (:base |base) (:store |base)
+                    :records $ []
+                    :merged? false
+                    :stopped? false
+                    :pointer nil
+                  , |next updater
+                , :store
+              assert= |next5 $ reel.schema/read-field
+                refresh-reel
+                  {} (:base |base) (:store |base)
+                    :records $ [] $ [] 5 |id 10
+                    :merged? false
+                    :stopped? false
+                    :pointer nil
+                  , |next updater
+                , :store
+              assert= "|Reel records must be a List" $ try
+                let ()
+                  refresh-reel
+                    {} (:base |base) (:store |base) (:records nil) (:merged? false) (:stopped? false) (:pointer nil)
+                    , |next updater
+                  , |unexpected-success
+                fn (error)
+                  hint-fn $ {}
+                    :args $ [] 'String
+                    :return 'String
+                  , error
+            :tags $ #{} :unit
         'remove-record-at $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-record-at (records idx)
             concat
@@ -676,6 +724,55 @@
           :require $ js-ffi.shared :as host
     'reel.schema $ %{} 'FileEntry
       :defs $ {}
+        'checked-records $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn checked-records (value)
+            if (list? value)
+              assert-type value $ :: 'List 'Dynamic
+              raise "|Reel records must be a List"
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] 'Dynamic
+            :return $ :: 'List 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |checked-legacy-record-container)
+            :code $ quote $ let ()
+              assert= ([])
+                checked-records $ []
+              assert=
+                [] $ [] :op |id 10
+                checked-records $ [] $ [] :op |id 10
+              assert= "|Reel records must be a List" $ try
+                let () (checked-records nil) |unexpected-success
+                fn (error)
+                  hint-fn $ {}
+                    :args $ [] 'String
+                    :return 'String
+                  , error
+              assert= "|Reel records must be a List" $ try
+                let () (checked-records 1) |unexpected-success
+                fn (error)
+                  hint-fn $ {}
+                    :args $ [] 'String
+                    :return 'String
+                  , error
+              assert= "|Reel records must be a List" $ try
+                let ()
+                  checked-records $ {}
+                  , |unexpected-success
+                fn (error)
+                  hint-fn $ {}
+                    :args $ [] 'String
+                    :return 'String
+                  , error
+              assert= "|Reel records must be a List" $ try
+                let ()
+                  checked-records $ Option :none
+                  , |unexpected-success
+                fn (error)
+                  hint-fn $ {}
+                    :args $ [] 'String
+                    :return 'String
+                  , error
+            :tags $ #{} :unit
         'read-field $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-field (value field)
             if (struct? value)
@@ -1029,7 +1126,8 @@
             let
                 record $ new-record op op-id op-time
                 records $ append (:records reel) record
-              if (:stopped? reel) (assoc reel :records records)
+              if (:stopped? reel)
+                struct-with reel $ :records records
                 struct-with reel (:records records)
                   :store $ updater (:store reel) op op-id op-time
           :examples $ []
@@ -1050,7 +1148,9 @@
                   str store op
                 initial $ assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
                 live $ record-op updater initial 5 |id-1 100
-                paused $ record-op updater (assoc live :stopped? true) 7 |id-2 200
+                paused $ record-op updater
+                  struct-with live $ :stopped? true
+                  , 7 |id-2 200
               do
                 assert= |base $ :base live
                 assert= |base5 $ :store live
@@ -1086,7 +1186,7 @@
                     records $ &list:concat
                       &list:slice (:records reel) 0 $ dec pointer
                       &list:slice (:records reel) pointer $ count $ :records reel
-                    next $ assoc reel :records records
+                    next $ struct-with reel $ :records records
                   recall updater next $ dec pointer
               , reel
           :examples $ []
@@ -1100,7 +1200,8 @@
         'reset-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reset-reel (reel)
             if (:stopped? reel)
-              assoc reel :records $ &list:slice (:records reel) 0 $ reel.util/unwrap-option (:pointer reel)
+              struct-with reel $ :records $ &list:slice (:records reel) 0
+                reel.util/unwrap-option $ :pointer reel
               struct-with reel
                 :store $ :base reel
                 :records $ []
@@ -1131,7 +1232,9 @@
                 assert= 0 $ count $ :records reset-live
                 assert= |next57 $ :store $ refresh updater live |next
                 assert= |next5 $ :store $ refresh updater paused |next
-                assert= |base57 $ :store $ refresh updater (assoc live :merged? true) |ignored
+                assert= |base57 $ :store $ refresh updater
+                  struct-with live $ :merged? true
+                  , |ignored
                 assert= true $ :display? $ toggle-display initial
                 assert= initial $ toggle-display $ toggle-display initial
         'resume $ %{} 'CodeEntry (:doc |)
@@ -1210,7 +1313,7 @@
                   assert= one-paused $ step updater one-paused
         'toggle-display $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn toggle-display (reel)
-            assoc reel :display? $ not $ :display? reel
+            struct-with reel $ :display? $ not (:display? reel)
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] $ :: 'reel.typed/State 'Op 'Store
@@ -1309,25 +1412,47 @@
           :code $ quote $ defn map-indexed-dynamic (xs f) (map-indexed xs f)
           :examples $ []
           :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'Dynamic)
-              :: 'Fn $ {} (:return 'Dynamic)
-                :args $ [] 'Number 'Dynamic
-            :return $ :: 'List 'Dynamic
-          :tests $ [] $ %{} 'TestEntry (:name |indexed-map-empty-and-populated)
-            :code $ quote $ do
-              assert= ([])
-                map-indexed-dynamic ([])
-                  fn (i x) (+ i x)
-              assert= ([] 10 21)
-                map-indexed-dynamic ([] 10 20)
-                  fn (i x) (+ i x)
-            :tags $ #{} :unit
+            :args $ [] (:: 'List 'T)
+              :: 'Fn $ {} (:return 'R)
+                :args $ [] 'Number 'T
+            :generics $ [] 'T 'R
+            :return $ :: 'List 'R
+          :tests $ []
+            %{} 'TestEntry (:name |indexed-map-empty-and-populated)
+              :code $ quote $ do
+                assert= ([])
+                  map-indexed-dynamic ([])
+                    fn (i x) (+ i x)
+                assert= ([] 10 21)
+                  map-indexed-dynamic ([] 10 20)
+                    fn (i x) (+ i x)
+              :tags $ #{} :unit
+            %{} 'TestEntry (:name |preserves-indexed-member-result-types)
+              :code $ quote $ assert= ([] 1 3)
+                map-indexed-dynamic ([] |a |abc)
+                  fn (index text) (.len text)
+              :tags $ #{} :unit
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
-            if (option:some? o) (&enum:nth o 1) (raise "|unexpected none")
+            if (.some? o) (.unwrap o) (raise "|unexpected none")
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] $ :: 'calcit.core/Option 'Dynamic
+          :schema $ :: 'Fn $ {} (:return 'T)
+            :args $ [] $ :: 'calcit.core/Option 'T
+            :generics $ [] 'T
+          :tests $ [] $ %{} 'TestEntry (:name |preserves-option-payload)
+            :code $ quote $ let ()
+              assert= 8 $ + 1 $ unwrap-option (Option :some 7)
+              assert= |value $ unwrap-option $ Option :some |value
+              assert= "|unexpected none" $ try
+                let ()
+                  unwrap-option $ Option :none
+                  , |unexpected-success
+                fn (error)
+                  hint-fn $ {}
+                    :args $ [] 'String
+                    :return 'String
+                  , error
+            :tags $ #{} :unit
         'update-map-dynamic $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn update-map-dynamic (m k f)
             &map:assoc m k $ f $ &map:get m k
