@@ -17,7 +17,8 @@
                 states $ reel.schema/read-field store :states
               div
                 {} $ :class-name css/global
-                comp-todolist (>> states :todolist) (reel.schema/read-field store :tasks)
+                comp-todolist (>> states :todolist)
+                  decode-map-as (reel.schema/read-field store :tasks) (:: 'List 'Dynamic)
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
@@ -168,6 +169,7 @@
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
+            , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Unit)
             :args $ [] 'Enum
@@ -350,8 +352,9 @@
                   :on-click $ fn (e d!) (tab-echo! item)
                 <> $ str $ type-of item
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {}
             :args $ [] 'Number 'Dynamic
+            :return $ :: 'List 'Dynamic
         'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shallow-data? (item)
             or (literal? item)
@@ -437,7 +440,11 @@
                 memo-comp-by :operations comp-operations $ reel.schema/read-field reel :stopped?
                 div
                   {} $ :class-name $ str-spaced css/expand css/row
-                  comp-records (reel.schema/read-field reel :records) (reel.schema/read-field reel :pointer)
+                  comp-records
+                    decode-map-as
+                      decode-map-as (reel.schema/read-field reel :records) (:: 'List 'Dynamic)
+                      :: 'List 'Dynamic
+                    reel.schema/read-field reel :pointer
                   div
                     {}
                       :class-name $ str-spaced css/column css/expand
@@ -447,9 +454,11 @@
                         records $ reel.schema/read-field reel :records
                         pointer $ reel.schema/read-field reel :pointer
                         record $ if (reel.schema/read-field reel :stopped?)
-                          if (> pointer 0)
-                            get records $ dec pointer
-                            Option :none
+                          &let
+                            stopped-pointer $ decode-map-as pointer 'Number
+                            if (> stopped-pointer 0)
+                              get records $ dec stopped-pointer
+                              Option :none
                           last records
                       if (option:some? record)
                         let[] (action op-id op-time) (reel.util/unwrap-option record)
@@ -521,7 +530,7 @@
               <> guide
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic
+            :args $ [] 'String 'Dynamic 'Dynamic
             :features $ #{} :js-ffi
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.reel
@@ -542,23 +551,28 @@
       :defs $ {}
         'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn play-records (store records updater pointer)
-            if (&= 0 pointer) store $ let[] (op op-id op-time)
-              or (&list:first records) ([])
-              &let
-                next-store $ updater store op op-id op-time
-                recur next-store (rest records) updater $ dec pointer
+            if (number? pointer)
+              if (&= 0 pointer) store $ let[] (op op-id op-time)
+                or (&list:first records) ([])
+                &let
+                  next-store $ updater store op op-id op-time
+                  recur next-store (rest records) updater $ dec pointer
+              raise "|play-records expected a Number pointer"
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
             :features $ #{} :js-ffi
         'reel-control-op? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reel-control-op? (op)
-            starts-with?
-              str $ &enum:nth op 0
-              , |:reel/
+            if (enum? op)
+              starts-with?
+                str $ &enum:nth op 0
+                , |:reel/
+              , false
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Bool)
-            :args $ [] 'Enum
+            :args $ [] 'T
+            :generics $ [] 'T
           :tests $ [] $ %{} 'TestEntry (:name |classifies-reel-control-ops)
             :code $ quote $ do
               assert= true $ reel-control-op? $ :: :reel/toggle
@@ -590,14 +604,16 @@
                       if stopped?
                         if
                           < (count records) 2
-                          , nil $ if
-                            < pointer $ count records
-                            let
-                                next-pointer $ inc pointer
-                                next-record $ &list:nth records pointer
-                              let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
-                                :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
-                            {} (:store base) (:pointer 0)
+                          , nil $ &let
+                            step-pointer $ decode-map-as pointer 'Number
+                            if
+                              < step-pointer $ count records
+                              let
+                                  next-pointer $ inc step-pointer
+                                  next-record $ &list:nth records step-pointer
+                                let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
+                                  :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
+                              {} (:store base) (:pointer 0)
                         , nil
                     (:reel/merge)
                       if stopped?
@@ -605,7 +621,7 @@
                           let
                               new-store $ play-records base records updater pointer
                             {} (:store new-store) (:base new-store) (:pointer 0)
-                              :records $ slice-records-from records pointer
+                              :records $ slice-records-from records $ decode-map-as pointer 'Number
                               :merged? true
                         {}
                           :base $ reel.schema/read-field reel :store
@@ -614,7 +630,7 @@
                           :merged? true
                     (:reel/reset)
                       if stopped?
-                        {} $ :records $ slice-records-until records pointer
+                        {} $ :records $ slice-records-until records (decode-map-as pointer 'Number)
                         {}
                           :store $ reel.schema/read-field reel :base
                           :pointer nil
