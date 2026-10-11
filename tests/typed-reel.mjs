@@ -63,7 +63,7 @@ async function replayAttachedTests() {
     const preview = JSON.parse(invoke(snapshot, "edit", "transaction", "--code", code, "--dry-run", "--format", "json"));
     invoke(snapshot, "edit", "transaction", "--code", code, "--expect-revision", preview.original_revision, "--format", "edn");
     const roots = ["--init-fn", entry, "--reload-fn", entry];
-    invoke(snapshot, ...roots);
+    invoke(snapshot, "--entry", "test", ...roots);
     const output = join(directory, "js");
     invoke(snapshot, ...roots, "--emit-path", output, "js");
     // Generated core modules register traits globally; isolate this second graph

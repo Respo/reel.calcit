@@ -2,8 +2,12 @@
 {}
   :about "|Machine-generated snapshot. Do not edit directly — changes will be overwritten. Use `calcit query` to inspect and `calcit edit`/`calcit tree` to modify. Run `calcit docs agents --contract` before mutations; use `--full` for first orientation or changed contract digest. Manual edits must follow format and schema conventions, then run `calcit edit format`."
   :package |reel
-  :entries $ {} $ :default
-    {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :native) (:reload-fn 'reel.app.main/reload!) (:target :browser)
+  :entries $ {}
+    :default $ {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :js) (:reload-fn 'reel.app.main/reload!) (:target :browser)
+      :feature-policy $ {}
+      :modules $ [] |respo.calcit/ |respo-ui.calcit/
+      :type-slots $ {}
+    :test $ {} (:description "|Pure typed Reel native regression") (:init-fn 'reel.test-typed/main!) (:mode :native) (:reload-fn 'reel.test-typed/main!) (:target :native)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/ |respo-ui.calcit/
       :type-slots $ {}
