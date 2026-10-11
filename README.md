@@ -2,20 +2,20 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。设计源自
 [actions-in-recorder](https://github.com/mvc-works/actions-in-recorder)。
-目前仍是 alpha 模块，推荐新应用使用 typed API；旧 Map API 保留，避免在
+推荐新应用使用 typed API；旧 Map API 保留，避免在
 升级时同时改写应用业务状态。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
 ## 0.29 兼容组合
 
-本分支的待发布模块为 `0.6.33-alpha.3`，使用以下已经发布的精确依赖：
+本分支的稳定版候选模块为 `0.6.33`，依赖版本如下；发布状态以对应 Release 为准：
 
 | 组件 | 版本 |
 | --- | --- |
-| Calcit CLI / `@calcit/procs` | `0.29.0-alpha.6` |
-| Respo | `0.16.114-alpha.7` |
-| Respo UI | `0.7.32-alpha.4` |
-| js-ffi | `0.2.1-alpha.13` |
-| Router（传递依赖） | `0.8.28-alpha.5` |
+| Calcit CLI / `@calcit/procs` | `0.29.0` |
+| Respo | `0.16.114` |
+| Respo UI | `0.7.32` |
+| js-ffi | `0.2.1` |
+| Router（传递依赖） | `0.8.28` |
 
 是否已正式发布，请以 [Releases](https://github.com/Respo/reel.calcit/releases)
 中的同名 tag 为准；源码版本号不等于发版证据。不要混用旧 CLI 与新 JS
@@ -92,25 +92,36 @@ calcit edit format
 git diff --exit-code -- calcit.cirru
 calcit --check-only
 calcit test --require-match
-calcit analyze check-public --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
-calcit analyze check-types --summary-only --format json
+calcit --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
+calcit analyze weak-types --only coverage --summary-only --format json
 calcit analyze weak-types --only schema-dynamic,code-dynamic --intent unresolved --summary-only --format json
-calcit analyze deprecated --summary-only --format json
-calcit --init-fn reel.test-typed/main! --reload-fn reel.test-typed/main!
+calcit analyze weak-types --only deprecated-call --summary-only --format json
+calcit --entry test --check-only
+calcit --entry test
 calcit --init-fn reel.test-typed/main! --reload-fn reel.comp.reel/comp-typed-reel --emit-path test-js-out js
 yarn node tests/typed-reel.mjs
 calcit js
 yarn vite build
 ```
 
-check-types/deprecated 在当前固定 CLI 中只支持 human/JSON，上述显式 JSON
-用于现有 CI；普通查询默认优先 Cirru EDN。不要只 emit 测试入口而漏掉
+上述显式 JSON 用于现有 CI；普通查询默认优先 Cirru EDN。
+默认入口明确使用 JS/browser，test 入口保留原纯逻辑的 native 执行。
+不要只 emit 测试入口而漏掉
 renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 
 附加断言优先定义在 Calcit `:tests`。现有 `tests/typed-reel.mjs` 在独立
 临时 Snapshot 中原样回放全部附加断言，并通过 native 与真正生成的 JS
 执行；独立进程隔离第二套 core 的 trait 注册，原 Snapshot 保持不变。
 它也保留 pointer、控制消息、adapter 和 SSR 的原有 JS 边界测试。
+
+稳定版候选已通过严格 Caps 图、CLI/runtime 配对、不可变安装、224 项严格检查
+（含可达依赖）、36 项完整公开定义检查、16 项原附带测试和原 native/JS typed suite。
+浏览器已确认输入记录、回溯、单步、Run、删除选中记录与 Reset，控制台无错误；
+开发模式仍有原来的缺少 mode 提示。旧开放 API 仍有 47 处未解决类型债务，不宣称全部类型闭合。
+
+额外 `fix` 预览仍受 [Calcit #1970](https://github.com/calcit-lang/calcit/issues/1970)
+影响：暂存序列化缩短合法的 `reel.typed/Record` 后误判旧类型名，失败但不写源码。
+这项工具检查未通过；不为绕过它重命名公共类型，也不降低原 CI。
 
 ## COS/CDN 配置
 
