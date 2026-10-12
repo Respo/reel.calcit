@@ -7,15 +7,15 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.29 兼容组合
 
-本分支的稳定版候选模块为 `0.6.34`，依赖版本如下；发布状态以对应 Release 为准：
+本分支的稳定版候选模块为 `0.6.35`，依赖版本如下；发布状态以对应 Release 为准：
 
 | 组件 | 版本 |
 | --- | --- |
-| Calcit CLI / `@calcit/procs` | `0.29.0` |
-| Respo | `0.16.114` |
-| Respo UI | `0.7.33` |
+| Calcit CLI / `@calcit/procs` | `0.29.1` |
+| Respo | `0.16.116` |
+| Respo UI | `0.7.35` |
 | js-ffi | `0.2.1` |
-| Router（传递依赖） | `0.8.28` |
+| Router（传递依赖） | `0.8.30` |
 
 是否已正式发布，请以 [Releases](https://github.com/Respo/reel.calcit/releases)
 中的同名 tag 为准；源码版本号不等于发版证据。不要混用旧 CLI 与新 JS
