@@ -10,6 +10,7 @@ import { view_data } from "../test-js-out/reel.typed-compat.mjs";
 import { map_indexed_dynamic } from "../test-js-out/reel.util.mjs";
 import { comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
 import { make_string } from "../test-js-out/respo.render.html.mjs";
+import { reel_updater } from "../test-js-out/reel.core.mjs";
 
 // Replay each canonical attached test in its original namespace, without
 // maintaining a second assertion set or editing the consumer's Snapshot.
@@ -83,6 +84,31 @@ async function replayAttachedTests() {
 
 await replayAttachedTests();
 main_$x_();
+// The legacy dispatcher obtains an ID and host clock; exercise it in its JS host.
+const legacyReel = parse_cirru_edn("{} (:base |base) (:store |base/5/7) (:records $ [] ([] 5 |first 10) ([] 7 |second 20)) (:pointer 2) (:stopped? true) (:display? false) (:merged? false)");
+let legacyUpdates = 0;
+const legacyUpdater = (store, op) => { legacyUpdates += 1; return `${store}/${op}`; };
+const legacyBefore = to_js_data(legacyReel);
+const removedLegacy = to_js_data(reel_updater(legacyUpdater, legacyReel, parse_cirru_edn(":: :reel/remove 2")));
+assert.deepEqual(removedLegacy.records, [[5, "first", 10]]);
+assert.equal(removedLegacy.pointer, 1);
+assert.equal(removedLegacy.store, "base/5");
+assert.equal(legacyUpdates, 1);
+assert.deepEqual(to_js_data(legacyReel), legacyBefore);
+legacyUpdates = 0;
+assert.deepEqual(to_js_data(reel_updater(legacyUpdater, legacyReel, parse_cirru_edn(":: :reel/remove 0"))), legacyBefore);
+assert.equal(legacyUpdates, 0);
+assert.throws(() => reel_updater(legacyUpdater, legacyReel, parse_cirru_edn(":: :reel/remove :invalid")));
+assert.equal(legacyUpdates, 0);
+for (const source of [
+  "{} (:base |base) (:store |base) (:records $ []) (:pointer nil) (:stopped? false)",
+  "{} (:base |base) (:store |base) (:records $ [] ([] 5 |first 10)) (:pointer 0) (:stopped? true)",
+]) {
+  const unchanged = parse_cirru_edn(source);
+  assert.deepEqual(to_js_data(reel_updater(legacyUpdater, unchanged, parse_cirru_edn(":: :reel/step"))), to_js_data(unchanged));
+}
+assert.equal(legacyUpdates, 0);
+console.log("legacy Reel JS: checked removal, zero-index/no-op controls, failed input ordering and immutable records passed");
 const updater = (store, op) => store + op;
 const initial = new_reel("base");
 const live = record_op(updater, initial, 5, "id", 10);

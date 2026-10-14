@@ -73,6 +73,10 @@ calcit query def reel.typed/State --format edn
 Record decoder，也不会将错误数据补成空列表。
 `read-field` 保留 Struct 与任意键 Map 的读取；非 Struct 分支在读取前校验 Map。
 缺失字段仍返回 nil，nil/false/0 与混合键不被替换成默认值；其他容器明确拒绝。
+旧历史重放在 pointer 非零、真正读取时校验 records 与单条 record 为 List，
+pointer 为零仍直接返回 store，不读取 records 或调用 updater。删除操作的索引
+在使用前校验 Number；零索引仍保留原状态。控制分支返回 nil 时显式保持原 Reel，
+其他 delta 校验为 Tag-keyed Map 后再合并，不改变旧 no-op 行为。
 
 watch 使用 `add-watch!` / `remove-watch!`。回调接收**新值和旧值**两个
 参数，应标记真实 State 类型与 Unit 返回值；可参考
@@ -123,10 +127,10 @@ renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 开发模式仍有原来的缺少 mode 提示。旧开放 API 仍有 47 处未解决类型债务，不宣称全部类型闭合。
 
 当前 `0.6.36` 候选使用正式 0.29.3：严格依赖、工具链配对与默认入口检查通过。
-新增四项 `read-field :tests` 通过，覆盖真实 Map/Struct 读取与非法容器。
-完整附带测试目前 19/20；原 legacy refresh 仍缺单条 record 的 List 证据，
-公开定义检查还发现 remove index 的 Number 证明缺口。完整 strict 另外报告
-demo cursor、renderer、typed 初值与宿主键盘字段等遗留边界，尚未通过。
+完整附带测试 native 与生成 JS 各 23/23，公开定义 36/36、原 typed suite、
+SSR 和页面构建通过。新增七项定义测试覆盖 Map/Struct、真实 record List、
+零 pointer 和错误输入不调用 updater；原 JS 宿主回归另外覆盖旧删除与 no-op 控制。
+完整 strict 另外报告 demo cursor、renderer、typed 初值与宿主键盘字段等遗留边界，尚未通过。
 这些是剩余迁移事项，不放宽类型或把局部检查当作完整验收。
 
 ## COS/CDN 配置

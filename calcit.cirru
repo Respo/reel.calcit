@@ -556,16 +556,52 @@
         'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn play-records (store records updater pointer)
             if (number? pointer)
-              if (&= 0 pointer) store $ let[] (op op-id op-time)
-                or (&list:first records) ([])
-                &let
+              if (&= 0 pointer) store $ let
+                  record-list $ reel.schema/checked-records records
+                  record $ decode-map-as
+                    or (&list:first record-list) ([])
+                    , 'List
+                let[] (op op-id op-time) record $ &let
                   next-store $ updater store op op-id op-time
-                  recur next-store (rest records) updater $ dec pointer
+                  recur next-store (rest record-list) updater $ dec pointer
               raise "|play-records expected a Number pointer"
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
             :features $ #{} :js-ffi
+          :tests $ []
+            %{} 'TestEntry
+              :name |zero-pointer-does-not-consume-records-or-call-updater
+              :code $ quote $ let
+                  updater $ fn (store op id time) (raise |Unexpected-updater-call)
+                assert= |base $ play-records |base nil updater 0
+              :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry
+              :name |legacy-tuples-replay-in-order-and-do-not-mutate-input
+              :code $ quote $ let
+                  records $ [] ([] 5 |a 10) ([] 7 |b 20)
+                  updater $ fn (store op id time) (str store |/ op |: id |@ time)
+                assert= |base/5:a@10/7:b@20 $ play-records |base records updater 2
+                assert=
+                  [] ([] 5 |a 10) ([] 7 |b 20)
+                  , records
+              :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry (:name |non-list-record-container-or-record-is-rejected)
+              :code $ quote $ let
+                  calls $ ref 0
+                  updater $ fn (store op id time)
+                    reset! calls $ inc @calls
+                    , store
+                assert= :rejected $ try
+                  do (play-records |base nil updater 1) :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do
+                    play-records |base ([] 42) updater 1
+                    , :accepted
+                  fn (error) :rejected
+                assert= 0 @calls
+              :tags $ #{} :legacy-boundary :unit
         'reel-control-op? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reel-control-op? (op)
             if (enum? op)
@@ -588,66 +624,70 @@
                 op-id $ generate-id!
                 op-time $ host/now-ms
               if (reel-control-op? op)
-                merge reel $ let
-                    pointer $ &map:get reel :pointer
-                    records $ reel.schema/checked-records $ &map:get reel :records
-                    base $ &map:get reel :base
-                    stopped? $ &map:get reel :stopped?
-                  match op
-                    (:reel/toggle)
-                      {} $ :display? $ not (reel.schema/read-field reel :display?)
-                    (:reel/recall idx)
-                      let
-                          new-store $ play-records base records updater idx
-                        {} (:pointer idx) (:stopped? true) (:store new-store)
-                    (:reel/run)
-                      let
-                          new-store $ play-records base records updater $ count records
-                        {} (:store new-store) (:stopped? false) (:pointer nil)
-                    (:reel/step)
-                      if stopped?
-                        if
-                          < (count records) 2
-                          , nil $ &let
-                            step-pointer $ decode-map-as pointer 'Number
-                            if
-                              < step-pointer $ count records
-                              let
-                                  next-pointer $ inc step-pointer
-                                  next-record $ &list:nth records step-pointer
-                                let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
-                                  :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
-                              {} (:store base) (:pointer 0)
-                        , nil
-                    (:reel/merge)
-                      if stopped?
-                        if (&= 0 pointer) ({})
+                let
+                    changes $ let
+                        pointer $ &map:get reel :pointer
+                        records $ reel.schema/checked-records $ &map:get reel :records
+                        base $ &map:get reel :base
+                        stopped? $ &map:get reel :stopped?
+                      match op
+                        (:reel/toggle)
+                          {} $ :display? $ not (reel.schema/read-field reel :display?)
+                        (:reel/recall idx)
                           let
-                              new-store $ play-records base records updater pointer
-                            {} (:store new-store) (:base new-store) (:pointer 0)
-                              :records $ slice-records-from records $ decode-map-as pointer 'Number
+                              new-store $ play-records base records updater idx
+                            {} (:pointer idx) (:stopped? true) (:store new-store)
+                        (:reel/run)
+                          let
+                              new-store $ play-records base records updater $ count records
+                            {} (:store new-store) (:stopped? false) (:pointer nil)
+                        (:reel/step)
+                          if stopped?
+                            if
+                              < (count records) 2
+                              , nil $ &let
+                                step-pointer $ decode-map-as pointer 'Number
+                                if
+                                  < step-pointer $ count records
+                                  let
+                                      next-pointer $ inc step-pointer
+                                      next-record $ &list:nth records step-pointer
+                                    let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
+                                      :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
+                                  {} (:store base) (:pointer 0)
+                            , nil
+                        (:reel/merge)
+                          if stopped?
+                            if (&= 0 pointer) ({})
+                              let
+                                  new-store $ play-records base records updater pointer
+                                {} (:store new-store) (:base new-store) (:pointer 0)
+                                  :records $ slice-records-from records $ decode-map-as pointer 'Number
+                                  :merged? true
+                            {}
+                              :base $ reel.schema/read-field reel :store
+                              :pointer nil
+                              :records $ []
                               :merged? true
-                        {}
-                          :base $ reel.schema/read-field reel :store
-                          :pointer nil
-                          :records $ []
-                          :merged? true
-                    (:reel/reset)
-                      if stopped?
-                        {} $ :records $ slice-records-until records (decode-map-as pointer 'Number)
-                        {}
-                          :store $ reel.schema/read-field reel :base
-                          :pointer nil
-                          :records $ []
-                          :stopped? false
-                    (:reel/remove idx)
-                      if (&= 0 idx) reel $ -> reel (reel.util/update-map-dynamic :pointer dec)
-                        reel.util/update-map-dynamic :records $ fn (records)
-                          remove-record-at (reel.schema/checked-records records) idx
-                        assoc :store $ play-records base records updater $ dec idx
-                    _ $ do
-                      host/console-warn! $ str "|Unknown reel/ op:" op
-                      , nil
+                        (:reel/reset)
+                          if stopped?
+                            {} $ :records $ slice-records-until records (decode-map-as pointer 'Number)
+                            {}
+                              :store $ reel.schema/read-field reel :base
+                              :pointer nil
+                              :records $ []
+                              :stopped? false
+                        (:reel/remove idx)
+                          if (&= 0 idx) reel $ let
+                              remove-index $ decode-map-as idx 'Number
+                            -> reel (reel.util/update-map-dynamic :pointer dec)
+                              reel.util/update-map-dynamic :records $ fn (records)
+                                remove-record-at (reel.schema/checked-records records) remove-index
+                              assoc :store $ play-records base records updater $ dec remove-index
+                        _ $ do
+                          host/console-warn! $ str "|Unknown reel/ op:" op
+                          , nil
+                  if (nil? changes) reel $ merge reel $ decode-map-as changes (:: 'Map 'Tag 'Dynamic)
                 let
                     data-pack $ [] op op-id op-time
                   if (&map:get reel :stopped?)
