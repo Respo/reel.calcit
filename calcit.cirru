@@ -797,10 +797,59 @@
           :code $ quote $ defn read-field (value field)
             if (struct? value)
               &map:get (&struct:to-map value) field
-              &map:get value field
+              &map:get (decode-map-as value 'Map) field
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Tag
+          :tests $ []
+            %{} 'TestEntry (:name |legacy-map-keeps-mixed-key-boundary)
+              :code $ quote $ let
+                  source $ {} (:value "|中文🐈") (|extra 1) (42 false)
+                assert= "|中文🐈" $ read-field source :value
+                assert= nil $ read-field source :missing
+                assert= 3 $ count source
+              :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry (:name |nil-false-and-zero-are-not-defaulted)
+              :code $ quote $ let
+                  source $ {} (:nil-value nil) (:false-value false) (:zero-value 0)
+                assert= nil $ read-field source :nil-value
+                assert= false $ read-field source :false-value
+                assert= 0 $ read-field source :zero-value
+              :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry
+              :name |nominal-record-fields-and-missing-key-remain-compatible
+              :code $ quote $ let
+                  record $ reel.typed/Record :op 42 :id "|记录🐈" :time 7
+                assert= 42 $ read-field record :op
+                assert= "|记录🐈" $ read-field record :id
+                assert= 7 $ read-field record :time
+                assert= nil $ read-field record :missing
+              :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry (:name |non-struct-non-map-input-is-rejected)
+              :code $ quote $ do
+                assert= :rejected $ try
+                  do (read-field nil :value) :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do (read-field 42 :value) :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do (read-field false :value) :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do (read-field |text :value) :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do
+                    read-field ([]) :value
+                    , :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do
+                    read-field (:: :invalid) :value
+                    , :accepted
+                  fn (error) :rejected
+              :tags $ #{} :legacy-boundary :unit
         'reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def reel
             {}
