@@ -7,19 +7,20 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.29 兼容组合
 
-本分支的稳定版候选模块为 `0.6.35`，依赖版本如下；发布状态以对应 Release 为准：
+本分支的稳定版候选模块为 `0.6.36`，依赖版本如下；发布状态以对应 Release 为准：
 
 | 组件 | 版本 |
 | --- | --- |
-| Calcit CLI / `@calcit/procs` | `0.29.1` |
-| Respo | `0.16.116` |
-| Respo UI | `0.7.35` |
-| js-ffi | `0.2.1` |
-| Router（传递依赖） | `0.8.30` |
+| Calcit CLI / `@calcit/procs` | `0.29.3` |
+| Respo | `0.16.120` |
+| Respo UI | `0.7.39` |
+| js-ffi | `0.2.3` |
+| Router（传递依赖） | `0.8.34` |
 
 是否已正式发布，请以 [Releases](https://github.com/Respo/reel.calcit/releases)
 中的同名 tag 为准；源码版本号不等于发版证据。不要混用旧 CLI 与新 JS
 runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版本检查。
+本仓库 Yarn 新包安装隔离期按既有授权统一为一小时，不设置逐版本豁免。
 
 ## 推荐的 typed API
 
@@ -70,6 +71,12 @@ calcit query def reel.typed/State --format edn
 深层校验。旧 Map updater/refresh 的 records 消费边界用
 `reel.schema/checked-records` 校验外层 List，成员仍是 Dynamic；它不是
 Record decoder，也不会将错误数据补成空列表。
+`read-field` 保留 Struct 与任意键 Map 的读取；非 Struct 分支在读取前校验 Map。
+缺失字段仍返回 nil，nil/false/0 与混合键不被替换成默认值；其他容器明确拒绝。
+旧历史重放在 pointer 非零、真正读取时校验 records 与单条 record 为 List，
+pointer 为零仍直接返回 store，不读取 records 或调用 updater。删除操作的索引
+在使用前校验 Number；零索引仍保留原状态。控制分支返回 nil 时显式保持原 Reel，
+其他 delta 校验为 Tag-keyed Map 后再合并，不改变旧 no-op 行为。
 
 watch 使用 `add-watch!` / `remove-watch!`。回调接收**新值和旧值**两个
 参数，应标记真实 State 类型与 Unit 返回值；可参考
@@ -114,14 +121,17 @@ renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 执行；独立进程隔离第二套 core 的 trait 注册，原 Snapshot 保持不变。
 它也保留 pointer、控制消息、adapter 和 SSR 的原有 JS 边界测试。
 
-稳定版候选已通过严格 Caps 图、CLI/runtime 配对、不可变安装、224 项严格检查
+旧 `0.6.35` 验收记录：通过严格 Caps 图、CLI/runtime 配对、不可变安装、224 项严格检查
 （含可达依赖）、36 项完整公开定义检查、16 项原附带测试和原 native/JS typed suite。
 浏览器已确认输入记录、回溯、单步、Run、删除选中记录与 Reset，控制台无错误；
 开发模式仍有原来的缺少 mode 提示。旧开放 API 仍有 47 处未解决类型债务，不宣称全部类型闭合。
 
-额外 `fix` 预览仍受 [Calcit #1970](https://github.com/calcit-lang/calcit/issues/1970)
-影响：暂存序列化缩短合法的 `reel.typed/Record` 后误判旧类型名，失败但不写源码。
-这项工具检查未通过；不为绕过它重命名公共类型，也不降低原 CI。
+当前 `0.6.36` 候选使用正式 0.29.3：严格依赖、工具链配对与默认入口检查通过。
+完整附带测试 native 与生成 JS 各 23/23，公开定义 36/36、原 typed suite、
+SSR 和页面构建通过。新增七项定义测试覆盖 Map/Struct、真实 record List、
+零 pointer 和错误输入不调用 updater；原 JS 宿主回归另外覆盖旧删除与 no-op 控制。
+完整 strict 另外报告 demo cursor、renderer、typed 初值与宿主键盘字段等遗留边界，尚未通过。
+这些是剩余迁移事项，不放宽类型或把局部检查当作完整验收。
 
 ## COS/CDN 配置
 
