@@ -299,7 +299,9 @@
                   :color :white
                 :on-click $ on-recall idx
               ; <> $ to-lispy-string $ first record
-              comp-action $ &list:first record
+              comp-action $ .unwrap-or
+                first $ decode-map-as record 'List
+                , nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] 'Dynamic 'Bool 'Number
@@ -314,8 +316,15 @@
                     hint-fn $ {}
                       :args $ [] 'Number 'Dynamic
                       :return $ :: 'List 'Dynamic
-                    [] (&list:last record)
-                      memo-comp-by (&list:last record) comp-record-item record (&= pointer idx) idx
+                    []
+                      .unwrap-or
+                        last $ decode-map-as record 'List
+                        , nil
+                      memo-comp-by
+                        .unwrap-or
+                          last $ decode-map-as record 'List
+                          , nil
+                        , comp-record-item record (&= pointer idx) idx
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'List 'Dynamic) 'Dynamic
@@ -559,7 +568,9 @@
               if (&= 0 pointer) store $ let
                   record-list $ reel.schema/checked-records records
                   record $ decode-map-as
-                    or (&list:first record-list) ([])
+                    or
+                      .unwrap-or (first record-list) nil
+                      []
                     , 'List
                 let[] (op op-id op-time) record $ &let
                   next-store $ updater store op op-id op-time
@@ -626,10 +637,10 @@
               if (reel-control-op? op)
                 let
                     changes $ let
-                        pointer $ &map:get reel :pointer
-                        records $ reel.schema/checked-records $ &map:get reel :records
-                        base $ &map:get reel :base
-                        stopped? $ &map:get reel :stopped?
+                        pointer $ .unwrap-or (get reel :pointer) nil
+                        records $ reel.schema/checked-records $ .unwrap-or (get reel :records) nil
+                        base $ .unwrap-or (get reel :base) nil
+                        stopped? $ .unwrap-or (get reel :stopped?) nil
                       match op
                         (:reel/toggle)
                           {} $ :display? $ not (reel.schema/read-field reel :display?)
@@ -690,7 +701,8 @@
                   if (nil? changes) reel $ merge reel $ decode-map-as changes (:: 'Map 'Tag 'Dynamic)
                 let
                     data-pack $ [] op op-id op-time
-                  if (&map:get reel :stopped?)
+                  if
+                    .unwrap-or (get reel :stopped?) nil
                     -> reel $ reel.util/update-map-dynamic :records $ fn (records)
                       conj (reel.schema/checked-records records) data-pack
                     -> reel
@@ -836,8 +848,12 @@
         'read-field $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn read-field (value field)
             if (struct? value)
-              &map:get (&struct:to-map value) field
-              &map:get (decode-map-as value 'Map) field
+              .unwrap-or
+                get (&struct:to-map value) field
+                , nil
+              .unwrap-or
+                get (decode-map-as value 'Map) field
+                , nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Tag
@@ -1564,10 +1580,57 @@
             :tags $ #{} :unit
         'update-map-dynamic $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn update-map-dynamic (m k f)
-            &map:assoc m k $ f $ &map:get m k
+            &map:assoc m k $ f $ .unwrap-or
+              get (decode-map-as m 'Map) k
+              , nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |absence-migration-map-update-boundary)
+            :code $ quote $ let
+                calls $ ref 0
+                record $ fn (value)
+                  reset! calls $ inc @calls
+                  , value
+                source $ {} (:nil-value nil) (:false-value false) (:zero-value 0) (:empty-value |)
+                absent $ update-map-dynamic source :missing record
+              assert= nil $ .unwrap $ get (decode-map-as absent 'Map) :missing
+              assert= source $ update-map-dynamic source :nil-value record
+              assert= source $ update-map-dynamic source :false-value record
+              assert= source $ update-map-dynamic source :zero-value record
+              assert= source $ update-map-dynamic source :empty-value record
+              assert= 5 @calls
+              assert= 4 $ count source
+              assert= :rejected $ try
+                do (update-map-dynamic |wrong :value record) :accepted
+                fn (error) :rejected
+              assert= :rejected $ try
+                do
+                  update-map-dynamic ([]) 0 record
+                  , :accepted
+                fn (error) :rejected
+              assert= :rejected $ try
+                do
+                  update-map-dynamic (reel.typed/Record :op 1 :id |record :time 0) :op record
+                  , :accepted
+                fn (error) :rejected
+              assert= 5 @calls
+              assert= :propagated $ try
+                do
+                  update-map-dynamic source :zero-value $ fn (value) (raise |callback-failure)
+                  , :accepted
+                fn (error) :propagated
+              assert=
+                {} (|key false) (42 0)
+                update-map-dynamic
+                  {} (|key false) (42 0)
+                  , |key $ fn (value) value
+              assert=
+                {} (|key false) (42 0)
+                update-map-dynamic
+                  {} (|key false) (42 0)
+                  , 42 $ fn (value) value
+            :tags $ #{} :migration :unit
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.util
           :require $ js-ffi.browser :as browser

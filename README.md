@@ -22,6 +22,19 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版本检查。
 本仓库 Yarn 新包安装隔离期按既有授权统一为一小时，不设置逐版本豁免。
 
+### 0.30.1 Option 迁移候选
+
+旧缺失值原语的直接调用已迁到公开 `get` / `first` / `last`，再显式恢复
+旧 nil 返回。Map 中存在的 nil、缺失键、false、0 和空字符串继续按原行为
+传递；没有把 nil 判断换成 Option 缺失判断。开放 record 在读取首尾前仍须
+校验为 List，`update-map-dynamic` 仍只接受 Map，不因公开 API 支持其他容器
+而扩大旧边界。callback 的求值次数和错误传播保持不变。
+
+当前依赖表仍是已发布的 0.29.3 配对，并非 0.30.1 验收结果。待新的正式
+CLI / runtime 配对和上游模块发布后，再更新精确版本与依赖锁，执行下方
+全部门禁和真实浏览器回放，才合并并发布本模块。不要将本地候选或新 tag
+已创建当作配对发布完成。
+
 ## 推荐的 typed API
 
 `reel.typed` 提供名义类型 `State<Op,Store>`、`Record<Op>` 和控制消息类型
@@ -132,6 +145,14 @@ SSR 和页面构建通过。新增七项定义测试覆盖 Map/Struct、真实 r
 零 pointer 和错误输入不调用 updater；原 JS 宿主回归另外覆盖旧删除与 no-op 控制。
 完整 strict 另外报告 demo cursor、renderer、typed 初值与宿主键盘字段等遗留边界，尚未通过。
 这些是剩余迁移事项，不放宽类型或把局部检查当作完整验收。
+
+Option 迁移候选在同一旧正式配对下通过全部 24 项附带测试的 native / JS
+回放（保留原 23 项，新增一项 Map 更新边界测试）、36 项公开定义检查、
+全部 70 项非空项目定义检查、原 typed suite、SSR 和页面构建。浏览器验证
+输入历史回溯、Step、Run、删除选中记录及 Reset；只观察到原页面 favicon
+请求 404，没有这些操作引发的 JS 异常。完整 `fix --workflow strict` 仍未
+通过：demo cursor、renderer、旧 updater、typed 空初值和键盘宿主合同还需
+处理；普通定义检查不等价于这条更强的证明门禁。新正式配对验收仍待完成。
 
 ## COS/CDN 配置
 
