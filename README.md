@@ -40,7 +40,8 @@ runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版�
 而扩大旧边界。callback 的求值次数和错误传播保持不变。
 
 旧 Map 更新 helper 在单一真实 Map 边界解码后再读取和写入，callback
-仍只求值一次。旧 updater 的开放结果在返回处检查声明的 Tag-keyed Map；
+仍只求值一次。旧 updater 未变化时保留原引用，仅对变化结果在返回处检查
+声明的 Tag-keyed Map；
 renderer 在解构单条历史前检查 List，时间及 id 显式转换为展示文本。
 demo 复用 Respo 自己的 DOM 查询类型，render action 在派发前检查 Enum；
 键盘宿主返回用真实 Number 解码替代未经检查的数值强转。
@@ -166,6 +167,7 @@ SSR 和页面构建通过。新增七项定义测试覆盖 Map/Struct、真实 r
 本轮真实浏览器验证 Unicode 输入、第一条历史回溯、Step 和 Run，未发现
 JS 错误；原 mode 未配置提示保留。本轮未执行浏览器 Remove/Reset，相关
 语义由原 native/JS suite 覆盖，不把旧浏览器记录冒充本轮验收。
+在原 JS suite 的 no-op step 分支追加身份断言，防止返回值解码重建原 Map。
 未解决的 schema Dynamic 仍为 47 处、涉及 28 个定义，不宣称全模块类型闭合。
 干净 CI、最新 review 与精确合并 main 的验收仍需独立通过，再发布正式 tag。
 

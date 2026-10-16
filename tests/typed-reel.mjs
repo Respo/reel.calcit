@@ -105,7 +105,9 @@ for (const source of [
   "{} (:base |base) (:store |base) (:records $ [] ([] 5 |first 10)) (:pointer 0) (:stopped? true)",
 ]) {
   const unchanged = parse_cirru_edn(source);
-  assert.deepEqual(to_js_data(reel_updater(legacyUpdater, unchanged, parse_cirru_edn(":: :reel/step"))), to_js_data(unchanged));
+  const noStep = reel_updater(legacyUpdater, unchanged, parse_cirru_edn(":: :reel/step"));
+  assert.equal(noStep, unchanged, "no-op step must preserve the original Map identity");
+  assert.deepEqual(to_js_data(noStep), to_js_data(unchanged));
 }
 assert.equal(legacyUpdates, 0);
 console.log("legacy Reel JS: checked removal, zero-index/no-op controls, failed input ordering and immutable records passed");
