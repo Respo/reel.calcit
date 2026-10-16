@@ -204,7 +204,8 @@
             :args $ []
             :features $ #{} :js-ffi
         'mount-target $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def mount-target (get-mount-target)
+          :code $ quote $ def mount-target
+            .unwrap $ dom/query-selector |.app
           :examples $ []
           :schema $ :: 'Dynamic
         'reload! $ %{} 'CodeEntry (:doc |)
@@ -234,7 +235,12 @@
           :code $ quote $ defn render-app! ()
             render! mount-target
               comp-container $ assert-type @*reel $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
-              , dispatch!
+              fn (op)
+                hint-fn $ {}
+                  :args $ [] 'Dynamic
+                  :return 'Unit
+                if (enum? op) (dispatch! op) (raise "|Expected an Enum render action")
+                , &unit
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ []
@@ -252,12 +258,16 @@
             reel.typed :as typed
             js-ffi.shared :as host
             js-ffi.browser :as browser
+            respo.ffi.browser :as dom
     'reel.app.updater $ %{} 'FileEntry
       :defs $ {} $ 'updater
         %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
-              (:states cursor s) (update-states store cursor s)
+              (:states cursor s)
+                decode-map-as
+                  update-states store (decode-map-as cursor 'List) s
+                  :: 'Map 'Dynamic 'Dynamic
               _ $ do
                 host/console-warn! $ str "|Unknown op" op
                 , store
@@ -454,9 +464,7 @@
                 div
                   {} $ :class-name $ str-spaced css/expand css/row
                   comp-records
-                    decode-map-as
-                      decode-map-as (reel.schema/read-field reel :records) (:: 'List 'Dynamic)
-                      :: 'List 'Dynamic
+                    decode-map-as (reel.schema/read-field reel :records) (:: 'List 'Dynamic)
                     reel.schema/read-field reel :pointer
                   div
                     {}
@@ -464,7 +472,7 @@
                       :style $ {} (:overflow :auto) (:padding "|0 8px")
                         :border-left $ str "|1px solid " $ hsl 0 0 94
                     let
-                        records $ reel.schema/read-field reel :records
+                        records $ decode-map-as (reel.schema/read-field reel :records) 'List
                         pointer $ reel.schema/read-field reel :pointer
                         record $ if (reel.schema/read-field reel :stopped?)
                           &let
@@ -474,7 +482,8 @@
                               Option :none
                           last records
                       if (option:some? record)
-                        let[] (action op-id op-time) (reel.util/unwrap-option record)
+                        let[] (action op-id op-time)
+                          decode-map-as (reel.util/unwrap-option record) 'List
                           div
                             {}
                               :class-name $ str-spaced css/font-code css/column
@@ -483,7 +492,10 @@
                               {} (:class-name css/row-parted)
                                 :style $ {} $ :border-bottom
                                   str "|1px solid " $ hsl 0 0 94
-                              div ({}) (<> op-time) (=< 8 nil) (<> op-id)
+                              div ({})
+                                <> $ str op-time
+                                =< 8 nil
+                                <> $ str op-id
                               if
                                 and (non-nil? pointer)
                                   not $ &= pointer 0
@@ -631,84 +643,87 @@
         'reel-updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reel-updater (updater reel op)
             ; println |Name: $ turn-string op
-            let
-                op-id $ generate-id!
-                op-time $ host/now-ms
-              if (reel-control-op? op)
-                let
-                    changes $ let
-                        pointer $ .unwrap-or (get reel :pointer) nil
-                        records $ reel.schema/checked-records $ .unwrap-or (get reel :records) nil
-                        base $ .unwrap-or (get reel :base) nil
-                        stopped? $ .unwrap-or (get reel :stopped?) nil
-                      match op
-                        (:reel/toggle)
-                          {} $ :display? $ not (reel.schema/read-field reel :display?)
-                        (:reel/recall idx)
-                          let
-                              new-store $ play-records base records updater idx
-                            {} (:pointer idx) (:stopped? true) (:store new-store)
-                        (:reel/run)
-                          let
-                              new-store $ play-records base records updater $ count records
-                            {} (:store new-store) (:stopped? false) (:pointer nil)
-                        (:reel/step)
-                          if stopped?
-                            if
-                              < (count records) 2
-                              , nil $ &let
-                                step-pointer $ decode-map-as pointer 'Number
-                                if
-                                  < step-pointer $ count records
-                                  let
-                                      next-pointer $ inc step-pointer
-                                      next-record $ &list:nth records step-pointer
-                                    let[] (old-op old-id old-time) next-record $ {} (:pointer next-pointer)
-                                      :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
-                                  {} (:store base) (:pointer 0)
+            decode-map-as
+              let
+                  op-id $ generate-id!
+                  op-time $ host/now-ms
+                if (reel-control-op? op)
+                  let
+                      changes $ let
+                          pointer $ .unwrap-or (get reel :pointer) nil
+                          records $ reel.schema/checked-records $ .unwrap-or (get reel :records) nil
+                          base $ .unwrap-or (get reel :base) nil
+                          stopped? $ .unwrap-or (get reel :stopped?) nil
+                        match op
+                          (:reel/toggle)
+                            {} $ :display? $ not (reel.schema/read-field reel :display?)
+                          (:reel/recall idx)
+                            let
+                                new-store $ play-records base records updater idx
+                              {} (:pointer idx) (:stopped? true) (:store new-store)
+                          (:reel/run)
+                            let
+                                new-store $ play-records base records updater $ count records
+                              {} (:store new-store) (:stopped? false) (:pointer nil)
+                          (:reel/step)
+                            if stopped?
+                              if
+                                < (count records) 2
+                                , nil $ &let
+                                  step-pointer $ decode-map-as pointer 'Number
+                                  if
+                                    < step-pointer $ count records
+                                    let
+                                        next-pointer $ inc step-pointer
+                                        next-record $ &list:nth records step-pointer
+                                      let[] (old-op old-id old-time) (decode-map-as next-record 'List)
+                                        {} (:pointer next-pointer)
+                                          :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
+                                    {} (:store base) (:pointer 0)
+                              , nil
+                          (:reel/merge)
+                            if stopped?
+                              if (&= 0 pointer) ({})
+                                let
+                                    new-store $ play-records base records updater pointer
+                                  {} (:store new-store) (:base new-store) (:pointer 0)
+                                    :records $ slice-records-from records $ decode-map-as pointer 'Number
+                                    :merged? true
+                              {}
+                                :base $ reel.schema/read-field reel :store
+                                :pointer nil
+                                :records $ []
+                                :merged? true
+                          (:reel/reset)
+                            if stopped?
+                              {} $ :records $ slice-records-until records (decode-map-as pointer 'Number)
+                              {}
+                                :store $ reel.schema/read-field reel :base
+                                :pointer nil
+                                :records $ []
+                                :stopped? false
+                          (:reel/remove idx)
+                            if (&= 0 idx) reel $ let
+                                remove-index $ decode-map-as idx 'Number
+                              -> reel (reel.util/update-map-dynamic :pointer dec)
+                                reel.util/update-map-dynamic :records $ fn (records)
+                                  remove-record-at (reel.schema/checked-records records) remove-index
+                                assoc :store $ play-records base records updater $ dec remove-index
+                          _ $ do
+                            host/console-warn! $ str "|Unknown reel/ op:" op
                             , nil
-                        (:reel/merge)
-                          if stopped?
-                            if (&= 0 pointer) ({})
-                              let
-                                  new-store $ play-records base records updater pointer
-                                {} (:store new-store) (:base new-store) (:pointer 0)
-                                  :records $ slice-records-from records $ decode-map-as pointer 'Number
-                                  :merged? true
-                            {}
-                              :base $ reel.schema/read-field reel :store
-                              :pointer nil
-                              :records $ []
-                              :merged? true
-                        (:reel/reset)
-                          if stopped?
-                            {} $ :records $ slice-records-until records (decode-map-as pointer 'Number)
-                            {}
-                              :store $ reel.schema/read-field reel :base
-                              :pointer nil
-                              :records $ []
-                              :stopped? false
-                        (:reel/remove idx)
-                          if (&= 0 idx) reel $ let
-                              remove-index $ decode-map-as idx 'Number
-                            -> reel (reel.util/update-map-dynamic :pointer dec)
-                              reel.util/update-map-dynamic :records $ fn (records)
-                                remove-record-at (reel.schema/checked-records records) remove-index
-                              assoc :store $ play-records base records updater $ dec remove-index
-                        _ $ do
-                          host/console-warn! $ str "|Unknown reel/ op:" op
-                          , nil
-                  if (nil? changes) reel $ merge reel $ decode-map-as changes (:: 'Map 'Tag 'Dynamic)
-                let
-                    data-pack $ [] op op-id op-time
-                  if
-                    .unwrap-or (get reel :stopped?) nil
-                    -> reel $ reel.util/update-map-dynamic :records $ fn (records)
-                      conj (reel.schema/checked-records records) data-pack
-                    -> reel
-                      assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
-                      reel.util/update-map-dynamic :records $ fn (records)
+                    if (nil? changes) reel $ merge reel $ decode-map-as changes (:: 'Map 'Tag 'Dynamic)
+                  let
+                      data-pack $ [] op op-id op-time
+                    if
+                      .unwrap-or (get reel :stopped?) nil
+                      -> reel $ reel.util/update-map-dynamic :records $ fn (records)
                         conj (reel.schema/checked-records records) data-pack
+                      -> reel
+                        assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
+                        reel.util/update-map-dynamic :records $ fn (records)
+                          conj (reel.schema/checked-records records) data-pack
+              :: 'Map 'Tag 'Dynamic
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ []
@@ -941,7 +956,9 @@
                     :args $ [] 'String 'Number 'String 'Number
                     :return 'String
                   str store op
-                initial $ assert-type (typed/new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                initial $ decode-map-as
+                  .to-map $ typed/new-reel |base
+                  :: 'reel.typed/State 'Number 'String
                 live $ typed/record-op updater initial 5 |one 10
                 queued $ typed/record-op updater (typed/recall updater live 0) 7 |two 20
                 running $ typed/resume updater queued
@@ -1509,7 +1526,7 @@
             let
                 text $ unsafe-coerce keyboard BrowserStringHost
                 upper $ unsafe-coerce (.!toUpperCase text) BrowserStringHost
-              unsafe-coerce (.!charCodeAt upper 0) 'Number
+              decode-map-as (.!charCodeAt upper 0) 'Number
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Number)
             :args $ [] 'String
@@ -1580,9 +1597,9 @@
             :tags $ #{} :unit
         'update-map-dynamic $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn update-map-dynamic (m k f)
-            &map:assoc m k $ f $ .unwrap-or
-              get (decode-map-as m 'Map) k
-              , nil
+            &let
+              checked-map $ decode-map-as m 'Map
+              &map:assoc checked-map k $ f $ .unwrap-or (get checked-map k) nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic

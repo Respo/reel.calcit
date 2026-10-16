@@ -5,13 +5,13 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 推荐新应用使用 typed API；旧 Map API 保留，避免在
 升级时同时改写应用业务状态。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.29 兼容组合
+## 正式工具链兼容组合
 
-本分支的稳定版候选模块为 `0.6.36`，依赖版本如下；发布状态以对应 Release 为准：
+本分支的 patch 候选模块为 `0.6.37`，依赖版本如下；发布状态以对应 Release 为准：
 
 | 组件 | 版本 |
 | --- | --- |
-| Calcit CLI / `@calcit/procs` | `0.29.3` |
+| Calcit CLI / `@calcit/procs` | `0.30.0` |
 | Respo | `0.16.120` |
 | Respo UI | `0.7.39` |
 | js-ffi | `0.2.3` |
@@ -22,7 +22,16 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版本检查。
 本仓库 Yarn 新包安装隔离期按既有授权统一为一小时，不设置逐版本豁免。
 
-### 0.30.1 Option 迁移候选
+### 使用者需要注意
+
+本 patch 将已合并的公开 Option 读取迁移纳入新正式版本，并修复完整 strict
+暴露的实际消费边界。旧 Map API 和 typed API 均保留，不要求下游改写业务
+状态。非法 record、cursor、render action 或宿主数值会在消费处明确报错，
+不会补成空列表、默认操作或业务值。更新后完整刷新已打开的 demo 页面。
+
+0.30.1 尚未正式发布；本版使用正式 0.30.0，不锁 alpha 或 hash，不代表
+所有消费者已经完成完整 strict 或 0.30.1 运行验收。模块发布也不合并或部署
+下游业务应用，原 COS 和服务器前端路径不变。
 
 旧缺失值原语的直接调用已迁到公开 `get` / `first` / `last`，再显式恢复
 旧 nil 返回。Map 中存在的 nil、缺失键、false、0 和空字符串继续按原行为
@@ -30,10 +39,11 @@ runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版�
 校验为 List，`update-map-dynamic` 仍只接受 Map，不因公开 API 支持其他容器
 而扩大旧边界。callback 的求值次数和错误传播保持不变。
 
-当前依赖表仍是已发布的 0.29.3 配对，并非 0.30.1 验收结果。待新的正式
-CLI / runtime 配对和上游模块发布后，再更新精确版本与依赖锁，执行下方
-全部门禁和真实浏览器回放，才合并并发布本模块。不要将本地候选或新 tag
-已创建当作配对发布完成。
+旧 Map 更新 helper 在单一真实 Map 边界解码后再读取和写入，callback
+仍只求值一次。旧 updater 的开放结果在返回处检查声明的 Tag-keyed Map；
+renderer 在解构单条历史前检查 List，时间及 id 显式转换为展示文本。
+demo 复用 Respo 自己的 DOM 查询类型，render action 在派发前检查 Enum；
+键盘宿主返回用真实 Number 解码替代未经检查的数值强转。
 
 ## 推荐的 typed API
 
@@ -111,6 +121,7 @@ yarn install --immutable
 calcit edit format
 git diff --exit-code -- calcit.cirru
 calcit --check-only
+calcit fix --workflow strict --verify --format edn
 calcit test --require-match
 calcit --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
 calcit analyze weak-types --only coverage --summary-only --format json
@@ -139,20 +150,24 @@ renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 浏览器已确认输入记录、回溯、单步、Run、删除选中记录与 Reset，控制台无错误；
 开发模式仍有原来的缺少 mode 提示。旧开放 API 仍有 47 处未解决类型债务，不宣称全部类型闭合。
 
-当前 `0.6.36` 候选使用正式 0.29.3：严格依赖、工具链配对与默认入口检查通过。
+历史 `0.6.36` 使用正式 0.29.3：严格依赖、工具链配对与默认入口检查通过。
 完整附带测试 native 与生成 JS 各 23/23，公开定义 36/36、原 typed suite、
 SSR 和页面构建通过。新增七项定义测试覆盖 Map/Struct、真实 record List、
 零 pointer 和错误输入不调用 updater；原 JS 宿主回归另外覆盖旧删除与 no-op 控制。
 完整 strict 另外报告 demo cursor、renderer、typed 初值与宿主键盘字段等遗留边界，尚未通过。
 这些是剩余迁移事项，不放宽类型或把局部检查当作完整验收。
 
-Option 迁移候选在同一旧正式配对下通过全部 24 项附带测试的 native / JS
-回放（保留原 23 项，新增一项 Map 更新边界测试）、36 项公开定义检查、
-全部 70 项非空项目定义检查、原 typed suite、SSR 和页面构建。浏览器验证
-输入历史回溯、Step、Run、删除选中记录及 Reset；只观察到原页面 favicon
-请求 404，没有这些操作引发的 JS 异常。完整 `fix --workflow strict` 仍未
-通过：demo cursor、renderer、旧 updater、typed 空初值和键盘宿主合同还需
-处理；普通定义检查不等价于这条更强的证明门禁。新正式配对验收仍待完成。
+当前 `0.6.37` 候选使用正式 0.30.0：完整 strict status=passed，公开定义
+36/36、包含可达依赖的全部检查 224/224，原 24 项附带测试 native / JS
+全部通过，原 typed suite、SSR 和页面构建通过。原断言、测试名和测试标签
+不变；typed 场景的空初值通过真实 Map 解码确认具体泛型，不再用断言把
+已经名义化的开放 Struct 重新标成闭合类型。
+
+本轮真实浏览器验证 Unicode 输入、第一条历史回溯、Step 和 Run，未发现
+JS 错误；原 mode 未配置提示保留。本轮未执行浏览器 Remove/Reset，相关
+语义由原 native/JS suite 覆盖，不把旧浏览器记录冒充本轮验收。
+未解决的 schema Dynamic 仍为 47 处、涉及 28 个定义，不宣称全模块类型闭合。
+干净 CI、最新 review 与精确合并 main 的验收仍需独立通过，再发布正式 tag。
 
 ## COS/CDN 配置
 
