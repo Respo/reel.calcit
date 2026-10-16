@@ -82,10 +82,10 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.task
           :require
-            respo.core :refer $ [] defcomp <> div button input
+            respo.core :refer $ defcomp <> div button input
             respo.css :refer $ defstyle
-            respo.util.format :refer $ [] hsl
-            respo.comp.space :refer $ [] =<
+            respo.util.format :refer $ hsl
+            respo.comp.space :refer $ =<
             respo-ui.core :as ui
             respo-ui.css :as css
     'reel.app.comp.todolist $ %{} 'FileEntry
@@ -279,7 +279,7 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.updater
           :require
-            [] respo.cursor :refer $ [] update-states
+            respo.cursor :refer $ update-states
             js-ffi.shared :as host
     'reel.comp.records $ %{} 'FileEntry
       :defs $ {}

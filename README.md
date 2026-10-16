@@ -7,15 +7,15 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 正式工具链兼容组合
 
-本分支的 patch 候选模块为 `0.6.37`，依赖版本如下；发布状态以对应 Release 为准：
+本分支的 patch 候选模块为 `0.6.38`，依赖版本如下；发布状态以对应 Release 为准：
 
 | 组件 | 版本 |
 | --- | --- |
 | Calcit CLI / `@calcit/procs` | `0.30.0` |
 | Respo | `0.16.120` |
-| Respo UI | `0.7.39` |
+| Respo UI | `0.7.40` |
 | js-ffi | `0.2.3` |
-| Router（传递依赖） | `0.8.34` |
+| Router（传递依赖） | `0.8.35` |
 
 是否已正式发布，请以 [Releases](https://github.com/Respo/reel.calcit/releases)
 中的同名 tag 为准；源码版本号不等于发版证据。不要混用旧 CLI 与新 JS
@@ -24,7 +24,19 @@ runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版�
 
 ### 使用者需要注意
 
-本 patch 将已合并的公开 Option 读取迁移纳入新正式版本，并修复完整 strict
+0.6.38 仅将 UI 对齐到已发布 0.7.40（传递 Router 0.8.35），并去掉两个 demo namespace
+中旧的 `[]` import 标记。消费者其他模块也需协调同一精确 UI/Router 版本，不要放宽
+Caps strict 或以未发布提交代替正式 tag。函数体、schema、typed/旧 Map API 与测试断言
+均未改动；不新增校验脚本、预算或兼容层，原部署路径不变。
+
+本地完整 strict/preflight、224/224 all-defs、36/36 public、原 24 项 native 附带测试、
+原 native entry、生成 JS 回放/旧 API/SSR suite、demo 构建通过。官方 program-diff
+只报告两个 namespace 配置变化，不将它冒称为纯文本格式变更。原 47 处开放 Dynamic
+仍保留；本地源码链接不代替 PR CI 的 fresh Caps 验收。
+0.30.1-alpha.4 只读探测通过公开 36/36 与原 native entry，不改变正式 pin，
+不代表 alpha 配对 JS 或全图 strict 已通过。
+
+上一 patch 0.6.37 将已合并的公开 Option 读取迁移纳入新正式版本，并修复完整 strict
 暴露的实际消费边界。旧 Map API 和 typed API 均保留，不要求下游改写业务
 状态。非法 record、cursor、render action 或宿主数值会在消费处明确报错，
 不会补成空列表、默认操作或业务值。更新后完整刷新已打开的 demo 页面。
