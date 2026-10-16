@@ -17,6 +17,7 @@ concurrency:
 jobs:
   test:
     runs-on: ubuntu-latest
+    timeout-minutes: 15
     steps:
     - uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
@@ -35,8 +36,10 @@ jobs:
     - uses: calcit-lang/setup-calcit@ca701be5a471759e442aa053cd100720bbe1f09f # v1.5.0
       with:
         tools: calcit,caps
+        deps-file: deps.cirru
+        caps-version: "0.1.1"
 
-    - name: Validate Calcit snapshot and type baseline
+    - name: Validate Calcit snapshot and types
       run: |
         set -euo pipefail
         caps --strict --ci
@@ -45,6 +48,7 @@ jobs:
         calcit calcit.cirru edit format
         git diff --exit-code -- calcit.cirru
         calcit calcit.cirru --check-only
+        calcit calcit.cirru fix --workflow strict --verify --format edn
         calcit calcit.cirru test --require-match --summary-only --format json
         calcit calcit.cirru --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
         calcit calcit.cirru analyze weak-types --only coverage --summary-only --format json
@@ -88,6 +92,7 @@ jobs:
 
     - name: Upload static assets to COS
       if: steps.asset-path.outcome == 'success'
+      timeout-minutes: 10
       uses: worktools/cos-upload-action@06d6027dcca6413c5936e04a9b6e9f0d5ef71ba0 # v1.2.0
       with:
         source-dir: dist
