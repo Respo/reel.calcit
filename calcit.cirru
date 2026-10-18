@@ -580,9 +580,7 @@
               if (&= 0 pointer) store $ let
                   record-list $ reel.schema/checked-records records
                   record $ decode-map-as
-                    or
-                      .unwrap-or (first record-list) nil
-                      []
+                    .unwrap-or (first record-list) ([])
                     , 'List
                 let[] (op op-id op-time) record $ &let
                   next-store $ updater store op op-id op-time
@@ -650,10 +648,10 @@
                   if (reel-control-op? op)
                     let
                         changes $ let
-                            pointer $ .unwrap-or (get reel :pointer) nil
-                            records $ reel.schema/checked-records $ .unwrap-or (get reel :records) nil
-                            base $ .unwrap-or (get reel :base) nil
-                            stopped? $ .unwrap-or (get reel :stopped?) nil
+                            pointer $ .unwrap $ get reel :pointer
+                            records $ reel.schema/checked-records $ .unwrap (get reel :records)
+                            base $ .unwrap $ get reel :base
+                            stopped? $ .unwrap-or (get reel :stopped?) false
                           match op
                             (:reel/toggle)
                               {} $ :display? $ not (reel.schema/read-field reel :display?)
@@ -716,7 +714,7 @@
                     let
                         data-pack $ [] op op-id op-time
                       if
-                        .unwrap-or (get reel :stopped?) nil
+                        .unwrap-or (get reel :stopped?) false
                         -> reel $ reel.util/update-map-dynamic :records $ fn (records)
                           conj (reel.schema/checked-records records) data-pack
                         -> reel
