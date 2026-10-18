@@ -309,7 +309,9 @@
                   :color :white
                 :on-click $ on-recall idx
               ; <> $ to-lispy-string $ first record
-              comp-action $ .unwrap $ first (decode-map-as record 'List)
+              comp-action $ .unwrap-or
+                first $ decode-map-as record 'List
+                , nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] 'Dynamic 'Bool 'Number
@@ -325,9 +327,13 @@
                       :args $ [] 'Number 'Dynamic
                       :return $ :: 'List 'Dynamic
                     []
-                      .unwrap $ last $ decode-map-as record 'List
+                      .unwrap-or
+                        last $ decode-map-as record 'List
+                        , nil
                       memo-comp-by
-                        .unwrap $ last $ decode-map-as record 'List
+                        .unwrap-or
+                          last $ decode-map-as record 'List
+                          , nil
                         , comp-record-item record (&= pointer idx) idx
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
@@ -645,7 +651,7 @@
                             pointer $ .unwrap $ get reel :pointer
                             records $ reel.schema/checked-records $ .unwrap (get reel :records)
                             base $ .unwrap $ get reel :base
-                            stopped? $ .unwrap $ get reel :stopped?
+                            stopped? $ .unwrap-or (get reel :stopped?) false
                           match op
                             (:reel/toggle)
                               {} $ :display? $ not (reel.schema/read-field reel :display?)
@@ -708,7 +714,7 @@
                     let
                         data-pack $ [] op op-id op-time
                       if
-                        .unwrap $ get reel :stopped?
+                        .unwrap-or (get reel :stopped?) false
                         -> reel $ reel.util/update-map-dynamic :records $ fn (records)
                           conj (reel.schema/checked-records records) data-pack
                         -> reel
@@ -1591,10 +1597,7 @@
           :code $ quote $ defn update-map-dynamic (m k f)
             &let
               checked-map $ decode-map-as m 'Map
-              match (get checked-map k)
-                (:some value)
-                  &map:assoc checked-map k $ f value
-                (:none) checked-map
+              &map:assoc checked-map k $ f $ .unwrap-or (get checked-map k) nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
@@ -1606,12 +1609,12 @@
                   , value
                 source $ {} (:nil-value nil) (:false-value false) (:zero-value 0) (:empty-value |)
                 absent $ update-map-dynamic source :missing record
-              assert= source absent
+              assert= nil $ .unwrap $ get (decode-map-as absent 'Map) :missing
               assert= source $ update-map-dynamic source :nil-value record
               assert= source $ update-map-dynamic source :false-value record
               assert= source $ update-map-dynamic source :zero-value record
               assert= source $ update-map-dynamic source :empty-value record
-              assert= 4 @calls
+              assert= 5 @calls
               assert= 4 $ count source
               assert= :rejected $ try
                 do (update-map-dynamic |wrong :value record) :accepted
@@ -1626,7 +1629,7 @@
                   update-map-dynamic (reel.typed/Record :op 1 :id |record :time 0) :op record
                   , :accepted
                 fn (error) :rejected
-              assert= 4 @calls
+              assert= 5 @calls
               assert= :propagated $ try
                 do
                   update-map-dynamic source :zero-value $ fn (value) (raise |callback-failure)
