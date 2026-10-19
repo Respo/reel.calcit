@@ -7,12 +7,12 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.30.1 迁移配对
 
-本分支的候选模块为 `0.6.39`，使用已发布的精确依赖图；发布状态以对应 Release 为准。
+本分支的候选模块为 `0.6.40`，使用已发布的精确依赖图；发布状态以对应 Release 为准。
 其中 Calcit 编译器为预发布版本，不代表 Calcit 稳定版已经发布：
 
 | 组件 | 版本 |
 | --- | --- |
-| Calcit CLI / `@calcit/procs` | `0.30.1-alpha.4` |
+| Calcit CLI / `@calcit/procs` | `0.30.1-alpha.5` |
 | Respo | `0.16.122` |
 | Respo UI | `0.7.41` |
 | js-ffi | `0.2.3` |
@@ -25,11 +25,12 @@ runtime，也不要改写模块缓存或生成文件中的 imports 来绕过版�
 
 ### 使用者需要注意
 
-0.6.39 将整个依赖图与 CLI/runtime 配对到上表版本，组件、业务函数体、schema、
-typed/旧 Map API、Snapshot 和测试断言均不变。消费者其他模块也需协调同一精确
-UI/Respo/Router 版本，不要放宽 Caps strict 或以未发布提交代替正式 tag。
-CI 显式断言完整 strict 的状态和空 diagnostics，不新增校验脚本、预算或兼容层，
-原部署路径不变。
+0.6.40 让历史展示中的单条记录只校验一次 List，保留该类型传给记录组件，并复用
+同一个 child/memo key。独立空记录组件的显示、nil memo key 的不缓存行为、
+false/0/空串 key 与开放业务操作的显示保持原样；整张 keyed 历史列表仍拒绝 nil key，
+不补随机 key。旧 Map 控制字段的缺失读取和非法记录的原校验顺序也保留。
+消费者其他模块需协调同一精确 UI/Respo/Router 版本；CLI 与 runtime 更新到上表
+配对，正常重新安装依赖后完整刷新 demo。原部署路径不变。
 
 上一 patch 0.6.37 将已合并的公开 Option 读取迁移纳入新正式版本，并修复完整 strict
 暴露的实际消费边界。旧 Map API 和 typed API 均保留，不要求下游改写业务
@@ -39,11 +40,11 @@ CI 显式断言完整 strict 的状态和空 diagnostics，不新增校验脚本
 Calcit 0.30.1 尚未稳定发布；本版的 alpha 配对只证明此模块已验证的范围，
 不代表所有消费者已经完成迁移。模块发布也不合并或部署下游业务应用。
 
-旧缺失值原语的直接调用已迁到公开 `get` / `first` / `last`，再显式恢复
-旧 nil 返回。Map 中存在的 nil、缺失键、false、0 和空字符串继续按原行为
-传递；没有把 nil 判断换成 Option 缺失判断。开放 record 在读取首尾前仍须
-校验为 List，`update-map-dynamic` 仍只接受 Map，不因公开 API 支持其他容器
-而扩大旧边界。callback 的求值次数和错误传播保持不变。
+公开 `get` / `first` / `last` 的 Option 只在具名的旧协议、展示或开放 callback
+边界恢复 nil。Map 中存在的 nil、缺失键、false、0 和空字符串继续按原行为
+传递；不能把旧 nil/truthiness 判断换成 Option 缺失判断。开放 record 在读取
+首尾前须校验为 List；`update-map-dynamic` 仍只接受 Map，callback 求值次数和
+错误传播保持不变。逐项消费合同见[缺失值与旧展示边界](docs/option-boundaries.md)。
 
 旧 Map 更新 helper 在单一真实 Map 边界解码后再读取和写入，callback
 仍只求值一次。旧 updater 未变化时保留原引用，仅对变化结果在返回处检查
@@ -59,8 +60,9 @@ demo 复用 Respo 自己的 DOM 查询类型，render action 在派发前检查 
 `Op,Store`。业务状态可以先保留旧 Map，再逐步收紧；这不意味着 Reel
 整体已没有 Dynamic。
 
-- `new-reel initial-store`：建立初始状态；操作类型尚无输入证据时，可用
-  `assert-type` 明确完整的 `State<Op,Store>`。
+- `new-reel initial-store`：建立初始状态；`Store` 来自输入，空历史的 `Op`
+  没有输入来源。应用有具体 `AppOp` 时，按下节使用已有 `State` 构造器和
+  `Ref<State<AppOp,AppStore>>` 上下文初始化，不对 helper 的开放结果作强断言。
 - `record-op updater reel op id time`：记录业务操作。updater 的四个参数为
   `store, op, id, time`，返回新的 `Store`；id 是 String，time 是 Number。
   调用方提供 id/time，Reel 不额外要求安装 npm shortid。
@@ -89,6 +91,34 @@ calcit query context reel.typed/record-op --format edn
 calcit query def reel.app.main/dispatch! --format edn
 calcit query def reel.typed/State --format edn
 ```
+
+### 空历史的操作类型从哪里来
+
+`new-reel` 的泛型 `Op` 不出现在参数中，不能仅凭 store 推断应用操作类型。
+在 Snapshot 的 `*reel` 定义上声明 `Ref<State<AppOp,AppStore>>`，再用公开的
+`State` 构造器提供空记录；这是空集合的类型上下文，不是对已有 Dynamic 值的强转。
+下面假定已导入 `reel.typed :as typed` 和应用的 `schema/store`：
+
+```cirru.no-check
+defref *reel $ typed/State
+  :base schema/store
+  :store schema/store
+  :records $ []
+  :pointer $ Option :none
+  :stopped? false
+  :display? false
+  :merged? false
+```
+
+在确认应用定义和实际类型名后，用现有结构化入口声明该定义的 schema，先 dry-run
+相应事务，再带 revision 应用。类型标注形状为：
+
+```cirru.no-check
+:: 'Ref $ :: 'reel.typed/State 'app.schema/AppOp 'app.schema/AppStore
+```
+
+这里的 `AppStore` 必须是应用实际 store 类型，不要求把旧业务 Map 伪造为新 Struct。
+记录产生后，`Record<AppOp>` 和 updater 的输入/返回关系继续接受原严格检查。
 
 ## 渲染、watch 和旧展示边界
 
@@ -129,7 +159,7 @@ calcit edit format
 git diff --exit-code -- calcit.cirru
 calcit --check-only
 calcit fix --workflow strict --verify --format edn
-calcit test --require-match
+calcit test --exclude-tag js-only --require-match
 calcit --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
 calcit analyze weak-types --only coverage --summary-only --format json
 calcit analyze weak-types --only schema-dynamic,code-dynamic --intent unresolved --summary-only --format json
@@ -148,13 +178,16 @@ yarn vite build
 renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 
 附加断言优先定义在 Calcit `:tests`。现有 `tests/typed-reel.mjs` 在独立
-临时 Snapshot 中原样回放全部附加断言，并通过 native 与真正生成的 JS
-执行；独立进程隔离第二套 core 的 trait 注册，原 Snapshot 保持不变。
+临时 Snapshot 中原样回放附加断言：共享测试通过 native 与真正生成的 JS
+执行，宿主/样式测试只走 JS；独立进程隔离第二套 core 的 trait 注册，原 Snapshot 保持不变。
 它也保留 pointer、控制消息、adapter 和 SSR 的原有 JS 边界测试。
+新宿主/样式回归仍在定义 `:tests`，标为 `:js-only` 后只在生成 JS 上回放；
+原有测试与新增共享测试在 native/JS 两端原样执行，不将样式或宿主实现伪装成 native 支持。
 
 当前候选在上表发布图下通过正常 Caps strict、工具链精确配对、不可变安装和完整 strict。
-原 24 项附带测试在 native / 生成 JS 原样回放，原 native entry、typed/旧 API suite、
-SSR 与生产构建通过；公开定义 36/36，全部非空命名空间定义 72/72（包含元数据）通过。
+原 24 项附带测试在 native / 生成 JS 原样回放，加上三项共享与两项 JS-only 回归，
+共 27 项 native / 29 项生成 JS 通过。原 native entry、typed/旧 API suite、SSR 与
+构建通过；公开定义 36/36，全部非空命名空间定义 72/72（包含元数据）通过。
 空的 `reel.style` 不含定义，不将零匹配冒称为通过。absence 迁移预览无建议，
 弃用调用和未解析动态方法视图均为空。
 

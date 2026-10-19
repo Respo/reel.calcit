@@ -35,6 +35,8 @@ async function replayAttachedTests() {
     const operations = [];
     const calls = [];
     const features = new Set();
+    const nativeCalls = [];
+    const nativeFeatures = new Set();
     for (const [index, item] of selected.tests.entries()) {
       const separator = item.id.indexOf("#");
       const owner = item.id.slice(0, separator);
@@ -53,18 +55,28 @@ async function replayAttachedTests() {
         JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
           [":features", ["#{}", ...ownerFeatures]]]])]);
       calls.push([target]);
+      if (!test.tags.includes("js-only")) {
+        nativeCalls.push([target]);
+        ownerFeatures.forEach(feature => nativeFeatures.add(feature));
+      }
     }
     const entry = "reel.test-typed/replay-attached!";
-    operations.push(["edit", "def", entry, "--input-format", "json-ast", "--code",
-      JSON.stringify(["defn", "replay-attached!", [], ...calls, "&unit"])]);
-    operations.push(["edit", "schema", entry, "--input-format", "json-ast", "--code",
-      JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
-        [":features", ["#{}", ...features]]]])]);
+    const nativeEntry = "reel.test-typed/replay-attached-native!";
+    assert.ok(nativeCalls.length > 0, "native replay must not silently select zero tests");
+    for (const [target, selectedCalls, selectedFeatures] of [
+      [entry, calls, features], [nativeEntry, nativeCalls, nativeFeatures],
+    ]) {
+      operations.push(["edit", "def", target, "--input-format", "json-ast", "--code",
+        JSON.stringify(["defn", target.split("/")[1], [], ...selectedCalls, "&unit"])]);
+      operations.push(["edit", "schema", target, "--input-format", "json-ast", "--code",
+        JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
+          [":features", ["#{}", ...selectedFeatures]]]])]);
+    }
     const code = JSON.stringify(operations);
     const preview = JSON.parse(invoke(snapshot, "edit", "transaction", "--code", code, "--dry-run", "--format", "json"));
-    invoke(snapshot, "edit", "transaction", "--code", code, "--expect-revision", preview.original_revision, "--format", "edn");
+    invoke(snapshot, "edit", "transaction", "--code", code, "--expect-revision", preview.scoped_revision, "--format", "edn");
     const roots = ["--init-fn", entry, "--reload-fn", entry];
-    invoke(snapshot, "--entry", "test", ...roots);
+    invoke(snapshot, "--entry", "test", "--init-fn", nativeEntry, "--reload-fn", nativeEntry);
     const output = join(directory, "js");
     invoke(snapshot, ...roots, "--emit-path", output, "js");
     // Generated core modules register traits globally; isolate this second graph
@@ -72,7 +84,7 @@ async function replayAttachedTests() {
     execFileSync(process.execPath, ["--input-type=module", "--eval",
       `const tests = await import(${JSON.stringify(pathToFileURL(join(output, "reel.test-typed.mjs")).href)}); tests.replay_attached_$x_();`],
       { timeout: 60000, stdio: "inherit" });
-    console.log(`typed Reel: ${selected.tests.length} canonical attached tests replayed on native/generated JS`);
+    console.log(`typed Reel: ${nativeCalls.length} native / ${calls.length} generated JS canonical attached tests replayed (${calls.length - nativeCalls.length} JS-only)`);
   } finally {
     try {
       assert.deepEqual(await readFile(canonical), before, "test replay must preserve canonical Snapshot bytes");

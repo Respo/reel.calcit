@@ -300,7 +300,8 @@
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] 'Dynamic
-        'comp-record-item $ %{} 'CodeEntry (:doc |)
+        'comp-record-item $ %{} 'CodeEntry
+          :doc "|接收展示入口已校验的历史 List；只在开放 action 的展示出口将缺失首项编码为原 nil。"
           :code $ quote $ defcomp comp-record-item (record pointed? idx)
             div
               {} (:class-name css-record)
@@ -309,13 +310,12 @@
                   :color :white
                 :on-click $ on-recall idx
               ; <> $ to-lispy-string $ first record
-              comp-action $ .unwrap-or
-                first $ decode-map-as record 'List
-                , nil
+              comp-action $ .unwrap-or (first record) nil
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Dynamic 'Bool 'Number
-        'comp-records $ %{} 'CodeEntry (:doc |)
+            :args $ [] (:: 'List 'Dynamic) 'Bool 'Number
+        'comp-records $ %{} 'CodeEntry
+          :doc "|每条旧历史只校验一次 List，复用同一个 child/memo key；nil key 保留绕过缓存，false、0、空串保留原 key。"
           :code $ quote $ defcomp comp-records (records pointer)
             div
               {} $ :class-name $ str-spaced css/font-code css-records
@@ -326,18 +326,102 @@
                     hint-fn $ {}
                       :args $ [] 'Number 'Dynamic
                       :return $ :: 'List 'Dynamic
-                    []
-                      .unwrap-or
-                        last $ decode-map-as record 'List
-                        , nil
-                      memo-comp-by
-                        .unwrap-or
-                          last $ decode-map-as record 'List
-                          , nil
-                        , comp-record-item record (&= pointer idx) idx
+                    let
+                        checked-record $ decode-map-as record $ :: 'List 'Dynamic
+                        key $ .unwrap-or (last checked-record) nil
+                      [] key $ memo-comp-by key comp-record-item checked-record (&= pointer idx) idx
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
             :args $ [] (:: 'List 'Dynamic) 'Dynamic
+          :tests $ [] $ %{} 'TestEntry (:name |legacy-record-keys-and-memo-identity)
+            :code $ quote $ let
+                element $ fn (node)
+                  hint-fn $ {}
+                    :args $ [] 'respo.schema/RenderNode
+                    :return 'respo.schema/Element
+                  match node
+                    (:element value) value
+                    _ $ raise |Expected-record-element
+                rows $ fn (records)
+                  hint-fn $ {}
+                    :args $ [] $ :: 'List 'Dynamic
+                    :return $ :: 'List 'respo.schema/ChildPair
+                  let
+                      view $ comp-records records nil
+                      root $ element $ .unwrap (:tree view)
+                      list-pair $ .unwrap $ first (:children root)
+                      list-element $ element $ .unwrap (:node list-pair)
+                    :children list-element
+                component $ fn (pair)
+                  hint-fn $ {}
+                    :args $ [] 'respo.schema/ChildPair
+                    :return 'respo.schema/Component
+                  match
+                    .unwrap $ :node pair
+                    (:component value) value
+                    _ $ raise |Expected-record-component
+                records $ [] ([] false) ([] 0) ([] |) ([] nil |nil-id 8) ([] :op |id 7)
+              respo.core/clear-cache!
+              respo.memo/begin-memo-frame!
+              let
+                  first-rows $ rows records
+                  next-rows $ rows records
+                  empty-first $ memo-comp-by nil comp-record-item ([]) false 1
+                  empty-next $ memo-comp-by nil comp-record-item ([]) false 1
+                assert= ([] :base false 0 | 8 7)
+                  map first-rows $ fn (pair)
+                    hint-fn $ {}
+                      :args $ [] 'respo.schema/ChildPair
+                      :return 'Dynamic
+                    :key pair
+                assert= 6 $ count first-rows
+                assert= true $ not $ identical? empty-first empty-next
+                assert= true $ identical?
+                  component $ .unwrap $ get first-rows 1
+                  component $ .unwrap $ get next-rows 1
+                assert= true $ identical?
+                  component $ .unwrap $ get first-rows 2
+                  component $ .unwrap $ get next-rows 2
+                assert= true $ identical?
+                  component $ .unwrap $ get first-rows 3
+                  component $ .unwrap $ get next-rows 3
+                assert= true $ identical?
+                  component $ .unwrap $ get first-rows 4
+                  component $ .unwrap $ get next-rows 4
+                assert= true $ identical?
+                  component $ .unwrap $ get first-rows 5
+                  component $ .unwrap $ get next-rows 5
+              respo.memo/finish-memo-frame!
+              respo.core/clear-cache!
+              let
+                  html $ respo.render.html/make-string $ comp-records records nil
+                assert= true $ .includes? html "|<span data-comp=\"comp-action\"></span>"
+                assert= true $ .includes? html "|<span data-comp=\"comp-action\">false</span>"
+                assert= true $ .includes? html "|<span data-comp=\"comp-action\">0</span>"
+                assert= true $ .includes? html "|<span data-comp=\"comp-action\">:op</span>"
+              assert=
+                respo.render.html/make-string $ comp-record-item ([]) false 1
+                respo.render.html/make-string $ comp-record-item ([] nil) false 1
+              assert= :rejected $ try
+                do
+                  comp-records
+                    [] $ []
+                    , nil
+                  , :accepted
+                fn (error) :rejected
+              assert= :rejected $ try
+                do
+                  comp-records
+                    [] $ [] nil
+                    , nil
+                  , :accepted
+                fn (error) :rejected
+              assert= :rejected $ try
+                do
+                  comp-records ([] 42) nil
+                  , :accepted
+                fn (error) :rejected
+            :tags $ #{} :js-only :legacy-boundary :unit
         'css-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-record
             {}
@@ -580,7 +664,9 @@
               if (&= 0 pointer) store $ let
                   record-list $ reel.schema/checked-records records
                   record $ decode-map-as
-                    .unwrap-or (first record-list) ([])
+                    or
+                      .unwrap-or (first record-list) ([])
+                      []
                     , 'List
                 let[] (op op-id op-time) record $ &let
                   next-store $ updater store op op-id op-time
@@ -623,6 +709,31 @@
                   fn (error) :rejected
                 assert= 0 @calls
               :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry
+              :name |missing-falsey-and-short-records-reject-before-updater
+              :code $ quote $ let
+                  calls $ ref 0
+                  updater $ fn (store op id time)
+                    reset! calls $ inc @calls
+                    , store
+                  reject $ fn (record-list)
+                    hint-fn $ {}
+                      :args $ [] $ :: 'List 'Dynamic
+                      :return 'Unit
+                    assert= :rejected $ try
+                      do (play-records |base record-list updater 1) :accepted
+                      fn (error) :rejected
+                    , &unit
+                reject $ []
+                reject $ [] nil
+                reject $ [] false
+                reject $ [] 0
+                reject $ [] |
+                reject $ [] $ []
+                reject $ [] $ [] :op
+                reject $ [] $ [] :op |id
+                assert= 0 @calls
+              :tags $ #{} :legacy-boundary :unit
         'reel-control-op? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reel-control-op? (op)
             if (enum? op)
@@ -648,9 +759,9 @@
                   if (reel-control-op? op)
                     let
                         changes $ let
-                            pointer $ .unwrap $ get reel :pointer
-                            records $ reel.schema/checked-records $ .unwrap (get reel :records)
-                            base $ .unwrap $ get reel :base
+                            pointer $ reel.schema/read-field reel :pointer
+                            records $ reel.schema/checked-records $ reel.schema/read-field reel :records
+                            base $ reel.schema/read-field reel :base
                             stopped? $ .unwrap-or (get reel :stopped?) false
                           match op
                             (:reel/toggle)
@@ -731,6 +842,42 @@
               , 'Dynamic
             :features $ #{} :js-ffi
             :return $ :: 'Map 'Tag 'Dynamic
+          :tests $ [] $ %{} 'TestEntry
+            :name |legacy-control-reads-keep-optional-fields-and-eager-validation
+            :code $ quote $ let
+                calls $ ref 0
+                updater $ fn (store op id time)
+                  reset! calls $ inc @calls
+                  , store
+                absent $ {}
+                  :records $ []
+                  :display? false
+                explicit-nil $ {}
+                  :records $ []
+                  :pointer nil
+                  :base nil
+                  :display? false
+              assert= (assoc absent :display? true)
+                reel-updater updater absent $ :: :reel/toggle
+              assert= (assoc explicit-nil :display? true)
+                reel-updater updater explicit-nil $ :: :reel/toggle
+              assert= 0 @calls
+              assert= :rejected $ try
+                do
+                  reel-updater updater
+                    {} $ :display? false
+                    :: :reel/toggle
+                  , :accepted
+                fn (error) :rejected
+              assert= :rejected $ try
+                do
+                  reel-updater updater
+                    {} $ :records false
+                    :: :reel/toggle
+                  , :accepted
+                fn (error) :rejected
+              assert= 0 @calls
+            :tags $ #{} :js-only :legacy-boundary :unit
         'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-reel (reel base updater)
             let
@@ -918,6 +1065,17 @@
                     read-field (:: :invalid) :value
                     , :accepted
                   fn (error) :rejected
+              :tags $ #{} :legacy-boundary :unit
+            %{} 'TestEntry (:name |legacy-empty-string-and-nil-struct-payload)
+              :code $ quote $ let
+                  record $ reel.typed/Record :op nil :id | :time 0
+                assert= | $ read-field
+                  {} $ :value |
+                  , :value
+                assert= nil $ read-field record :op
+                assert= | $ read-field record :id
+                assert= 0 $ read-field record :time
+                assert= nil $ read-field record :missing
               :tags $ #{} :legacy-boundary :unit
         'reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def reel
@@ -1486,17 +1644,40 @@
             :args $ [] $ :: 'reel.typed/State 'Op 'Store
             :generics $ [] 'Op 'Store
             :return $ :: 'Map 'Tag 'Dynamic
-          :tests $ [] $ %{} 'TestEntry (:name |legacy-view-shape)
-            :code $ quote $ let
-                initial $ assert-type (typed/new-reel |base) (:: 'reel.typed/State 'Number 'String)
-              assert=
-                {} (:base |base) (:store |base)
-                  :records $ []
-                  :pointer nil
-                  :stopped? false
-                  :display? false
-                  :merged? false
-                view-data initial
+          :tests $ []
+            %{} 'TestEntry (:name |legacy-view-shape)
+              :code $ quote $ let
+                  initial $ assert-type (typed/new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                assert=
+                  {} (:base |base) (:store |base)
+                    :records $ []
+                    :pointer nil
+                    :stopped? false
+                    :display? false
+                    :merged? false
+                  view-data initial
+            %{} 'TestEntry (:name |present-pointer-and-records-keep-legacy-shape)
+              :code $ quote $ let
+                  records $ [] (typed/Record :op 7 :id |first :time 10) (typed/Record :op 9 :id |second :time 20)
+                  zero $ typed/State :base |base :store |current :records records :pointer (Option :some 0) :stopped? true :display? true :merged? false
+                  later $ typed/State :base |base :store |current :records records :pointer (Option :some 2) :stopped? true :display? false :merged? true
+                assert=
+                  {} (:base |base) (:store |current)
+                    :records $ [] ([] 7 |first 10) ([] 9 |second 20)
+                    :pointer 0
+                    :stopped? true
+                    :display? true
+                    :merged? false
+                  view-data zero
+                assert=
+                  {} (:base |base) (:store |current)
+                    :records $ [] ([] 7 |first 10) ([] 9 |second 20)
+                    :pointer 2
+                    :stopped? true
+                    :display? false
+                    :merged? true
+                  view-data later
+              :tags $ #{} :legacy-boundary :unit
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.typed-compat
           :require $ reel.typed :as typed
