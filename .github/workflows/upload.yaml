@@ -49,7 +49,7 @@ jobs:
         git diff --exit-code -- calcit.cirru
         calcit calcit.cirru --check-only
         calcit calcit.cirru fix --workflow strict --verify --format json | jq -e '.data.workflow.status == "passed" and .diagnostics == []'
-        calcit calcit.cirru test --require-match --summary-only --format json
+        calcit calcit.cirru test --exclude-tag js-only --require-match --summary-only --format json
         calcit calcit.cirru --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
         calcit calcit.cirru analyze weak-types --only coverage --summary-only --format json
         calcit calcit.cirru analyze weak-types --only schema-dynamic,code-dynamic --intent unresolved --summary-only --format json
