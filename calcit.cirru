@@ -1352,7 +1352,6 @@
           :code $ quote $ defn play-records (updater base records limit)
             foldl (&list:slice records 0 limit) base $ fn (store record)
               hint-fn $ {}
-                :generics $ [] 'Op 'Store
                 :args $ [] 'Store $ :: 'reel.typed/Record 'Op
                 :return 'Store
               updater store (:op record) (:id record) (:time record)
@@ -1629,7 +1628,6 @@
               :records $ map (:records reel)
                 fn (record)
                   hint-fn $ {}
-                    :generics $ [] 'Op
                     :args $ [] $ :: 'reel.typed/Record 'Op
                     :return $ :: 'List 'Dynamic
                   [] (:op record) (:id record) (:time record)
