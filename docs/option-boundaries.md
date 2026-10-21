@@ -44,6 +44,16 @@ updater。真正回放时先检查外层 List，首项 Option 缺失使用原空
 也不因为一个 Number-only `dec` 调用就把整个 helper 谎称为接受任意
 `Fn<Dynamic,Dynamic>`。进一步收窄必须同时证明字段值和具体 callback 的关系。
 
+该 helper 的返回合同是 `Map<Dynamic,Dynamic>`，而不是整个 `Dynamic`：
+原有入口解码与写入已经保证容器为 Map，键和值仍是旧协议的真实开放边界。
+因此已知 Map 上的后续 `.assoc` 可以直接 lowering；不在调用方增加重复解码，
+也不通过修改 callback 合同掩盖它可能只接受 Number 的事实。
+
+`refresh-reel` 的开放根与此 helper 不同：混合键 Map 在补写缺失的 `:base` /
+`:store` 后保留额外字段，具体名义 Struct 则保留其 definition 与原输入。
+共享测试在 native / 生成 JS 重放这些行为。未知泛型 Struct 的动态字段写入
+不因此获得证明；该出口暂保留旧操作，不能记为旧 API 退场完成。
+
 ## 验证入口
 
 定义旁的共享 `:tests` 验证 pointer、Record 转换、旧字段值和非法短记录；
