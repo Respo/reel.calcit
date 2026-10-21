@@ -1202,7 +1202,7 @@
         'global $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle global
             {} $ |$0 $ {}
-              :font-family "|var(--rui-font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif)"
+              :font-family "|var(--rui-font-sans, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif)"
               :line-height |1.6
               :font-size |14px
           :examples $ []
