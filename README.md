@@ -8,7 +8,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 ## 0.30.1 迁移配对
 
 本分支的候选模块为 `0.6.40`，使用已发布的精确依赖图；发布状态以对应 Release 为准。
-其中 Calcit 编译器为预发布版本，不代表 Calcit 稳定版已经发布：
+其中 Calcit 编译器仍固定为预发布版本，不代表本模块已经完成正式 0.30.1 或 0.31.0 配对：
 
 | 组件 | 版本 |
 | --- | --- |
@@ -37,8 +37,21 @@ false/0/空串 key 与开放业务操作的显示保持原样；整张 keyed 历
 状态。非法 record、cursor、render action 或宿主数值会在消费处明确报错，
 不会补成空列表、默认操作或业务值。更新后完整刷新已打开的 demo 页面。
 
-Calcit 0.30.1 尚未稳定发布；本版的 alpha 配对只证明此模块已验证的范围，
+Calcit 0.30.1 已稳定发布；本分支仍保持上表的 alpha.5 配对，只证明此模块已验证的范围，
 不代表所有消费者已经完成迁移。模块发布也不合并或部署下游业务应用。
+
+### 已知 Map 写入与旧兼容出口
+
+旧 dispatcher 中已知为 Map 的两处写入使用 `.assoc`，由编译器按真实接收者
+类型 lowering，不在应用源码直接调用底层原语。`update-map-dynamic` 的返回值
+由整个 `Dynamic` 收窄为 `Map<Dynamic,Dynamic>`：其原实现已经先检查 Map，
+这里只保留真实容器类型，不新增 Map 解码、扩大输入或假装键值类型已被证明。
+callback、缺失时传 nil、求值次数、错误传播和原检查顺序均不变。
+
+`refresh-reel` 的两个旧 `assoc` 仍是明确的兼容出口：它既允许混合键 Map，
+也允许字段可以校验的名义 Struct。不能为消除调用而把参数改成 Tag-only Map，
+也不能用未知泛型字段的动态写入冒充静态证明。新代码继续使用已有的 typed API；
+这些兼容调用未完成退场，本次不删除旧 API，也不更新模块或工具链版本。
 
 公开 `get` / `first` / `last` 的 Option 只在具名的旧协议、展示或开放 callback
 边界恢复 nil。Map 中存在的 nil、缺失键、false、0 和空字符串继续按原行为
@@ -185,8 +198,9 @@ renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 原有测试与新增共享测试在 native/JS 两端原样执行，不将样式或宿主实现伪装成 native 支持。
 
 当前候选在上表发布图下通过正常 Caps strict、工具链精确配对、不可变安装和完整 strict。
-原 24 项附带测试在 native / 生成 JS 原样回放，加上三项共享与两项 JS-only 回归，
-共 27 项 native / 29 项生成 JS 通过。原 native entry、typed/旧 API suite、SSR 与
+原 24 项附带测试与既有三项共享、两项 JS-only 回归继续保留；本次再增加一项
+共享兼容边界和一项真实 JS dispatcher 回归，共 28 项 native / 31 项生成 JS
+通过。原 native entry、typed/旧 API suite、SSR 与
 构建通过；公开定义 36/36，全部非空命名空间定义 72/72（包含元数据）通过。
 空的 `reel.style` 不含定义，不将零匹配冒称为通过。absence 迁移预览无建议，
 弃用调用和未解析动态方法视图均为空。

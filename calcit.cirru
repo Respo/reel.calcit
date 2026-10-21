@@ -817,7 +817,7 @@
                                 -> reel (reel.util/update-map-dynamic :pointer dec)
                                   reel.util/update-map-dynamic :records $ fn (records)
                                     remove-record-at (reel.schema/checked-records records) remove-index
-                                  assoc :store $ play-records base records updater $ dec remove-index
+                                  .assoc :store $ play-records base records updater $ dec remove-index
                             _ $ do
                               host/console-warn! $ str "|Unknown reel/ op:" op
                               , nil
@@ -829,7 +829,7 @@
                         -> reel $ reel.util/update-map-dynamic :records $ fn (records)
                           conj (reel.schema/checked-records records) data-pack
                         -> reel
-                          assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
+                          .assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
                           reel.util/update-map-dynamic :records $ fn (records)
                             conj (reel.schema/checked-records records) data-pack
               if (identical? result reel) reel $ decode-map-as result $ :: 'Map 'Tag 'Dynamic
@@ -842,42 +842,82 @@
               , 'Dynamic
             :features $ #{} :js-ffi
             :return $ :: 'Map 'Tag 'Dynamic
-          :tests $ [] $ %{} 'TestEntry
-            :name |legacy-control-reads-keep-optional-fields-and-eager-validation
-            :code $ quote $ let
-                calls $ ref 0
-                updater $ fn (store op id time)
-                  reset! calls $ inc @calls
-                  , store
-                absent $ {}
-                  :records $ []
-                  :display? false
-                explicit-nil $ {}
-                  :records $ []
-                  :pointer nil
-                  :base nil
-                  :display? false
-              assert= (assoc absent :display? true)
-                reel-updater updater absent $ :: :reel/toggle
-              assert= (assoc explicit-nil :display? true)
-                reel-updater updater explicit-nil $ :: :reel/toggle
-              assert= 0 @calls
-              assert= :rejected $ try
-                do
-                  reel-updater updater
-                    {} $ :display? false
-                    :: :reel/toggle
-                  , :accepted
-                fn (error) :rejected
-              assert= :rejected $ try
-                do
-                  reel-updater updater
-                    {} $ :records false
-                    :: :reel/toggle
-                  , :accepted
-                fn (error) :rejected
-              assert= 0 @calls
-            :tags $ #{} :js-only :legacy-boundary :unit
+          :tests $ []
+            %{} 'TestEntry
+              :name |legacy-control-reads-keep-optional-fields-and-eager-validation
+              :code $ quote $ let
+                  calls $ ref 0
+                  updater $ fn (store op id time)
+                    reset! calls $ inc @calls
+                    , store
+                  absent $ {}
+                    :records $ []
+                    :display? false
+                  explicit-nil $ {}
+                    :records $ []
+                    :pointer nil
+                    :base nil
+                    :display? false
+                assert= (.assoc absent :display? true)
+                  reel-updater updater absent $ :: :reel/toggle
+                assert= (.assoc explicit-nil :display? true)
+                  reel-updater updater explicit-nil $ :: :reel/toggle
+                assert= 0 @calls
+                assert= :rejected $ try
+                  do
+                    reel-updater updater
+                      {} $ :display? false
+                      :: :reel/toggle
+                    , :accepted
+                  fn (error) :rejected
+                assert= :rejected $ try
+                  do
+                    reel-updater updater
+                      {} $ :records false
+                      :: :reel/toggle
+                    , :accepted
+                  fn (error) :rejected
+                assert= 0 @calls
+              :tags $ #{} :js-only :legacy-boundary :unit
+            %{} 'TestEntry
+              :name |legacy-business-map-writes-keep-callback-and-records
+              :code $ quote $ let
+                  calls $ ref 0
+                  updater $ fn (store op id time)
+                    hint-fn $ {}
+                      :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+                      :return 'Dynamic
+                    reset! calls $ inc @calls
+                    str (decode-map-as store 'String) (decode-map-as op 'Number)
+                  source $ {} (:base |base) (:store |base) (:stopped? false) (:extra |keep)
+                    :records $ []
+                  updated $ reel-updater updater source 5
+                  records $ reel.schema/checked-records $ reel.schema/read-field updated :records
+                  record $ decode-map-as
+                    .unwrap $ first records
+                    , 'List
+                  stopped $ .assoc source :stopped? true
+                  stopped-updated $ reel-updater updater stopped 7
+                assert= 1 @calls
+                assert= |base5 $ reel.schema/read-field updated :store
+                assert= |keep $ reel.schema/read-field updated :extra
+                assert= 1 $ count records
+                assert= 3 $ count record
+                assert= 5 $ .unwrap $ first record
+                assert= true $ string? $ .unwrap (nth record 1)
+                assert= true $ number? $ .unwrap (nth record 2)
+                assert= |base $ reel.schema/read-field source :store
+                assert= ([]) (reel.schema/read-field source :records)
+                assert= |base $ reel.schema/read-field stopped-updated :store
+                assert= 1 $ count $ reel.schema/checked-records (reel.schema/read-field stopped-updated :records)
+                assert= :propagated $ try
+                  do
+                    reel-updater
+                      fn (store op id time) (raise |callback-failure)
+                      , source 5
+                    , :accepted
+                  fn (error) :propagated
+              :tags $ #{} :js-only :legacy-boundary :unit
         'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-reel (reel base updater)
             let
@@ -889,43 +929,75 @@
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
             :features $ #{} :js-ffi
-          :tests $ [] $ %{} 'TestEntry (:name |legacy-refresh-checks-record-container)
-            :code $ quote $ let
-                updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
-                  str store op
-              assert= |next $ reel.schema/read-field
-                refresh-reel
-                  {} (:base |base) (:store |base)
+          :tests $ []
+            %{} 'TestEntry (:name |legacy-refresh-checks-record-container)
+              :code $ quote $ let
+                  updater $ fn (store op id time)
+                    hint-fn $ {}
+                      :args $ [] 'String 'Number 'String 'Number
+                      :return 'String
+                    str store op
+                assert= |next $ reel.schema/read-field
+                  refresh-reel
+                    {} (:base |base) (:store |base)
+                      :records $ []
+                      :merged? false
+                      :stopped? false
+                      :pointer nil
+                    , |next updater
+                  , :store
+                assert= |next5 $ reel.schema/read-field
+                  refresh-reel
+                    {} (:base |base) (:store |base)
+                      :records $ [] $ [] 5 |id 10
+                      :merged? false
+                      :stopped? false
+                      :pointer nil
+                    , |next updater
+                  , :store
+                assert= "|Reel records must be a List" $ try
+                  let ()
+                    refresh-reel
+                      {} (:base |base) (:store |base) (:records nil) (:merged? false) (:stopped? false) (:pointer nil)
+                      , |next updater
+                    , |unexpected-success
+                  fn (error)
+                    hint-fn $ {}
+                      :args $ [] 'String
+                      :return 'String
+                    , error
+              :tags $ #{} :unit
+            %{} 'TestEntry
+              :name |legacy-refresh-preserves-mixed-map-and-nominal-root
+              :code $ quote $ let
+                  updater $ fn (store op id time)
+                    hint-fn $ {}
+                      :args $ [] 'String 'Number 'String 'Number
+                      :return 'String
+                    str store op
+                  source $ {} (|extra 1) (42 false)
                     :records $ []
                     :merged? false
                     :stopped? false
-                    :pointer nil
-                  , |next updater
-                , :store
-              assert= |next5 $ reel.schema/read-field
-                refresh-reel
-                  {} (:base |base) (:store |base)
-                    :records $ [] $ [] 5 |id 10
-                    :merged? false
-                    :stopped? false
-                    :pointer nil
-                  , |next updater
-                , :store
-              assert= "|Reel records must be a List" $ try
-                let ()
-                  refresh-reel
-                    {} (:base |base) (:store |base) (:records nil) (:merged? false) (:stopped? false) (:pointer nil)
-                    , |next updater
-                  , |unexpected-success
-                fn (error)
-                  hint-fn $ {}
-                    :args $ [] 'String
-                    :return 'String
-                  , error
-            :tags $ #{} :unit
+                  refreshed $ refresh-reel source |next updater
+                  LegacyRefresh $ defstruct LegacyRefresh (:base 'String) (:store 'String)
+                    :records $ :: 'List 'Number
+                    :merged? 'Bool
+                    :stopped? 'Bool
+                  nominal $ LegacyRefresh :base |base :store |base :records ([]) :merged? false :stopped? false
+                  refreshed-nominal $ refresh-reel nominal |next updater
+                assert= (Option :some 1) (get refreshed |extra)
+                assert= (Option :some false) (get refreshed 42)
+                assert= |next $ reel.schema/read-field refreshed :base
+                assert= |next $ reel.schema/read-field refreshed :store
+                assert= (Option :none) (get source :base)
+                assert= (Option :none) (get source :store)
+                assert= (struct-definition nominal) (struct-definition refreshed-nominal)
+                assert= |next $ reel.schema/read-field refreshed-nominal :base
+                assert= |next $ reel.schema/read-field refreshed-nominal :store
+                assert= |base $ reel.schema/read-field nominal :base
+                assert= |base $ reel.schema/read-field nominal :store
+              :tags $ #{} :legacy-boundary :unit
         'remove-record-at $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-record-at (records idx)
             concat
@@ -1778,8 +1850,9 @@
               checked-map $ decode-map-as m 'Map
               &map:assoc checked-map k $ f $ .unwrap-or (get checked-map k) nil
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {}
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
+            :return $ :: 'Map 'Dynamic 'Dynamic
           :tests $ [] $ %{} 'TestEntry (:name |absence-migration-map-update-boundary)
             :code $ quote $ let
                 calls $ ref 0
