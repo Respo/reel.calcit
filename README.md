@@ -191,6 +191,10 @@ yarn vite build
 
 上述显式 JSON 用于现有 CI；普通查询默认优先 Cirru EDN。
 默认入口明确使用 JS/browser，test 入口保留原纯逻辑的 native 执行。
+正式候选 CI 另用 `respo-calcit-workflow` 精确源码作独立 typed Reel 消费者：
+在本模块已验证宿主依赖图上检查全部定义、完整 strict、原附着测试、codegen 和构建，
+并确认消费者 Snapshot 未变。这是源码兼容性 fixture，不等于该消费者自己的
+npm/部署图或真实浏览器验收；不修改、合并或部署该应用。
 不要只 emit 测试入口而漏掉
 renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 
