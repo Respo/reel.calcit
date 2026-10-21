@@ -5,11 +5,11 @@
   :entries $ {}
     :default $ {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :js) (:reload-fn 'reel.app.main/reload!) (:target :browser)
       :feature-policy $ {}
-      :modules $ [] |respo.calcit/ |respo-ui.calcit/
+      :modules $ [] |respo.calcit/
       :type-slots $ {}
     :test $ {} (:description "|Pure typed Reel native regression") (:init-fn 'reel.test-typed/main!) (:mode :native) (:reload-fn 'reel.test-typed/main!) (:target :native)
       :feature-policy $ {}
-      :modules $ [] |respo.calcit/ |respo-ui.calcit/
+      :modules $ [] |respo.calcit/
       :type-slots $ {}
   :files $ {}
     'reel.app.comp.container $ %{} 'FileEntry
@@ -31,8 +31,7 @@
         :code $ quote $ ns reel.app.comp.container
           :require
             respo.util.format :refer $ hsl
-            respo-ui.core :as ui
-            respo-ui.css :as css
+            reel.style :as css
             respo.core :refer $ defcomp <> >> div span
             respo.css :refer $ defstyle
             respo.comp.space :refer $ =<
@@ -86,8 +85,7 @@
             respo.css :refer $ defstyle
             respo.util.format :refer $ hsl
             respo.comp.space :refer $ =<
-            respo-ui.core :as ui
-            respo-ui.css :as css
+            reel.style :as css
     'reel.app.comp.todolist $ %{} 'FileEntry
       :defs $ {}
         'comp-todolist $ %{} 'CodeEntry (:doc |)
@@ -145,8 +143,7 @@
             respo.core :refer $ defcomp <> div span button input list->
             respo.css :refer $ defstyle
             respo.comp.space :refer $ =<
-            respo-ui.core :as ui
-            respo-ui.css :as css
+            reel.style :as css
             reel.app.comp.task :refer $ comp-task
     'reel.app.main $ %{} 'FileEntry
       :defs $ {}
@@ -500,12 +497,11 @@
           :require
             respo.core :refer $ defcomp <> div span style list-> memo-comp-by
             respo.css :refer $ defstyle
-            respo-ui.core :as ui
-            respo-ui.css :as css
+            reel.style :as css
             respo.comp.space :refer $ =<
             reel.style :as reel-style
             respo.util.format :refer $ hsl
-            respo-ui.util :refer $ tab-echo!
+            reel.util :refer $ tab-echo!
     'reel.comp.reel $ %{} 'FileEntry
       :defs $ {}
         'comp-operations $ %{} 'CodeEntry (:doc |)
@@ -648,8 +644,7 @@
             respo.css :refer $ defstyle
             respo.util.format :refer $ hsl
             respo.comp.inspect :refer $ comp-inspect
-            respo-ui.core :as ui
-            respo-ui.css :as css
+            reel.style :as css
             respo.comp.space :refer $ =<
             reel.comp.records :refer $ comp-records
             respo-value.comp.value :refer $ comp-value
@@ -1172,8 +1167,72 @@
         :code $ quote $ ns reel.schema
     'reel.style $ %{} 'FileEntry
       :defs $ {}
+        'button $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle button
+            {}
+              |$0 $ {} (:height |32px) (:padding "|0 12px") (:font-size |14px) (:border "|1px solid hsl(0 0% 85%)") (:border-radius |4px) (:background-color |white) (:cursor |pointer) (:display |inline-block) (:line-height |30px)
+              |$0:hover $ {} (:color "|var(--rui-color-primary, hsl(200 80% 50%))") (:border-color "|var(--rui-color-primary, hsl(200 80% 50%))")
+          :examples $ []
+        'column $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle column
+            {} $ |$0 $ {} (:display |flex) (:align-items |stretch) (:flex-direction |column)
+          :examples $ []
+        'expand $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle expand
+            {} $ |$0 $ {} (:flex |1) (:overflow |auto)
+          :examples $ []
+        'flex $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle flex
+            {} $ |$0 $ {} (:flex |1)
+          :examples $ []
+        'font-code $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle font-code
+            {} $ |$0 $ {}
+              :font-family "|var(--rui-font-mono, 'Source Code Pro', Menlo, 'Ubuntu Mono', Consolas, monospace)"
+          :examples $ []
+        'font-fancy $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle font-fancy
+            {} $ |$0 $ {}
+              :font-family "|var(--rui-font-display, 'Josefin Sans', 'Helvetica Neue', Arial, sans-serif)"
+          :examples $ []
+        'fullscreen $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle fullscreen
+            {} $ |$0 $ {} (:position |absolute) (:left 0) (:top 0) (:width |100%) (:height |100%) (:overflow |auto)
+          :examples $ []
+        'global $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle global
+            {} $ |$0 $ {}
+              :font-family "|var(--rui-font-body, -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif)"
+              :line-height |1.6
+              :font-size |14px
+          :examples $ []
+        'input $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle input
+            {}
+              |$0 $ {} (:height |32px) (:padding "|0 8px") (:font-size |14px) (:border "|1px solid hsl(0 0% 85%)") (:border-radius |4px) (:outline |none) (:min-width |120px)
+              |$0:focus $ {} $ :border-color "|var(--rui-color-primary, hsl(200 80% 50%))"
+          :examples $ []
+        'link $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle link
+            {}
+              |$0 $ {} (:display |inline-block) (:margin |4px) (:color "|var(--rui-color-primary, hsl(200 80% 50%))") (:text-decoration |underline) (:text-underline-offset |2px) (:cursor |pointer) (:user-select |none)
+              |$0:hover $ {} $ :color "|var(--rui-color-primary-hover, hsl(200 80% 40%))"
+          :examples $ []
+        'row $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle row
+            {} $ |$0 $ {} (:display |flex) (:align-items |stretch) (:flex-direction |row)
+          :examples $ []
+        'row-middle $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle row-middle
+            {} $ |$0 $ {} (:display |flex) (:align-items |center) (:justify-content |flex-start) (:flex-direction |row)
+          :examples $ []
+        'row-parted $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstyle row-parted
+            {} $ |$0 $ {} (:display |flex) (:align-items |center) (:justify-content |space-between) (:flex-direction |row)
+          :examples $ []
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.style
+          :require $ respo.css :refer $ defstyle
     'reel.test-typed $ %{} 'FileEntry
       :defs $ {} $ 'main!
         %{} 'CodeEntry (:doc |)
@@ -1823,6 +1882,58 @@
                 map-indexed-dynamic ([] |a |abc)
                   fn (index text) (.len text)
               :tags $ #{} :unit
+        'santinize-html-text $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn santinize-html-text (content)
+            &str:replace
+              &str:replace
+                &str:replace (&str:replace content |& |&amp;) |< |&lt;
+                , |> |&gt;
+              , "| " |&nbsp;
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'String)
+            :args $ [] 'String
+        'tab-echo! $ %{} 'CodeEntry
+          :doc "|Open the data in a new tab: :json or :edn as plain text, or by default in the EDN tree viewer. Moved from respo-ui.util so Reel no longer depends on respo-ui."
+          :code $ quote $ defn tab-echo! (data format)
+            match (option:unwrap-or format :viewer)
+              :json $ let
+                  content $ js-ffi.contract/expect-string |JSON.stringify $ js/JSON.stringify (to-js-data data) js/undefined 2
+                option:fold (browser/window-open |about:blank)
+                  fn () &unit
+                  fn (window)
+                    let
+                        document window.:document
+                      respo.dom/set-inner-html! (unsafe-coerce document.:body 'respo.dom/DomElement)
+                        str |<pre> (santinize-html-text content) |</pre>
+                    , &unit
+              :edn $ let
+                  content $ format-cirru-edn data
+                option:fold (browser/window-open |about:blank)
+                  fn () &unit
+                  fn (window)
+                    let
+                        document window.:document
+                      respo.dom/set-inner-html! (unsafe-coerce document.:body 'respo.dom/DomElement)
+                        str |<pre> (santinize-html-text content) |</pre>
+                    , &unit
+              _ $ let
+                  content $ format-cirru-edn $ :: :tab-echo data
+                  app |https://r.tiye.me/Memkits/edn-tree-viewer/?mode=dev
+                option:fold (browser/window-open app)
+                  fn () &unit
+                  fn (window)
+                    browser/set-timeout!
+                      fn () $ window .post-message! content |https://r.tiye.me
+                      , 20
+                    browser/set-timeout!
+                      fn () $ window .post-message! content |https://r.tiye.me
+                      , 200
+                    , &unit
+            , &unit
+          :examples $ []
+          :schema $ :: 'Fn $ {} (:return 'Unit)
+            :args $ [] 'Dynamic $ :: 'calcit.core/Option 'Tag
+            :features $ #{} :js-ffi
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
             if (.some? o) (.unwrap o) (raise "|unexpected none")

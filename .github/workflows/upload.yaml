@@ -82,7 +82,7 @@ jobs:
         cp "$GITHUB_WORKSPACE/deps.cirru" "$GITHUB_WORKSPACE/package.json" "$GITHUB_WORKSPACE/yarn.lock" .
         ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
         mkdir -p .calcit/modules
-        for module in respo-ui.calcit respo.calcit js-ffi respo-router.calcit; do
+        for module in respo.calcit js-ffi; do
           ln -s "$GITHUB_WORKSPACE/.calcit/modules/$module" ".calcit/modules/$module"
         done
         ln -s "$GITHUB_WORKSPACE" .calcit/modules/reel.calcit
