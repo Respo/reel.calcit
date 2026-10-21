@@ -7,16 +7,18 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.30.1 迁移配对
 
-本分支的候选模块为 `0.6.40`，使用已发布的精确依赖图；发布状态以对应 Release 为准。
-其中 Calcit 编译器仍固定为预发布版本，不代表本模块已经完成正式 0.30.1 或 0.31.0 配对：
+使用者注意：本分支候选模块 `0.6.41` 配对正式 Calcit `0.30.1`，必须同步下表
+完整正式依赖图，不混用旧 alpha，也不关闭 Caps strict。源码版本号不代表已经发布。
+本次不改 Reel API、业务操作、历史重放、旧 Map 与 typed 合同；UI 从 0.7 升至
+0.8，基础样式可能变化，需要完整刷新并验收实际页面，不承诺外观逐像素一致。
 
 | 组件 | 版本 |
 | --- | --- |
-| Calcit CLI / `@calcit/procs` | `0.30.1-alpha.5` |
-| Respo | `0.16.122` |
-| Respo UI | `0.7.41` |
-| js-ffi | `0.2.3` |
-| Router（传递依赖） | `0.8.36` |
+| Calcit CLI / `@calcit/procs` | `0.30.1` |
+| Respo | `0.16.124` |
+| Respo UI | `0.8.0` |
+| js-ffi | `0.2.5` |
+| Router（传递依赖） | `0.8.37` |
 
 是否已正式发布，请以 [Releases](https://github.com/Respo/reel.calcit/releases)
 中的同名 tag 为准；源码版本号不等于发版证据。不要混用旧 CLI 与新 JS
@@ -37,8 +39,9 @@ false/0/空串 key 与开放业务操作的显示保持原样；整张 keyed 历
 状态。非法 record、cursor、render action 或宿主数值会在消费处明确报错，
 不会补成空列表、默认操作或业务值。更新后完整刷新已打开的 demo 页面。
 
-Calcit 0.30.1 已稳定发布；本分支仍保持上表的 alpha.5 配对，只证明此模块已验证的范围，
-不代表所有消费者已经完成迁移。模块发布也不合并或部署下游业务应用。
+Calcit 0.30.1 已稳定发布；本候选需在完整 strict、原 native/JS 回放、实际 Demo
+和独立消费者验收后再发布，不代表所有消费者已经完成迁移。
+本 PR 不合并或部署下游业务应用；合并本库会触发原有 Demo 前端部署，需单独确认。
 
 ### 已知 Map 写入与旧兼容出口
 
@@ -51,7 +54,8 @@ callback、缺失时传 nil、求值次数、错误传播和原检查顺序均�
 `refresh-reel` 的两个旧 `assoc` 仍是明确的兼容出口：它既允许混合键 Map，
 也允许字段可以校验的名义 Struct。不能为消除调用而把参数改成 Tag-only Map，
 也不能用未知泛型字段的动态写入冒充静态证明。新代码继续使用已有的 typed API；
-这些兼容调用未完成退场，本次不删除旧 API，也不更新模块或工具链版本。
+这些兼容调用未完成退场，本次不删除旧 API。此前 Map 写入收敛没有升级工具链；
+本候选另按上表完成正式工具链配对。
 
 公开 `get` / `first` / `last` 的 Option 只在具名的旧协议、展示或开放 callback
 边界恢复 nil。Map 中存在的 nil、缺失键、false、0 和空字符串继续按原行为
@@ -170,7 +174,7 @@ Demo 的 updater 目前只处理 `:states`，Add/Try 会记录消息并提示未
 yarn install --immutable
 calcit edit format
 git diff --exit-code -- calcit.cirru
-calcit --check-only
+calcit --check-only --all-defs
 calcit fix --workflow strict --verify --format edn
 calcit test --exclude-tag js-only --require-match
 calcit --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
@@ -187,6 +191,10 @@ yarn vite build
 
 上述显式 JSON 用于现有 CI；普通查询默认优先 Cirru EDN。
 默认入口明确使用 JS/browser，test 入口保留原纯逻辑的 native 执行。
+正式候选 CI 另用 `respo-calcit-workflow` 精确源码作独立 typed Reel 消费者：
+在本模块已验证宿主依赖图上检查全部定义、完整 strict、原附着测试、codegen 和构建，
+并确认消费者 Snapshot 未变。这是源码兼容性 fixture，不等于该消费者自己的
+npm/部署图或真实浏览器验收；不修改、合并或部署该应用。
 不要只 emit 测试入口而漏掉
 renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 
@@ -197,7 +205,8 @@ renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 新宿主/样式回归仍在定义 `:tests`，标为 `:js-only` 后只在生成 JS 上回放；
 原有测试与新增共享测试在 native/JS 两端原样执行，不将样式或宿主实现伪装成 native 支持。
 
-当前候选在上表发布图下通过正常 Caps strict、工具链精确配对、不可变安装和完整 strict。
+以下是 `0.6.40` 原 alpha.5 依赖图的历史验收，不冒充本候选正式配对已通过。
+当时通过正常 Caps strict、工具链精确配对、不可变安装和完整 strict。
 原 24 项附带测试与既有三项共享、两项 JS-only 回归继续保留；本次再增加一项
 共享兼容边界和一项真实 JS dispatcher 回归，共 28 项 native / 31 项生成 JS
 通过。原 native entry、typed/旧 API suite、SSR 与

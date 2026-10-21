@@ -47,7 +47,7 @@ jobs:
         caps deps.cirru verify --toolchain
         calcit calcit.cirru edit format
         git diff --exit-code -- calcit.cirru
-        calcit calcit.cirru --check-only
+        calcit calcit.cirru --check-only --all-defs
         calcit calcit.cirru fix --workflow strict --verify --format json | jq -e '.data.workflow.status == "passed" and .diagnostics == []'
         calcit calcit.cirru test --exclude-tag js-only --require-match --summary-only --format json
         calcit calcit.cirru --check-only --ns reel.core --ns reel.schema --ns reel.typed --ns reel.typed-compat --ns reel.util --summary-only
@@ -64,6 +64,34 @@ jobs:
         calcit --entry test
         calcit --init-fn reel.test-typed/main! --reload-fn reel.comp.reel/comp-typed-reel --emit-path test-js-out js
         yarn node tests/typed-reel.mjs
+
+    - name: Check out an independent typed Reel consumer
+      uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+      with:
+        repository: calcit-lang/respo-calcit-workflow
+        ref: bcaa0d2d8fb189d161fd1e4ec6120dff73a4cf01
+        path: .calcit/workflow-consumer
+        persist-credentials: false
+
+    - name: Check original workflow source against this Reel
+      working-directory: .calcit/workflow-consumer
+      run: |
+        set -euo pipefail
+        # Source compatibility fixture, not the consumer's own npm/deployment graph.
+        git rev-parse HEAD
+        cp "$GITHUB_WORKSPACE/deps.cirru" "$GITHUB_WORKSPACE/package.json" "$GITHUB_WORKSPACE/yarn.lock" .
+        ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
+        mkdir -p .calcit/modules
+        for module in respo-ui.calcit respo.calcit js-ffi respo-router.calcit; do
+          ln -s "$GITHUB_WORKSPACE/.calcit/modules/$module" ".calcit/modules/$module"
+        done
+        ln -s "$GITHUB_WORKSPACE" .calcit/modules/reel.calcit
+        calcit --check-only --all-defs
+        calcit fix --workflow strict --verify --format json | jq -e 'if .data.workflow.status == "passed" and .diagnostics == [] then true else ., false end'
+        calcit test --require-match --summary-only --format json
+        calcit js
+        yarn vite build --base=./
+        git diff --quiet -- . ':!deps.cirru' ':!package.json' ':!yarn.lock'
 
     - name: Select CDN asset prefix
       id: asset-path
