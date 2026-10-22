@@ -6,7 +6,7 @@
     :default $ {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :js) (:reload-fn 'reel.app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/
-      :type-slots $ {}
+      :type-slots $ {} $ :dispatch-op |reel.app.updater/Op
     :test $ {} (:description "|Pure typed Reel native regression") (:init-fn 'reel.test-typed/main!) (:mode :native) (:reload-fn 'reel.test-typed/main!) (:target :native)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/
@@ -232,12 +232,7 @@
           :code $ quote $ defn render-app! ()
             render! mount-target
               comp-container $ assert-type @*reel $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
-              fn (op)
-                hint-fn $ {}
-                  :args $ [] 'Dynamic
-                  :return 'Unit
-                if (enum? op) (dispatch! op) (raise "|Expected an Enum render action")
-                , &unit
+              , dispatch!
           :examples $ []
           :schema $ :: 'Fn $ {} (:return 'Dynamic)
             :args $ []
@@ -257,8 +252,26 @@
             js-ffi.browser :as browser
             respo.ffi.browser :as dom
     'reel.app.updater $ %{} 'FileEntry
-      :defs $ {} $ 'updater
-        %{} 'CodeEntry (:doc |)
+      :defs $ {}
+        'Op $ %{} 'CodeEntry
+          :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Includes the :reel/* controls that comp-reel sends."
+          :code $ quote $ defenum Op
+            :states (:: 'List 'Dynamic) 'Dynamic
+            :task/add 'Dynamic
+            :task/toggle 'Dynamic
+            :task/edit 'Dynamic 'Dynamic
+            :task/remove 'Dynamic
+            :try
+            :reel/toggle
+            :reel/recall 'Number
+            :reel/run
+            :reel/step
+            :reel/merge
+            :reel/reset
+            :reel/remove 'Number
+          :examples $ []
+          :schema $ :: 'EnumDef
+        'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
               (:states cursor s)
@@ -1959,7 +1972,9 @@
           :code $ quote $ defn update-map-dynamic (m k f)
             &let
               checked-map $ decode-map-as m 'Map
-              &map:assoc checked-map k $ f $ .unwrap-or (get checked-map k) nil
+              &map:assoc checked-map k $ if (fn? f)
+                f $ .unwrap-or (get checked-map k) nil
+                raise "|update-map-dynamic expects a function"
           :examples $ []
           :schema $ :: 'Fn $ {}
             :args $ [] 'Dynamic 'Dynamic 'Dynamic
