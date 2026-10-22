@@ -261,7 +261,7 @@
             :task/toggle 'Dynamic
             :task/edit 'Dynamic 'Dynamic
             :task/remove 'Dynamic
-            :try
+            :try 'Dynamic 'Dynamic
             :reel/toggle
             :reel/recall 'Number
             :reel/run
