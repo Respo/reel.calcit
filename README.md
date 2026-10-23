@@ -7,18 +7,20 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.30.1 迁移配对
 
-使用者注意：本分支候选模块 `0.6.41` 配对正式 Calcit `0.30.1`，必须同步下表
+使用者注意：本维护候选模块 `0.6.42` 配对正式 Calcit `0.30.1`，必须同步下表
 完整正式依赖图，不混用旧 alpha，也不关闭 Caps strict。源码版本号不代表已经发布。
-本次不改 Reel API、业务操作、历史重放、旧 Map 与 typed 合同；UI 从 0.7 升至
-0.8，基础样式可能变化，需要完整刷新并验收实际页面，不承诺外观逐像素一致。
+本次保留 Reel API、业务操作、历史重放、旧 Map 与 typed 合同；迁移源码及附带测试的
+旧 Option/构造写法和内部 concat，不改原断言或业务缺失值。Demo 挂载点改用 Respo
+已有的 typed 查询，保留对象身份和未命中时抛错，移除一处 Dynamic 强转；键盘宿主边界保留。
+CLI/runtime 仍为正式0.30.1，应用需配对同一直接/传递图，不只改根 pin 或放宽 strict。
 
 | 组件 | 版本 |
 | --- | --- |
 | Calcit CLI / `@calcit/procs` | `0.30.1` |
-| Respo | `0.16.124` |
-| Respo UI | `0.8.0` |
-| js-ffi | `0.2.5` |
-| Router（传递依赖） | `0.8.37` |
+| Respo | `0.16.126` |
+| Respo UI | `0.8.1` |
+| js-ffi | `0.2.6` |
+| Router（传递依赖） | `0.8.38` |
 
 是否已正式发布，请以 [Releases](https://github.com/Respo/reel.calcit/releases)
 中的同名 tag 为准；源码版本号不等于发版证据。不要混用旧 CLI 与新 JS
@@ -41,7 +43,9 @@ false/0/空串 key 与开放业务操作的显示保持原样；整张 keyed 历
 
 Calcit 0.30.1 已稳定发布；本候选需在完整 strict、原 native/JS 回放、实际 Demo
 和独立消费者验收后再发布，不代表所有消费者已经完成迁移。
-本 PR 不合并或部署下游业务应用；合并本库会触发原有 Demo 前端部署，需单独确认。
+本补丁从正式0.6.41建立独立 `maintenance/0.30.1`，不回退较新main。
+维护线及其PR只检查和构建，PR保存相对路径artifact，不上传COS或rsync，不部署Demo、
+不发布npm、不合并或部署下游业务应用。main与面向main的原预览、部署路径和COS内置verify保持。
 
 ### 已知 Map 写入与旧兼容出口
 
@@ -217,7 +221,7 @@ renderer 根，否则 Node 的 SSR 验证会缺少生成模块。
 真实浏览器验证 Unicode 输入、第一条历史回溯、Step、Run、删除选中记录及 Reset，
 控制台无 warning/error。原测试名、标签与断言不变，不新增 Option→nil 回流、Dynamic 或 unsafe。
 现有旧 Map/展示边界仍有未解决类型债务，不宣称全模块类型闭合。最新 HEAD 的 CI/review
-和精确 main 部署成功后才发布模块，后续应用验收仍须独立完成。
+和精确维护线合并CI通过后才发布本补丁；不要求部署Demo，后续应用验收仍须独立完成。
 
 ## COS/CDN 配置
 
