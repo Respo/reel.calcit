@@ -1386,31 +1386,31 @@
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
-                %some $ %:: Control :toggle
+                Option :some $ %:: Control :toggle
                 decode-control $ :: :reel/toggle
               assert=
-                %some $ %:: Control :recall 2
+                Option :some $ %:: Control :recall 2
                 decode-control $ :: :reel/recall 2
               assert=
-                %some $ %:: Control :run
+                Option :some $ %:: Control :run
                 decode-control $ :: :reel/run
               assert=
-                %some $ %:: Control :step
+                Option :some $ %:: Control :step
                 decode-control $ :: :reel/step
               assert=
-                %some $ %:: Control :merge
+                Option :some $ %:: Control :merge
                 decode-control $ :: :reel/merge
               assert=
-                %some $ %:: Control :reset
+                Option :some $ %:: Control :reset
                 decode-control $ :: :reel/reset
               assert=
-                %some $ %:: Control :remove 1
+                Option :some $ %:: Control :remove 1
                 decode-control $ :: :reel/remove 1
-              assert= (%none)
+              assert= (Option :none)
                 decode-control $ :: :app/update |text
-              assert= (%none)
+              assert= (Option :none)
                 decode-control $ :: :reel/recall |bad
-              assert= (%none)
+              assert= (Option :none)
                 decode-control $ :: :reel/remove |bad
         'merge-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn merge-reel (updater reel)
@@ -1454,7 +1454,7 @@
               do
                 assert= |base5 $ :base merged
                 assert= |base5 $ :store merged
-                assert= (%some 0) (:pointer merged)
+                assert= (Option :some 0) (:pointer merged)
                 assert=
                   [] $ new-record 7 |two 20
                   :records merged
@@ -1554,7 +1554,7 @@
               do
                 assert= |base $ :store stopped
                 assert= true $ :stopped? stopped
-                assert= (%some 0) (:pointer stopped)
+                assert= (Option :some 0) (:pointer stopped)
                 assert= |base $ :store queued
                 assert= 2 $ count $ :records queued
                 assert= |base57 $ :store running
@@ -1668,7 +1668,7 @@
               do
                 assert= |base5 $ :store reset-paused
                 assert= 1 $ count $ :records reset-paused
-                assert= (%some 1) (:pointer reset-paused)
+                assert= (Option :some 1) (:pointer reset-paused)
                 assert= |base $ :store reset-live
                 assert= 0 $ count $ :records reset-live
                 assert= |next57 $ :store $ refresh updater live |next
@@ -1742,7 +1742,7 @@
                 assert= |base57 $ :store step-two
                 assert= |base $ :store $ step updater (step updater step-two)
                 assert= |base5 $ :store removed
-                assert= (%some 1) (:pointer removed)
+                assert= (Option :some 1) (:pointer removed)
                 assert=
                   [] (new-record 5 |one 10) (new-record 9 |three 30)
                   :records removed
