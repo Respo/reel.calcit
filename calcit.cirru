@@ -179,11 +179,9 @@
             :args $ [] 'Enum
         'get-mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-mount-target ()
-            unsafe-coerce
-              option:unwrap $ browser/query-selector |.app
-              quote Dynamic
+            .unwrap $ dom/query-selector |.app
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
+          :schema $ :: 'Fn $ {} (:return 'respo.dom/DomElement)
             :args $ []
             :features $ #{} :js-ffi
         'main! $ %{} 'CodeEntry (:doc |)
@@ -207,7 +205,7 @@
           :code $ quote $ def mount-target
             .unwrap $ dom/query-selector |.app
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ :: 'respo.dom/DomElement
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -565,7 +563,7 @@
                               get records $ dec stopped-pointer
                               Option :none
                           last records
-                      if (option:some? record)
+                      if (.some? record)
                         let[] (action op-id op-time)
                           decode-map-as (reel.util/unwrap-option record) 'List
                           div
@@ -751,7 +749,7 @@
               assert= false $ reel-control-op? $ :: :task/add
         'reel-updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reel-updater (updater reel op)
-            ; println |Name: $ turn-string op
+            ; println |Name: $ to-lispy-string op
             let
                 result $ let
                     op-id $ generate-id!
@@ -1193,7 +1191,7 @@
               assert= |base $ :store queued
               assert= |base57 $ :store running
               assert= false $ :stopped? running
-              assert= true $ option:none? $ :pointer running
+              assert= true $ .none? $ :pointer running
               assert=
                 [] (typed/new-record 5 |one 10) (typed/new-record 7 |two 20)
                 :records running
@@ -1242,9 +1240,9 @@
               (:remove pointer)
                 if
                   and
-                    option:some? $ :pointer reel
+                    .some? $ :pointer reel
                     =
-                      option:unwrap $ :pointer reel
+                      .unwrap $ :pointer reel
                       , pointer
                   remove-current updater reel
                   , reel
@@ -1272,19 +1270,19 @@
                 paused $ recall updater live 1
               do
                 assert= (toggle-display live)
-                  apply-control updater live $ %:: Control :toggle
-                assert= paused $ apply-control updater live $ %:: Control :recall 1
+                  apply-control updater live $ Control :toggle
+                assert= paused $ apply-control updater live $ Control :recall 1
                 assert= (resume updater paused)
-                  apply-control updater paused $ %:: Control :run
+                  apply-control updater paused $ Control :run
                 assert= (step updater paused)
-                  apply-control updater paused $ %:: Control :step
+                  apply-control updater paused $ Control :step
                 assert= (merge-reel updater paused)
-                  apply-control updater paused $ %:: Control :merge
+                  apply-control updater paused $ Control :merge
                 assert= (reset-reel paused)
-                  apply-control updater paused $ %:: Control :reset
+                  apply-control updater paused $ Control :reset
                 assert= (remove-current updater paused)
-                  apply-control updater paused $ %:: Control :remove 1
-                assert= paused $ apply-control updater paused $ %:: Control :remove 2
+                  apply-control updater paused $ Control :remove 1
+                assert= paused $ apply-control updater paused $ Control :remove 2
         'decode-control $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-control (op)
             match op
@@ -1314,31 +1312,31 @@
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
-                %some $ %:: Control :toggle
+                Option :some $ Control :toggle
                 decode-control $ :: :reel/toggle
               assert=
-                %some $ %:: Control :recall 2
+                Option :some $ Control :recall 2
                 decode-control $ :: :reel/recall 2
               assert=
-                %some $ %:: Control :run
+                Option :some $ Control :run
                 decode-control $ :: :reel/run
               assert=
-                %some $ %:: Control :step
+                Option :some $ Control :step
                 decode-control $ :: :reel/step
               assert=
-                %some $ %:: Control :merge
+                Option :some $ Control :merge
                 decode-control $ :: :reel/merge
               assert=
-                %some $ %:: Control :reset
+                Option :some $ Control :reset
                 decode-control $ :: :reel/reset
               assert=
-                %some $ %:: Control :remove 1
+                Option :some $ Control :remove 1
                 decode-control $ :: :reel/remove 1
-              assert= (%none)
+              assert= (Option :none)
                 decode-control $ :: :app/update |text
-              assert= (%none)
+              assert= (Option :none)
                 decode-control $ :: :reel/recall |bad
-              assert= (%none)
+              assert= (Option :none)
                 decode-control $ :: :reel/remove |bad
         'merge-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn merge-reel (updater reel)
@@ -1382,7 +1380,7 @@
               do
                 assert= |base5 $ :base merged
                 assert= |base5 $ :store merged
-                assert= (%some 0) (:pointer merged)
+                assert= (Option :some 0) (:pointer merged)
                 assert=
                   [] $ new-record 7 |two 20
                   :records merged
@@ -1416,7 +1414,7 @@
                 assert= |initial $ :base reel
                 assert= |initial $ :store reel
                 assert= 0 $ count $ :records reel
-                assert= true $ option:none? $ :pointer reel
+                assert= true $ .none? $ :pointer reel
                 assert= false $ :stopped? reel
                 assert= false $ :display? reel
                 assert= false $ :merged? reel
@@ -1482,12 +1480,12 @@
               do
                 assert= |base $ :store stopped
                 assert= true $ :stopped? stopped
-                assert= (%some 0) (:pointer stopped)
+                assert= (Option :some 0) (:pointer stopped)
                 assert= |base $ :store queued
                 assert= 2 $ count $ :records queued
                 assert= |base57 $ :store running
                 assert= false $ :stopped? running
-                assert= true $ option:none? $ :pointer running
+                assert= true $ .none? $ :pointer running
                 assert= |base5 $ :store $ recall updater running 1
                 assert= |base57 $ :store $ recall updater running 2
         'record-op $ %{} 'CodeEntry (:doc |)
@@ -1552,7 +1550,7 @@
               let
                   pointer $ reel.util/unwrap-option $ :pointer reel
                 if (&= pointer 0) reel $ let
-                    records $ &list:concat
+                    records $ concat
                       &list:slice (:records reel) 0 $ dec pointer
                       &list:slice (:records reel) pointer $ count $ :records reel
                     next $ struct-with reel $ :records records
@@ -1596,7 +1594,7 @@
               do
                 assert= |base5 $ :store reset-paused
                 assert= 1 $ count $ :records reset-paused
-                assert= (%some 1) (:pointer reset-paused)
+                assert= (Option :some 1) (:pointer reset-paused)
                 assert= |base $ :store reset-live
                 assert= 0 $ count $ :records reset-live
                 assert= |next57 $ :store $ refresh updater live |next
@@ -1670,7 +1668,7 @@
                 assert= |base57 $ :store step-two
                 assert= |base $ :store $ step updater (step updater step-two)
                 assert= |base5 $ :store removed
-                assert= (%some 1) (:pointer removed)
+                assert= (Option :some 1) (:pointer removed)
                 assert=
                   [] (new-record 5 |one 10) (new-record 9 |three 30)
                   :records removed
