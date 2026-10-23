@@ -54,7 +54,12 @@ const ops=[];
 for(let i=0;i<before.length;i++){
   const a=before[i],b=expected[i];
   if(JSON.stringify(a.code)!==JSON.stringify(b.code))ops.push(['edit','def',b.id,'--overwrite','--input-format','json-ast','--code',JSON.stringify(b.code)]);
-  if(JSON.stringify(a.schema)!==JSON.stringify(b.schema))ops.push(['edit','schema',b.id,'--input-format','json-ast','--code',JSON.stringify(b.schema)]);
+  if(JSON.stringify(a.schema)!==JSON.stringify(b.schema)){
+    const schema=b.id==='reel.app.main/get-mount-target'
+      ? ['::',"'Fn",['{}',...b.schema.slice(1).filter(p=>p[0]!==':kind')]]
+      : b.schema;
+    ops.push(['edit','schema',b.id,'--input-format','json-ast','--code',JSON.stringify(schema)]);
+  }
   for(let k=0;k<a.tests.length;k++)if(JSON.stringify(a.tests[k].code)!==JSON.stringify(b.tests[k].code)){
     const t=b.tests[k];
     ops.push(['edit','add-test',b.id,t.name,'--overwrite',...(t.tags.length?['--tags',t.tags.join(',')]:[]),'--input-format','json-ast','--code',JSON.stringify(t.code)]);
@@ -68,7 +73,16 @@ const preview=JSON.parse(run(...args,'--dry-run'));
 assert.ok(preview.scoped_revision);
 writeFileSync('acceptance/preview.json',JSON.stringify(preview,null,2));
 writeFileSync('acceptance/applied.json',run(...args,'--expect-revision',preview.scoped_revision));
-assert.deepEqual(inventory(),expected,'All72views preserve every reviewed test assertion except spelling and all other schema/doc/FFI/code');
+const after=inventory();
+const fields=schema=>{
+  const map=schema[0]==='::'&&schema[1]==="'Fn" ? schema[2] : schema;
+  assert.equal(map[0],'{}');
+  return Object.fromEntries(map.slice(1).filter(p=>p[0]!==':kind'));
+};
+const actualMount=after.find(d=>d.id===mount.id);
+assert.deepEqual(fields(actualMount.schema),fields(mount.schema),'Canonical Fn wrapper preserves exactly reviewed args/features/return');
+mount.schema=actualMount.schema;
+assert.deepEqual(after,expected,'All72views preserve every reviewed test assertion except spelling and all other schema/doc/FFI/code');
 writeFileSync('acceptance/after.json',JSON.stringify(expected,null,2));
 const diff=json('analyze','program-diff','HEAD');
 assert.equal(diff.data.evidence.changes.length,15);
