@@ -315,9 +315,11 @@
           :code $ quote $ defcomp comp-record-item (record pointed? idx)
             div
               {} (:class-name css-record)
-                :style $ if pointed? $ {}
-                  :background-color $ hsl 220 20 56
-                  :color :white
+                :style $ if pointed?
+                  {}
+                    :background-color $ hsl 220 20 56
+                    :color :white
+                  {}
                 :on-click $ on-recall idx
               ; <> $ to-lispy-string $ first record
               comp-action $ .unwrap-or (first record) nil
