@@ -12,15 +12,15 @@ __metadata:
   languageName: node
   linkType: hard
 
-"@calcit/procs@npm:0.31.0-alpha.2":
-  version: 0.31.0-alpha.2
-  resolution: "@calcit/procs@npm:0.31.0-alpha.2"
+"@calcit/procs@npm:0.31.0-alpha.4":
+  version: 0.31.0-alpha.4
+  resolution: "@calcit/procs@npm:0.31.0-alpha.4"
   dependencies:
     "@calcit/finger-vec": "npm:0.1.1"
     "@calcit/ternary-tree": "npm:0.0.26"
     "@cirru/parser.ts": "npm:0.0.10"
     "@cirru/writer.ts": "npm:^0.1.9"
-  checksum: 10c0/2b2cd01509ce5fed25b1f73205ee5b4bc347de3fb2bd82b334677efe8da2c0bdf20874b51f9e6423bf6ca4b2867e10be6a87f48c84554403ca93ff51ac6c4165
+  checksum: 10c0/b944fe8d9b2c0476e62799880c4192c456ef7924acd76457bd8571c11fe61c6b1fd17269b011ab3f706517e151d88d48e1fde16d19695044ad8641d79fa792f7
   languageName: node
   linkType: hard
 
@@ -683,7 +683,7 @@ __metadata:
   version: 0.0.0-use.local
   resolution: "root-workspace-0b6124@workspace:."
   dependencies:
-    "@calcit/procs": "npm:0.31.0-alpha.2"
+    "@calcit/procs": "npm:0.31.0-alpha.4"
     bottom-tip: "npm:^0.1.5"
     vite: "npm:^8.0.16"
   languageName: unknown
