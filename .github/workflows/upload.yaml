@@ -81,10 +81,10 @@ jobs:
         git rev-parse HEAD
         cp "$GITHUB_WORKSPACE/deps.cirru" "$GITHUB_WORKSPACE/package.json" "$GITHUB_WORKSPACE/yarn.lock" .
         # Reel no longer depends on respo-ui, but this consumer's own source still loads it.
-        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.8.0) #' deps.cirru
+        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.9.0-alpha.4) #' deps.cirru
         grep -q 'Respo/respo-ui.calcit' deps.cirru
         ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
-        caps
+        caps --strict --ci
         ln -s "$GITHUB_WORKSPACE" .calcit/modules/reel.calcit
         calcit --check-only --all-defs
         calcit fix --workflow strict --verify --format json | jq -e 'if .data.workflow.status == "passed" and .diagnostics == [] then true else ., false end'

@@ -105,7 +105,7 @@
                         = (reel.schema/read-field e :keycode) 13
                         do
                           d! $ :: :task/add state
-                          d! $ :: :states ([]) |
+                          d! $ :: :states cursor |
                       , &unit
                   =< 8 nil
                   button
@@ -271,6 +271,23 @@
             :reel/remove 'Number
           :examples $ []
           :schema $ :: 'EnumDef
+        'Task $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defstruct Task (:id 'String) (:text 'String) (:done? 'Bool)
+          :examples $ []
+          :schema $ :: 'StructDef
+        'read-tasks $ %{} 'CodeEntry
+          :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
+          :code $ quote $ defn read-tasks (store)
+            decode-map-as
+              .map
+                decode-map-as (reel.schema/read-field store :tasks) (:: 'List 'Dynamic)
+                fn (raw)
+                  if (struct? raw) (&struct:to-map raw) raw
+              :: 'List 'Task
+          :examples $ []
+          :schema $ :: 'Fn $ {}
+            :args $ [] $ :: 'Map 'Dynamic 'Dynamic
+            :return $ :: 'List 'Task
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -278,6 +295,34 @@
                 decode-map-as
                   update-states store (decode-map-as cursor 'List) s
                   :: 'Map 'Dynamic 'Dynamic
+              (:task/add text)
+                .assoc store :tasks $ .append (read-tasks store)
+                  Task :id op-id :text (decode-map-as text 'String) :done? false
+              (:task/toggle raw-id)
+                let
+                    id $ decode-map-as raw-id 'String
+                  .assoc store :tasks $ .map (read-tasks store)
+                    fn (task)
+                      if
+                        = id $ :id task
+                        .assoc task :done? $ not $ :done? task
+                        , task
+              (:task/edit raw-id raw-text)
+                let
+                    id $ decode-map-as raw-id 'String
+                    text $ decode-map-as raw-text 'String
+                  .assoc store :tasks $ .map (read-tasks store)
+                    fn (task)
+                      if
+                        = id $ :id task
+                        .assoc task :text text
+                        , task
+              (:task/remove raw-id)
+                let
+                    id $ decode-map-as raw-id 'String
+                  .assoc store :tasks $ .filter (read-tasks store)
+                    fn (task)
+                      not= id $ :id task
               _ $ do
                 host/console-warn! $ str "|Unknown op" op
                 , store
@@ -286,6 +331,57 @@
             :args $ [] (:: 'Map 'Dynamic 'Dynamic) 'Enum 'String 'Number
             :features $ #{} :js-ffi
             :return $ :: 'Map 'Dynamic 'Dynamic
+          :tests $ []
+            %{} 'TestEntry
+              :name |demo-task-operations-preserve-id-order-and-input
+              :code $ quote $ let
+                  initial-store $ {}
+                    :states $ {}
+                    :tasks $ []
+                  added $ updater initial-store (:: :task/add "|合成🐈") |id-031 100
+                  second $ updater added (:: :task/add "|第二项") |id-032 101
+                  toggled $ updater second (:: :task/toggle |id-031) |toggle 102
+                  edited $ updater toggled (:: :task/edit |id-031 "|已编辑🐈") |edit 103
+                  removed $ updater edited (:: :task/remove |id-031) |remove 104
+                assert=
+                  [] $ Task :id |id-031 :text "|合成🐈" :done? false
+                  read-tasks added
+                assert=
+                  [] (Task :id |id-031 :text "|已编辑🐈" :done? true) (Task :id |id-032 :text "|第二项" :done? false)
+                  read-tasks edited
+                assert=
+                  [] $ Task :id |id-032 :text "|第二项" :done? false
+                  read-tasks removed
+                assert= (read-tasks initial-store) ([])
+              :tags $ #{} :unit
+            %{} 'TestEntry (:name |demo-task-history-preserves-record-identities)
+              :code $ quote $ let
+                  initial-store $ decode-map-as
+                    {}
+                      :states $ {}
+                      :tasks $ []
+                    :: 'Map 'Dynamic 'Dynamic
+                  initial-reel $ decode-map-as
+                    .to-map $ reel.typed/new-reel initial-store
+                    :: 'reel.typed/State 'reel.app.updater/Op $ :: 'Map 'Dynamic 'Dynamic
+                  added $ reel.typed/record-op updater initial-reel (reel.app.updater/Op :task/add "|原文") |stable-031 100
+                  edited $ reel.typed/record-op updater added (reel.app.updater/Op :task/edit |stable-031 "|改写🐈") |edit-031 101
+                  paused $ reel.typed/recall updater edited 0
+                  queued $ reel.typed/record-op updater paused (reel.app.updater/Op :task/toggle |stable-031) |toggle-031 102
+                  running $ reel.typed/resume updater queued
+                  refreshed $ reel.typed/refresh updater running initial-store
+                  without-add $ reel.typed/resume updater $ reel.typed/remove-current updater (reel.typed/recall updater running 1)
+                assert= initial-store $ :store queued
+                assert=
+                  [] $ Task :id |stable-031 :text "|改写🐈" :done? true
+                  read-tasks $ :store running
+                assert= (:store running) (:store refreshed)
+                assert= (:records running) (:records refreshed)
+                assert= (:store running)
+                  :store $ reel.typed/merge-reel updater running
+                assert= ([])
+                  read-tasks $ :store without-add
+              :tags $ #{} :unit
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.updater
           :require

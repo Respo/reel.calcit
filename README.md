@@ -5,21 +5,34 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 推荐新应用使用 typed API；旧 Map API 保留，避免在
 升级时同时改写应用业务状态。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
+使用者影响：本次 `0.7.0-alpha.4` 候选对齐 Respo `0.17.0-alpha.4` 与 JS-FFI `0.2.7` 的 0.31 发布图。JS-FFI 旧 `0.2.6` tag 实际声明 0.30.1；不以根检查通过代替传递依赖 tag 的配对证据，详见 [发布配对问题](https://github.com/calcit-lang/js-ffi/issues/195)。Respo 该 tag 已在原 CI 与 Demo 部署通过后发布；本模块仍须完成原门禁及自身发版，不将 main 当成已发布 tag。
+
 ## 当前 0.31 工具链配对
 
 Reel 0.7 系列配对正式 Calcit CLI / `@calcit/procs` `0.31.0`。当前候选
-`0.7.0-alpha.3` 使用已发布的 Respo `0.17.0-alpha.3` 和 JS FFI `0.2.6`；
+`0.7.0-alpha.4` 使用已发布的 Respo `0.17.0-alpha.4` 和 JS FFI `0.2.7`；
 消费者需协调 UI、Router 等上层模块的精确版本，重新安装并生成 JS，
 不能将此依赖图单独混入 0.30 维护线。
 
-本轮只调整依赖与版本元数据及配对说明，Snapshot、typed/旧 Map API、
-操作记录与历史重放、原测试和 CI 均未改动。完整 strict 和默认 proof audit 保留，
+本轮对齐依赖与版本元数据；另补齐原 Demo 声明但未实现的任务增改、切换和删除，
+并修正 Enter 清空的组件 cursor。库的 typed/旧 Map API、操作记录和历史重放算法保持，
+原测试与全部门禁保留；原独立消费者改用已发布 UI alpha.4，并启用严格 Caps 安装。完整 strict 和默认 proof audit 保留，
 现有开放展示边界仍需消费处校验。alpha.7 的空状态泛型修复、nominal-root 的
 实际形状守卫及旧 dispatcher 完整回调合同已随原迁移保留，不据此声称没有 Dynamic。
 
 正式 CLI/runtime 已发布不代表本模块候选已发布；消费者以
 [Releases](https://github.com/Respo/reel.calcit/releases) 的精确 tag 为准，
 不使用 main 或 commit 替代发布依赖。以下 0.30.1 配对记录为历史。
+
+### Demo 任务操作修复
+
+实际页面验收发现旧 Demo 只处理 `:states`，Add 虽记录操作却不创建任务，见 [#95](https://github.com/Respo/reel.calcit/issues/95)。
+现在在既有开放 `:tasks` 状态入口验证 String id/text、Bool done 字段后，进入具体 Task 列表；
+旧 Map/Struct 任务作为数据逐项受检，不靠名称假定名义身份。新增任务使用记录传入的 op-id，重放不生成新 id。
+针对不存在的任务 id，编辑/切换/删除确定地保持其余任务及顺序；Enter 与 Add 清空同一 cursor。
+这只修复 Demo，不改变 Reel 公开库的开放业务状态合同，也不以 unsafe、伪强转或放宽预算通过门禁。
+新增两项附带回归覆盖任务操作和实际 typed 历史暂停/排队/恢复/刷新/merge/删除 add 记录后的结果；
+原库回归与独立消费者检查全部保留，仍须实际页面验收及完整 CI 后才可发布本候选。
 
 ## 0.30.1 历史迁移配对
 
