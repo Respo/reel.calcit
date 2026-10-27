@@ -926,11 +926,7 @@
                 assert= :propagated $ try
                   do
                     reel-updater
-                      fn (store op id time)
-                        hint-fn $ {}
-                          :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
-                          :return 'Dynamic
-                        raise |callback-failure
+                      fn (store op id time) (raise |callback-failure)
                       , source 5
                     , :accepted
                   fn (error) :propagated
@@ -1010,7 +1006,7 @@
                 assert= (Option :none) (get source :base)
                 assert= (Option :none) (get source :store)
                 assert= (struct-definition nominal)
-                  struct-definition $ if (struct? refreshed-nominal) refreshed-nominal $ raise "|Expected a refreshed nominal Struct"
+                  if (struct? refreshed-nominal) (struct-definition refreshed-nominal) (Option :none)
                 assert= |next $ reel.schema/read-field refreshed-nominal :base
                 assert= |next $ reel.schema/read-field refreshed-nominal :store
                 assert= |base $ reel.schema/read-field nominal :base
@@ -1902,7 +1898,11 @@
                       + i x
                 assert= ([] 10 21)
                   map-indexed-dynamic ([] 10 20)
-                    fn (i x) (+ i x)
+                    fn (i x)
+                      hint-fn $ {}
+                        :args $ [] 'Number 'Number
+                        :return 'Number
+                      + i x
               :tags $ #{} :unit
             %{} 'TestEntry (:name |preserves-indexed-member-result-types)
               :code $ quote $ assert= ([] 1 3)
