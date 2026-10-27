@@ -7,15 +7,19 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 当前 0.31 工具链配对
 
-CLI 与 `@calcit/procs` 从 alpha.6 成对更新到已发布的正式 `0.31.0`，
-包含 alpha.7 中空状态工厂返回泛型丢失的修复。Respo `0.17.0-alpha.2`、JS FFI `0.2.5`
-和生产定义保持不变；原 nominal-root 回归在读取 Struct 定义前增加实际形状守卫，保留原断言。
-原空 List 映射回调显式声明数值合同；两个旧 dispatcher 测试回调补齐现有开放 updater 的完整函数签名，保留全部断言与运行行为。
-该版默认预检查拒绝未证明的 Dynamic 流向；沿用原 typed/旧 Map 测试及完整 strict，
-不关闭 proof audit 或放宽合同。0.30 稳定消费者继续使用旧维护线，不单独混装。
-以下 0.30.1 配对记录为历史；当前版本以 `deps.cirru` / `package.json` 为准。
-当前仓库提交仍是未发版的 Reel 模块候选；正式 CLI/runtime 已发布不代表本模块已发版。
-消费者应等待对应模块 tag，不以本候选、main 或 commit 替代已发布依赖。
+Reel 0.7 系列配对正式 Calcit CLI / `@calcit/procs` `0.31.0`。当前候选
+`0.7.0-alpha.3` 使用已发布的 Respo `0.17.0-alpha.3` 和 JS FFI `0.2.6`；
+消费者需协调 UI、Router 等上层模块的精确版本，重新安装并生成 JS，
+不能将此依赖图单独混入 0.30 维护线。
+
+本轮只调整依赖与版本元数据及配对说明，Snapshot、typed/旧 Map API、
+操作记录与历史重放、原测试和 CI 均未改动。完整 strict 和默认 proof audit 保留，
+现有开放展示边界仍需消费处校验。alpha.7 的空状态泛型修复、nominal-root 的
+实际形状守卫及旧 dispatcher 完整回调合同已随原迁移保留，不据此声称没有 Dynamic。
+
+正式 CLI/runtime 已发布不代表本模块候选已发布；消费者以
+[Releases](https://github.com/Respo/reel.calcit/releases) 的精确 tag 为准，
+不使用 main 或 commit 替代发布依赖。以下 0.30.1 配对记录为历史。
 
 ## 0.30.1 历史迁移配对
 
