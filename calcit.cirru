@@ -858,6 +858,9 @@
               :code $ quote $ let
                   calls $ ref 0
                   updater $ fn (store op id time)
+                    hint-fn $ {}
+                      :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+                      :return 'Dynamic
                     reset! calls $ inc @calls
                     , store
                   absent $ {}
@@ -923,7 +926,11 @@
                 assert= :propagated $ try
                   do
                     reel-updater
-                      fn (store op id time) (raise |callback-failure)
+                      fn (store op id time)
+                        hint-fn $ {}
+                          :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
+                          :return 'Dynamic
+                        raise |callback-failure
                       , source 5
                     , :accepted
                   fn (error) :propagated
@@ -1002,7 +1009,8 @@
                 assert= |next $ reel.schema/read-field refreshed :store
                 assert= (Option :none) (get source :base)
                 assert= (Option :none) (get source :store)
-                assert= (struct-definition nominal) (struct-definition refreshed-nominal)
+                assert= (struct-definition nominal)
+                  struct-definition $ if (struct? refreshed-nominal) refreshed-nominal $ raise "|Expected a refreshed nominal Struct"
                 assert= |next $ reel.schema/read-field refreshed-nominal :base
                 assert= |next $ reel.schema/read-field refreshed-nominal :store
                 assert= |base $ reel.schema/read-field nominal :base
@@ -1887,7 +1895,11 @@
               :code $ quote $ do
                 assert= ([])
                   map-indexed-dynamic ([])
-                    fn (i x) (+ i x)
+                    fn (i x)
+                      hint-fn $ {}
+                        :args $ [] 'Number 'Number
+                        :return 'Number
+                      + i x
                 assert= ([] 10 21)
                   map-indexed-dynamic ([] 10 20)
                     fn (i x) (+ i x)
