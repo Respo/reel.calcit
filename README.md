@@ -14,6 +14,8 @@ CLI 与 `@calcit/procs` 从 alpha.6 成对更新到已发布的正式 `0.31.0`�
 该版默认预检查拒绝未证明的 Dynamic 流向；沿用原 typed/旧 Map 测试及完整 strict，
 不关闭 proof audit 或放宽合同。0.30 稳定消费者继续使用旧维护线，不单独混装。
 以下 0.30.1 配对记录为历史；当前版本以 `deps.cirru` / `package.json` 为准。
+当前仓库提交仍是未发版的 Reel 模块候选；正式 CLI/runtime 已发布不代表本模块已发版。
+消费者应等待对应模块 tag，不以本候选、main 或 commit 替代已发布依赖。
 
 ## 0.30.1 历史迁移配对
 
