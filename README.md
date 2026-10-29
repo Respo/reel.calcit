@@ -16,7 +16,7 @@ Reel 0.7 系列配对正式 Calcit CLI / `@calcit/procs` `0.32.1`。当前候选
 
 本轮对齐依赖与版本元数据；另补齐原 Demo 声明但未实现的任务增改、切换和删除，
 并修正 Enter 清空的组件 cursor。库的 typed/旧 Map API、操作记录和历史重放算法保持，
-原测试与全部门禁保留；原独立消费者改用已发布 UI alpha.4，并启用严格 Caps 安装。完整 strict 和默认 proof audit 保留，
+原测试与全部门禁保留；原独立消费者改用已发布 UI 0.9.0，并启用严格 Caps 安装。完整 strict 和默认 proof audit 保留，
 现有开放展示边界仍需消费处校验。alpha.7 的空状态泛型修复、nominal-root 的
 实际形状守卫及旧 dispatcher 完整回调合同已随原迁移保留，不据此声称没有 Dynamic。
 
