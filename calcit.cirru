@@ -72,12 +72,12 @@
               :background-color $ hsl 220 100 76
               :cursor :pointer
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'style-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-container
             {} (:margin "|8px 0") (:height |32px)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote $ Map Tag String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.task
           :require
@@ -135,7 +135,7 @@
           :code $ quote $ defstyle css-container
             {} $ |$0 $ {} (:padding 8) (:overflow :auto)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.todolist
           :require
@@ -226,7 +226,7 @@
                 reel.typed/State Enum $ Map Dynamic Dynamic
               , dispatch!
           :examples $ []
-          :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.main
           :require
@@ -514,12 +514,12 @@
               |$0 $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
               |$0:hover $ {} $ :background-color |#eee
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-records
             {} $ |& $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'literal? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn literal? (x)
             or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
@@ -554,7 +554,7 @@
           :code $ quote $ defstyle style-action-sep
             {} $ |& $ {} (:margin "|0 4px")
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'style-data $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-data
             {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
@@ -573,7 +573,7 @@
               |&:hover $ {} $ :box-shadow
                 str "|0px 0px 2px 2px " $ hsl 0 0 0 0.06
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.records
           :require
@@ -694,13 +694,13 @@
               :z-index 9999
               :border-radius |6px
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'css-snippet $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-snippet
             {} $ |$0 $ {} (:font-size 12) (:white-space :pre) (:padding "|16px 0px 200px 0px") (:line-height |20px) (:overflow :auto)
               :border-top $ str "|1px solid " $ hsl 0 0 94
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote String
         'render-button $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-button (guide on-click enabled?)
             div
@@ -1220,32 +1220,39 @@
               |$0 $ {} (:height |32px) (:padding "|0 12px") (:font-size |14px) (:border "|1px solid hsl(0 0% 85%)") (:border-radius |4px) (:background-color |white) (:cursor |pointer) (:display |inline-block) (:line-height |30px)
               |$0:hover $ {} (:color "|var(--rui-color-primary, hsl(200 80% 50%))") (:border-color "|var(--rui-color-primary, hsl(200 80% 50%))")
           :examples $ []
+          :schema $ quote String
         'column $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle column
             {} $ |$0 $ {} (:display |flex) (:align-items |stretch) (:flex-direction |column)
           :examples $ []
+          :schema $ quote String
         'expand $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle expand
             {} $ |$0 $ {} (:flex |1) (:overflow |auto)
           :examples $ []
+          :schema $ quote String
         'flex $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle flex
             {} $ |$0 $ {} (:flex |1)
           :examples $ []
+          :schema $ quote String
         'font-code $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle font-code
             {} $ |$0 $ {}
               :font-family "|var(--rui-font-mono, 'Source Code Pro', Menlo, 'Ubuntu Mono', Consolas, monospace)"
           :examples $ []
+          :schema $ quote String
         'font-fancy $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle font-fancy
             {} $ |$0 $ {}
               :font-family "|var(--rui-font-display, 'Josefin Sans', 'Helvetica Neue', Arial, sans-serif)"
           :examples $ []
+          :schema $ quote String
         'fullscreen $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle fullscreen
             {} $ |$0 $ {} (:position |absolute) (:left 0) (:top 0) (:width |100%) (:height |100%) (:overflow |auto)
           :examples $ []
+          :schema $ quote String
         'global $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle global
             {} $ |$0 $ {}
@@ -1253,30 +1260,36 @@
               :line-height |1.6
               :font-size |14px
           :examples $ []
+          :schema $ quote String
         'input $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle input
             {}
               |$0 $ {} (:height |32px) (:padding "|0 8px") (:font-size |14px) (:border "|1px solid hsl(0 0% 85%)") (:border-radius |4px) (:outline |none) (:min-width |120px)
               |$0:focus $ {} $ :border-color "|var(--rui-color-primary, hsl(200 80% 50%))"
           :examples $ []
+          :schema $ quote String
         'link $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle link
             {}
               |$0 $ {} (:display |inline-block) (:margin |4px) (:color "|var(--rui-color-primary, hsl(200 80% 50%))") (:text-decoration |underline) (:text-underline-offset |2px) (:cursor |pointer) (:user-select |none)
               |$0:hover $ {} $ :color "|var(--rui-color-primary-hover, hsl(200 80% 40%))"
           :examples $ []
+          :schema $ quote String
         'row $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle row
             {} $ |$0 $ {} (:display |flex) (:align-items |stretch) (:flex-direction |row)
           :examples $ []
+          :schema $ quote String
         'row-middle $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle row-middle
             {} $ |$0 $ {} (:display |flex) (:align-items |center) (:justify-content |flex-start) (:flex-direction |row)
           :examples $ []
+          :schema $ quote String
         'row-parted $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle row-parted
             {} $ |$0 $ {} (:display |flex) (:align-items |center) (:justify-content |space-between) (:flex-direction |row)
           :examples $ []
+          :schema $ quote String
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.style
           :require $ respo.css :refer $ defstyle
