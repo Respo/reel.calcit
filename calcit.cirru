@@ -25,8 +25,9 @@
                   decode-map-as (reel.schema/read-field store :tasks) (:: 'List 'Dynamic)
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
+          :schema $ quote $ Fn
+            reel.typed/State Enum $ Map Dynamic Dynamic
+            -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.container
           :require
@@ -64,20 +65,19 @@
                     d! $ :: :task/remove $ reel.schema/read-field task :id
                 <> |Remove
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Dynamic
+          :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
         'css-done $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-done
             {} $ |$0 $ {} (:width 32) (:height 32) (:display :inline-block)
               :background-color $ hsl 220 100 76
               :cursor :pointer
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'style-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-container
             {} (:margin "|8px 0") (:height |32px)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.task
           :require
@@ -130,13 +130,12 @@
                   -> tasks $ map $ fn (task)
                     [] (reel.schema/read-field task :id) (comp-task task)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Dynamic $ :: 'List 'Dynamic
+          :schema $ quote $ Fn Dynamic (List Dynamic) (-> respo.schema/Component)
         'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-container
             {} $ |$0 $ {} (:padding 8) (:overflow :auto)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.todolist
           :require
@@ -150,93 +149,84 @@
         '*reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
-          :schema $ :: 'Ref $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
+          :schema $ quote $ Ref
+            reel.typed/State Enum $ Map Dynamic Dynamic
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
             match (typed/decode-control op)
               (:some control)
                 typed/apply-control updater
-                  assert-type @*reel $ :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                  assert-type @*reel $ quote $ reel.typed/State Enum (Map Dynamic Dynamic)
                   , control
               (:none)
                 typed/record-op updater
-                  assert-type @*reel $ :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                  assert-type @*reel $ quote $ reel.typed/State Enum (Map Dynamic Dynamic)
                   , op (generate-id!)
                     :timestamp $ host/date-now-snapshot
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Enum
-            :return $ :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+          :schema $ quote $ Fn Enum
+            -> $ reel.typed/State Enum $ Map Dynamic Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Enum
+          :schema $ quote $ Fn Enum (-> Unit)
         'get-mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-mount-target ()
             unsafe-coerce
               option:unwrap $ browser/query-selector |.app
               quote Dynamic
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch! *reel :changes $ fn (reel prev)
-              hint-fn $ {}
-                :args $ []
-                  :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
-                  :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
-                :return 'Unit
+              hint-fn $ Fn
+                reel.typed/State Enum $ Map Dynamic Dynamic
+                reel.typed/State Enum $ Map Dynamic Dynamic
+                -> Unit
               render-app!
               , &unit
             listen-devtools! |k dispatch!
             dispatch! $ :: :reel/toggle
             println "|App started!"
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target
             .unwrap $ dom/query-selector |.app
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote respo.dom/DomElement
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
               do (remove-watch! *reel :changes) (clear-cache!)
                 add-watch! *reel :changes $ fn (reel prev)
-                  hint-fn $ {}
-                    :args $ []
-                      :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
-                      :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
-                    :return 'Unit
+                  hint-fn $ Fn
+                    reel.typed/State Enum $ Map Dynamic Dynamic
+                    reel.typed/State Enum $ Map Dynamic Dynamic
+                    -> Unit
                   render-app!
                   , &unit
                 let
                     refreshed $ typed/refresh updater
-                      assert-type @*reel $ :: 'reel.typed/State 'Enum $ :: 'Map 'Dynamic 'Dynamic
+                      assert-type @*reel $ quote $ reel.typed/State Enum (Map Dynamic Dynamic)
                       , schema/store
-                  reset! *reel $ assert-type refreshed $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
+                  reset! *reel $ assert-type refreshed $ quote
+                    reel.typed/State Enum $ Map Dynamic Dynamic
                 hud! |ok~ |Ok
               hud! |error build-errors
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render! mount-target
-              comp-container $ assert-type @*reel $ :: 'reel.typed/State 'Enum (:: 'Map 'Dynamic 'Dynamic)
+              comp-container $ assert-type @*reel $ quote
+                reel.typed/State Enum $ Map Dynamic Dynamic
               , dispatch!
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.main
           :require
@@ -256,7 +246,9 @@
         'Op $ %{} 'CodeEntry
           :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Includes the :reel/* controls that comp-reel sends."
           :code $ quote $ defenum Op
-            :states (:: 'List 'Dynamic) 'Dynamic
+            :states
+              quote $ List Dynamic
+              , 'Dynamic
             :task/add 'Dynamic
             :task/toggle 'Dynamic
             :task/edit 'Dynamic 'Dynamic
@@ -270,11 +262,11 @@
             :reel/reset
             :reel/remove 'Number
           :examples $ []
-          :schema $ :: 'EnumDef
+          :schema $ quote EnumDef
         'Task $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Task (:id 'String) (:text 'String) (:done? 'Bool)
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'read-tasks $ %{} 'CodeEntry
           :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
           :code $ quote $ defn read-tasks (store)
@@ -285,9 +277,8 @@
                   if (struct? raw) (&struct:to-map raw) raw
               :: 'List 'Task
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] $ :: 'Map 'Dynamic 'Dynamic
-            :return $ :: 'List 'Task
+          :schema $ quote $ Fn (Map Dynamic Dynamic)
+            -> $ List Task
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -327,10 +318,9 @@
                 host/console-warn! $ str "|Unknown op" op
                 , store
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic) 'Enum 'String 'Number
-            :features $ #{} :js-ffi
-            :return $ :: 'Map 'Dynamic 'Dynamic
+          :schema $ quote $ Fn (Map Dynamic Dynamic) Enum String Number
+            -> $ Map Dynamic Dynamic
+            :features :js-ffi
           :tests $ []
             %{} 'TestEntry
               :name |demo-task-operations-preserve-id-order-and-input
@@ -404,8 +394,7 @@
                     list-> ({}) (reel.util/map-indexed-dynamic params render-action-item)
                 <> $ str action
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Dynamic
+          :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
         'comp-record-item $ %{} 'CodeEntry
           :doc "|接收展示入口已校验的历史 List；只在开放 action 的展示出口将缺失首项编码为原 nil。"
           :code $ quote $ defcomp comp-record-item (record pointed? idx)
@@ -420,8 +409,7 @@
               ; <> $ to-lispy-string $ first record
               comp-action $ .unwrap-or (first record) nil
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'List 'Dynamic) 'Bool 'Number
+          :schema $ quote $ Fn (List Dynamic) Bool Number (-> respo.schema/Component)
         'comp-records $ %{} 'CodeEntry
           :doc "|每条旧历史只校验一次 List，复用同一个 child/memo key；nil key 保留绕过缓存，false、0、空串保留原 key。"
           :code $ quote $ defcomp comp-records (records pointer)
@@ -431,29 +419,23 @@
                 reel.util/map-indexed-dynamic
                   prepend records $ [] :base nil :base
                   fn (idx record)
-                    hint-fn $ {}
-                      :args $ [] 'Number 'Dynamic
-                      :return $ :: 'List 'Dynamic
+                    hint-fn $ Fn Number Dynamic $ -> (List Dynamic)
                     let
                         checked-record $ decode-map-as record $ :: 'List 'Dynamic
                         key $ .unwrap-or (last checked-record) nil
                       [] key $ memo-comp-by key comp-record-item checked-record (&= pointer idx) idx
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'List 'Dynamic) 'Dynamic
+          :schema $ quote $ Fn (List Dynamic) Dynamic (-> respo.schema/Component)
           :tests $ [] $ %{} 'TestEntry (:name |legacy-record-keys-and-memo-identity)
             :code $ quote $ let
                 element $ fn (node)
-                  hint-fn $ {}
-                    :args $ [] 'respo.schema/RenderNode
-                    :return 'respo.schema/Element
+                  hint-fn $ Fn respo.schema/RenderNode $ -> respo.schema/Element
                   match node
                     (:element value) value
                     _ $ raise |Expected-record-element
                 rows $ fn (records)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'List 'Dynamic
-                    :return $ :: 'List 'respo.schema/ChildPair
+                  hint-fn $ Fn (List Dynamic)
+                    -> $ List respo.schema/ChildPair
                   let
                       view $ comp-records records nil
                       root $ element $ .unwrap (:tree view)
@@ -461,9 +443,7 @@
                       list-element $ element $ .unwrap (:node list-pair)
                     :children list-element
                 component $ fn (pair)
-                  hint-fn $ {}
-                    :args $ [] 'respo.schema/ChildPair
-                    :return 'respo.schema/Component
+                  hint-fn $ Fn respo.schema/ChildPair $ -> respo.schema/Component
                   match
                     .unwrap $ :node pair
                     (:component value) value
@@ -478,9 +458,7 @@
                   empty-next $ memo-comp-by nil comp-record-item ([]) false 1
                 assert= ([] :base false 0 | 8 7)
                   map first-rows $ fn (pair)
-                    hint-fn $ {}
-                      :args $ [] 'respo.schema/ChildPair
-                      :return 'Dynamic
+                    hint-fn $ Fn respo.schema/ChildPair $ -> Dynamic
                     :key pair
                 assert= 6 $ count first-rows
                 assert= true $ not $ identical? empty-first empty-next
@@ -536,27 +514,23 @@
               |$0 $ {} (:cursor :pointer) (:padding "|0 4px") (:white-space :nowrap) (:cursor :pointer) (:overflow :hidden) (:text-overflow :ellipsis)
               |$0:hover $ {} $ :background-color |#eee
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'css-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-records
             {} $ |& $ {} (:overflow :auto) (:flex-shrink 0) (:padding-bottom 120) (:padding-top 16) (:width 320) (:font-size 12)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'literal? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn literal? (x)
             or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Bool)
-            :args $ [] 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic (-> Bool) (:features :js-ffi)
         'on-recall $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-recall (idx)
             fn (e dispatch!)
               dispatch! $ :: :reel/recall idx
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic (-> Dynamic) (:features :js-ffi)
         'render-action-item $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-action-item (idx item)
             [] idx $ if (shallow-data? item)
@@ -567,28 +541,25 @@
                   :on-click $ fn (e d!) (tab-echo! item)
                 <> $ str $ type-of item
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Number 'Dynamic
-            :return $ :: 'List 'Dynamic
+          :schema $ quote $ Fn Number Dynamic
+            -> $ List Dynamic
         'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shallow-data? (item)
             or (literal? item)
               and (list? item) (every? item literal?)
               and (map? item) (every? item shallow-data?)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Bool)
-            :args $ [] 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic (-> Bool) (:features :js-ffi)
         'style-action-sep $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle style-action-sep
             {} $ |& $ {} (:margin "|0 4px")
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'style-data $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def style-data
             {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'style-type-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle style-type-tag
             {}
@@ -602,7 +573,7 @@
               |&:hover $ {} $ :box-shadow
                 str "|0px 0px 2px 2px " $ hsl 0 0 0 0.06
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.records
           :require
@@ -642,8 +613,7 @@
                   d! $ :: :reel/toggle
                 not stopped?
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] 'Bool
+          :schema $ quote $ Fn Bool (-> respo.schema/Component)
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles)
             if (reel.schema/read-field reel :display?)
@@ -706,17 +676,14 @@
                       <> $ trim $ format-cirru-edn (reel.schema/read-field reel :store)
               span $ {}
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic) (:: 'Map 'Dynamic 'Dynamic) (:: 'Map 'Dynamic 'Dynamic)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) (Map Dynamic Dynamic) (Map Dynamic Dynamic) (-> respo.schema/Component)
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-typed-reel (states reel user-styles)
             assert-type
               comp-reel states (typed-compat/view-data reel) user-styles
               , Struct
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'respo.schema/Component)
-            :args $ [] (:: 'Map 'Dynamic 'Dynamic) (:: 'reel.typed/State 'Op 'Store) (:: 'Map 'Dynamic 'Dynamic)
-            :generics $ [] 'Op 'Store
+          :schema $ quote $ Fn (Map Dynamic Dynamic) (reel.typed/State Op Store) (Map Dynamic Dynamic) (-> respo.schema/Component) (:generics Op Store)
         'css-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-reel
             {} $ |$0 $ {} (:width |60%) (:height |80%) (:right |0px) (:bottom |0px) (:position :fixed)
@@ -727,13 +694,13 @@
               :z-index 9999
               :border-radius |6px
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'css-snippet $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-snippet
             {} $ |$0 $ {} (:font-size 12) (:white-space :pre) (:padding "|16px 0px 200px 0px") (:line-height |20px) (:overflow :auto)
               :border-top $ str "|1px solid " $ hsl 0 0 94
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'render-button $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-button (guide on-click enabled?)
             div
@@ -745,9 +712,7 @@
                 :on-click $ if enabled? on-click $ fn (e d!)
               <> guide
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'String 'Dynamic 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn String Dynamic Dynamic (-> Dynamic) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.reel
           :require
@@ -779,9 +744,7 @@
                   recur next-store (rest record-list) updater $ dec pointer
               raise "|play-records expected a Number pointer"
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic Dynamic Dynamic Dynamic (-> Dynamic) (:features :js-ffi)
           :tests $ []
             %{} 'TestEntry
               :name |zero-pointer-does-not-consume-records-or-call-updater
@@ -823,9 +786,7 @@
                     reset! calls $ inc @calls
                     , store
                   reject $ fn (record-list)
-                    hint-fn $ {}
-                      :args $ [] $ :: 'List 'Dynamic
-                      :return 'Unit
+                    hint-fn $ Fn (List Dynamic) (-> Unit)
                     assert= :rejected $ try
                       do (play-records |base record-list updater 1) :accepted
                       fn (error) :rejected
@@ -848,9 +809,7 @@
                 , |:reel/
               , false
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Bool)
-            :args $ [] 'T
-            :generics $ [] 'T
+          :schema $ quote $ Fn T (-> Bool) (:generics T)
           :tests $ [] $ %{} 'TestEntry (:name |classifies-reel-control-ops)
             :code $ quote $ do
               assert= true $ reel-control-op? $ :: :reel/toggle
@@ -940,23 +899,19 @@
                             conj (reel.schema/checked-records records) data-pack
               if (identical? result reel) reel $ decode-map-as result $ :: 'Map 'Tag 'Dynamic
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Dynamic)
-                :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
-              :: 'Map 'Tag 'Dynamic
-              , 'Dynamic
-            :features $ #{} :js-ffi
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn
+            Fn Dynamic Dynamic Dynamic Dynamic $ -> Dynamic
+            Map Tag Dynamic
+            , Dynamic
+              -> $ Map Tag Dynamic
+              :features :js-ffi
           :tests $ []
             %{} 'TestEntry
               :name |legacy-control-reads-keep-optional-fields-and-eager-validation
               :code $ quote $ let
                   calls $ ref 0
                   updater $ fn (store op id time)
-                    hint-fn $ {}
-                      :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
-                      :return 'Dynamic
+                    hint-fn $ Fn Dynamic Dynamic Dynamic Dynamic $ -> Dynamic
                     reset! calls $ inc @calls
                     , store
                   absent $ {}
@@ -993,9 +948,7 @@
               :code $ quote $ let
                   calls $ ref 0
                   updater $ fn (store op id time)
-                    hint-fn $ {}
-                      :args $ [] 'Dynamic 'Dynamic 'Dynamic 'Dynamic
-                      :return 'Dynamic
+                    hint-fn $ Fn Dynamic Dynamic Dynamic Dynamic $ -> Dynamic
                     reset! calls $ inc @calls
                     str (decode-map-as store 'String) (decode-map-as op 'Number)
                   source $ {} (:base |base) (:store |base) (:stopped? false) (:extra |keep)
@@ -1035,16 +988,12 @@
               -> reel (assoc :base next-base)
                 assoc :store $ play-records next-base records updater $ if (reel.schema/read-field reel :stopped?) (reel.schema/read-field reel :pointer) (count records)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic Dynamic Dynamic (-> Dynamic) (:features :js-ffi)
           :tests $ []
             %{} 'TestEntry (:name |legacy-refresh-checks-record-container)
               :code $ quote $ let
                   updater $ fn (store op id time)
-                    hint-fn $ {}
-                      :args $ [] 'String 'Number 'String 'Number
-                      :return 'String
+                    hint-fn $ Fn String Number String Number $ -> String
                     str store op
                 assert= |next $ reel.schema/read-field
                   refresh-reel
@@ -1071,18 +1020,14 @@
                       , |next updater
                     , |unexpected-success
                   fn (error)
-                    hint-fn $ {}
-                      :args $ [] 'String
-                      :return 'String
+                    hint-fn $ Fn String $ -> String
                     , error
               :tags $ #{} :unit
             %{} 'TestEntry
               :name |legacy-refresh-preserves-mixed-map-and-nominal-root
               :code $ quote $ let
                   updater $ fn (store op id time)
-                    hint-fn $ {}
-                      :args $ [] 'String 'Number 'String 'Number
-                      :return 'String
+                    hint-fn $ Fn String Number String Number $ -> String
                     str store op
                   source $ {} (|extra 1) (42 false)
                     :records $ []
@@ -1090,7 +1035,7 @@
                     :stopped? false
                   refreshed $ refresh-reel source |next updater
                   LegacyRefresh $ defstruct LegacyRefresh (:base 'String) (:store 'String)
-                    :records $ :: 'List 'Number
+                    :records $ quote $ List Number
                     :merged? 'Bool
                     :stopped? 'Bool
                   nominal $ LegacyRefresh :base |base :store |base :records ([]) :merged? false :stopped? false
@@ -1114,25 +1059,22 @@
               slice-records-until records $ dec idx
               slice-records-from records idx
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'T) 'Number
-            :generics $ [] 'T
-            :return $ :: 'List 'T
+          :schema $ quote $ Fn (List T) Number
+            -> $ List T
+            :generics T
         'slice-records-from $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn slice-records-from (records start)
             &list:slice records start $ count records
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'T) 'Number
-            :generics $ [] 'T
-            :return $ :: 'List 'T
+          :schema $ quote $ Fn (List T) Number
+            -> $ List T
+            :generics T
         'slice-records-until $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn slice-records-until (records end) (&list:slice records 0 end)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'T) 'Number
-            :generics $ [] 'T
-            :return $ :: 'List 'T
+          :schema $ quote $ Fn (List T) Number
+            -> $ List T
+            :generics T
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.core
           :require $ js-ffi.shared :as host
@@ -1141,12 +1083,11 @@
         'checked-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn checked-records (value)
             if (list? value)
-              assert-type value $ :: 'List 'Dynamic
+              assert-type value $ quote $ List Dynamic
               raise "|Reel records must be a List"
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Dynamic
-            :return $ :: 'List 'Dynamic
+          :schema $ quote $ Fn Dynamic
+            -> $ List Dynamic
           :tests $ [] $ %{} 'TestEntry (:name |checked-legacy-record-container)
             :code $ quote $ let ()
               assert= ([])
@@ -1157,34 +1098,26 @@
               assert= "|Reel records must be a List" $ try
                 let () (checked-records nil) |unexpected-success
                 fn (error)
-                  hint-fn $ {}
-                    :args $ [] 'String
-                    :return 'String
+                  hint-fn $ Fn String $ -> String
                   , error
               assert= "|Reel records must be a List" $ try
                 let () (checked-records 1) |unexpected-success
                 fn (error)
-                  hint-fn $ {}
-                    :args $ [] 'String
-                    :return 'String
+                  hint-fn $ Fn String $ -> String
                   , error
               assert= "|Reel records must be a List" $ try
                 let ()
                   checked-records $ {}
                   , |unexpected-success
                 fn (error)
-                  hint-fn $ {}
-                    :args $ [] 'String
-                    :return 'String
+                  hint-fn $ Fn String $ -> String
                   , error
               assert= "|Reel records must be a List" $ try
                 let ()
                   checked-records $ Option :none
                   , |unexpected-success
                 fn (error)
-                  hint-fn $ {}
-                    :args $ [] 'String
-                    :return 'String
+                  hint-fn $ Fn String $ -> String
                   , error
             :tags $ #{} :unit
         'read-field $ %{} 'CodeEntry (:doc |)
@@ -1197,8 +1130,7 @@
                 get (decode-map-as value 'Map) field
                 , nil
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Dynamic)
-            :args $ [] 'Dynamic 'Tag
+          :schema $ quote $ Fn Dynamic Tag (-> Dynamic)
           :tests $ []
             %{} 'TestEntry (:name |legacy-map-keeps-mixed-key-boundary)
               :code $ quote $ let
@@ -1270,14 +1202,14 @@
               :display? false
               :merged? false
           :examples $ []
-          :schema $ :: 'Dynamic
+          :schema $ quote Dynamic
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
               :states $ {}
               :tasks $ []
           :examples $ []
-          :schema $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Map Tag Dynamic
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.schema
     'reel.style $ %{} 'FileEntry
@@ -1354,9 +1286,7 @@
           :code $ quote $ defn main! ()
             let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 initial $ decode-map-as
                   .to-map $ typed/new-reel |base
@@ -1374,8 +1304,7 @@
               assert= |base5 $ typed/play-records updater |base (:records running) 1
               , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ []
+          :schema $ quote $ Fn (-> Unit)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.test-typed
           :require $ reel.typed :as typed
@@ -1384,20 +1313,20 @@
         'Control $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defenum Control (:toggle) (:recall 'Number) (:run) (:step) (:merge) (:reset) (:remove 'Number)
           :examples $ []
-          :schema $ :: 'EnumDef
+          :schema $ quote EnumDef
         'Record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct Record ([] 'Op) (:op 'Op) (:id 'String) (:time 'Number)
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'State $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct State ([] 'Op 'Store) (:base 'Store) (:store 'Store)
-            :records $ :: 'List $ :: 'reel.typed/Record 'Op
-            :pointer $ :: 'Option 'Number
+            :records $ quote $ List (reel.typed/Record Op)
+            :pointer $ quote $ Option Number
             :stopped? 'Bool
             :display? 'Bool
             :merged? 'Bool
           :examples $ []
-          :schema $ :: 'StructDef
+          :schema $ quote StructDef
         'apply-control $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control (updater reel control)
             match control
@@ -1423,24 +1352,21 @@
                   remove-current updater reel
                   , reel
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-              , 'reel.typed/Control
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            , reel.typed/Control
+              -> $ reel.typed/State Op Store
+              :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |dispatch-equivalence)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                    assert-type (new-reel |base)
+                      quote $ reel.typed/State Number String
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1482,9 +1408,8 @@
                   Option :none
               _ $ Option :none
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Enum
-            :return $ :: 'calcit.core/Option 'reel.typed/Control
+          :schema $ quote $ Fn Enum
+            -> $ calcit.core/Option reel.typed/Control
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
@@ -1531,23 +1456,20 @@
                 :pointer $ Option :none
                 :merged? true
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            -> $ reel.typed/State Op Store
+            :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |paused-and-live-merge)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                    assert-type (new-reel |base)
+                      quote $ reel.typed/State Number String
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1571,21 +1493,20 @@
         'new-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn new-record (op id time) (Record :op op :id id :time time)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Op 'String 'Number
-            :generics $ [] 'Op
-            :return $ :: 'reel.typed/Record 'Op
+          :schema $ quote $ Fn Op String Number
+            -> $ reel.typed/Record Op
+            :generics Op
         'new-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn new-reel (base)
             State :base base :store base :records ([]) :pointer (Option :none) :stopped? false :display? false :merged? false
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn Store
+            -> $ reel.typed/State Op Store
+            :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |empty-typed-state)
             :code $ quote $ let
-                reel $ assert-type (new-reel |initial) (:: 'reel.typed/State 'Number 'String)
+                reel $ assert-type (new-reel |initial)
+                  quote $ reel.typed/State Number String
               do
                 assert= |initial $ :base reel
                 assert= |initial $ :store reel
@@ -1597,25 +1518,18 @@
         'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn play-records (updater base records limit)
             foldl (&list:slice records 0 limit) base $ fn (store record)
-              hint-fn $ {}
-                :args $ [] 'Store $ :: 'reel.typed/Record 'Op
-                :return 'Store
+              hint-fn $ Fn Store (reel.typed/Record Op) (-> Store)
               updater store (:op record) (:id record) (:time record)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Store)
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              , 'Store
-                :: 'List $ :: 'reel.typed/Record 'Op
-                , 'Number
-            :generics $ [] 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            , Store
+              List $ reel.typed/Record Op
+              , Number (-> Store) (:generics Op Store)
           :tests $ [] $ %{} 'TestEntry (:name |replay-prefix)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 records $ [] (new-record 5 |id-1 100) (new-record 7 |id-2 200)
               do
@@ -1632,23 +1546,20 @@
               :pointer $ Option :some pointer
               :stopped? true
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-              , 'Number
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            , Number
+              -> $ reel.typed/State Op Store
+              :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |recall-queue-resume)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 live $ record-op updater
-                  assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                  assert-type (new-reel |base)
+                    quote $ reel.typed/State Number String
                   , 5 |one 10
                 stopped $ recall updater live 0
                 queued $ record-op updater stopped 7 |two 20
@@ -1674,22 +1585,19 @@
                 struct-with reel (:records records)
                   :store $ updater (:store reel) op op-id op-time
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-              , 'Op 'String 'Number
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            , Op String Number
+              -> $ reel.typed/State Op Store
+              :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |live-and-paused)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
-                initial $ assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                initial $ assert-type (new-reel |base)
+                  quote $ reel.typed/State Number String
                 live $ record-op updater initial 5 |id-1 100
                 paused $ record-op updater
                   struct-with live $ :stopped? true
@@ -1712,14 +1620,12 @@
               struct-with reel (:base next-base)
                 :store $ play-records updater next-base (:records reel) limit
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-              , 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            , Store
+              -> $ reel.typed/State Op Store
+              :generics Op Store
         'remove-current $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-current (updater reel)
             if (:stopped? reel)
@@ -1733,13 +1639,11 @@
                   recall updater next $ dec pointer
               , reel
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            -> $ reel.typed/State Op Store
+            :generics Op Store
         'reset-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reset-reel (reel)
             if (:stopped? reel)
@@ -1751,18 +1655,16 @@
                 :pointer $ Option :none
                 :stopped? false
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] $ :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn (reel.typed/State Op Store)
+            -> $ reel.typed/State Op Store
+            :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |reset-and-refresh)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
-                initial $ assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                initial $ assert-type (new-reel |base)
+                  quote $ reel.typed/State Number String
                 live $ record-op updater (record-op updater initial 5 |one 10) 7 |two 20
                 paused $ recall updater live 1
                 reset-paused $ reset-reel paused
@@ -1788,13 +1690,11 @@
               :pointer $ Option :none
               :stopped? false
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            -> $ reel.typed/State Op Store
+            :generics Op Store
         'step $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn step (updater reel)
             if
@@ -1816,22 +1716,19 @@
                     :store $ :base reel
               , reel
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ []
-              :: 'Fn $ {} (:return 'Store)
-                :args $ [] 'Store 'Op 'String 'Number
-              :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn
+            Fn Store Op String Number $ -> Store
+            reel.typed/State Op Store
+            -> $ reel.typed/State Op Store
+            :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |stepping-and-removal)
             :code $ quote $ let
                 updater $ fn (store op id time)
-                  hint-fn $ {}
-                    :args $ [] 'String 'Number 'String 'Number
-                    :return 'String
+                  hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 one $ record-op updater
-                  assert-type (new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                  assert-type (new-reel |base)
+                    quote $ reel.typed/State Number String
                   , 5 |one 10
                 live $ record-op updater (record-op updater one 7 |two 20) 9 |three 30
                 zero $ recall updater live 0
@@ -1858,10 +1755,9 @@
           :code $ quote $ defn toggle-display (reel)
             struct-with reel $ :display? $ not (:display? reel)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] $ :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'reel.typed/State 'Op 'Store
+          :schema $ quote $ Fn (reel.typed/State Op Store)
+            -> $ reel.typed/State Op Store
+            :generics Op Store
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.typed
     'reel.typed-compat $ %{} 'FileEntry
@@ -1873,9 +1769,8 @@
               :store $ :store reel
               :records $ map (:records reel)
                 fn (record)
-                  hint-fn $ {}
-                    :args $ [] $ :: 'reel.typed/Record 'Op
-                    :return $ :: 'List 'Dynamic
+                  hint-fn $ Fn (reel.typed/Record Op)
+                    -> $ List Dynamic
                   [] (:op record) (:id record) (:time record)
               :pointer $ match (:pointer reel)
                 (:some pointer) pointer
@@ -1884,14 +1779,14 @@
               :display? $ :display? reel
               :merged? $ :merged? reel
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] $ :: 'reel.typed/State 'Op 'Store
-            :generics $ [] 'Op 'Store
-            :return $ :: 'Map 'Tag 'Dynamic
+          :schema $ quote $ Fn (reel.typed/State Op Store)
+            -> $ Map Tag Dynamic
+            :generics Op Store
           :tests $ []
             %{} 'TestEntry (:name |legacy-view-shape)
               :code $ quote $ let
-                  initial $ assert-type (typed/new-reel |base) (:: 'reel.typed/State 'Number 'String)
+                  initial $ assert-type (typed/new-reel |base)
+                    quote $ reel.typed/State Number String
                 assert=
                   {} (:base |base) (:store |base)
                     :records $ []
@@ -1929,21 +1824,15 @@
       :defs $ {}
         'BrowserStringHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait BrowserStringHost
-            .toUpperCase $ :: 'Fn $ {}
-              :args $ []
-              :return 'BrowserStringHost
-            .charCodeAt $ :: 'Fn $ {}
-              :args $ [] 'Number
-              :return 'Number
+            .toUpperCase $ quote $ Fn (-> BrowserStringHost)
+            .charCodeAt $ quote $ Fn Number (-> Number)
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
-          :schema $ :: 'Trait
+          :schema $ quote Trait
         'browser-window $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn browser-window () (browser/window-host)
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'js-ffi.browser/WindowHost)
-            :args $ []
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn (-> js-ffi.browser/WindowHost) (:features :js-ffi)
         'keyboard-code $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn keyboard-code (keyboard)
             let
@@ -1951,9 +1840,7 @@
                 upper $ unsafe-coerce (.!toUpperCase text) BrowserStringHost
               decode-map-as (.!charCodeAt upper 0) 'Number
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Number)
-            :args $ [] 'String
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn String (-> Number) (:features :js-ffi)
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn listen-devtools! (keyboard dispatch!)
             browser/add-event-listener! |keydown $ fn (event)
@@ -1968,36 +1855,29 @@
                   , &unit
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'String $ :: 'Fn
-              {} (:return 'Unit)
-                :args $ [] 'Enum
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn String
+            Fn Enum $ -> Unit
+            -> Unit
+            :features :js-ffi
         'map-indexed-dynamic $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn map-indexed-dynamic (xs f) (map-indexed xs f)
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] (:: 'List 'T)
-              :: 'Fn $ {} (:return 'R)
-                :args $ [] 'Number 'T
-            :generics $ [] 'T 'R
-            :return $ :: 'List 'R
+          :schema $ quote $ Fn (List T)
+            Fn Number T $ -> R
+            -> $ List R
+            :generics T R
           :tests $ []
             %{} 'TestEntry (:name |indexed-map-empty-and-populated)
               :code $ quote $ do
                 assert= ([])
                   map-indexed-dynamic ([])
                     fn (i x)
-                      hint-fn $ {}
-                        :args $ [] 'Number 'Number
-                        :return 'Number
+                      hint-fn $ Fn Number Number $ -> Number
                       + i x
                 assert= ([] 10 21)
                   map-indexed-dynamic ([] 10 20)
                     fn (i x)
-                      hint-fn $ {}
-                        :args $ [] 'Number 'Number
-                        :return 'Number
+                      hint-fn $ Fn Number Number $ -> Number
                       + i x
               :tags $ #{} :unit
             %{} 'TestEntry (:name |preserves-indexed-member-result-types)
@@ -2013,8 +1893,7 @@
                 , |> |&gt;
               , "| " |&nbsp;
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'String)
-            :args $ [] 'String
+          :schema $ quote $ Fn String (-> String)
         'tab-echo! $ %{} 'CodeEntry
           :doc "|Open the data in a new tab: :json or :edn as plain text, or by default in the EDN tree viewer. Moved from respo-ui.util so Reel no longer depends on respo-ui."
           :code $ quote $ defn tab-echo! (data format)
@@ -2054,16 +1933,12 @@
                     , &unit
             , &unit
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'Unit)
-            :args $ [] 'Dynamic $ :: 'calcit.core/Option 'Tag
-            :features $ #{} :js-ffi
+          :schema $ quote $ Fn Dynamic (calcit.core/Option Tag) (-> Unit) (:features :js-ffi)
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
             if (.some? o) (.unwrap o) (raise "|unexpected none")
           :examples $ []
-          :schema $ :: 'Fn $ {} (:return 'T)
-            :args $ [] $ :: 'calcit.core/Option 'T
-            :generics $ [] 'T
+          :schema $ quote $ Fn (calcit.core/Option T) (-> T) (:generics T)
           :tests $ [] $ %{} 'TestEntry (:name |preserves-option-payload)
             :code $ quote $ let ()
               assert= 8 $ + 1 $ unwrap-option (Option :some 7)
@@ -2073,9 +1948,7 @@
                   unwrap-option $ Option :none
                   , |unexpected-success
                 fn (error)
-                  hint-fn $ {}
-                    :args $ [] 'String
-                    :return 'String
+                  hint-fn $ Fn String $ -> String
                   , error
             :tags $ #{} :unit
         'update-map-dynamic $ %{} 'CodeEntry (:doc |)
@@ -2086,9 +1959,8 @@
                 f $ .unwrap-or (get checked-map k) nil
                 raise "|update-map-dynamic expects a function"
           :examples $ []
-          :schema $ :: 'Fn $ {}
-            :args $ [] 'Dynamic 'Dynamic 'Dynamic
-            :return $ :: 'Map 'Dynamic 'Dynamic
+          :schema $ quote $ Fn Dynamic Dynamic Dynamic
+            -> $ Map Dynamic Dynamic
           :tests $ [] $ %{} 'TestEntry (:name |absence-migration-map-update-boundary)
             :code $ quote $ let
                 calls $ ref 0
