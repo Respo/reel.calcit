@@ -5,18 +5,18 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 推荐新应用使用 typed API；旧 Map API 保留，避免在
 升级时同时改写应用业务状态。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-使用者影响：本次 `0.7.0-alpha.4` 候选对齐 Respo `0.17.0-alpha.4` 与 JS-FFI `0.2.7` 的 0.31 发布图。JS-FFI 旧 `0.2.6` tag 实际声明 0.30.1；不以根检查通过代替传递依赖 tag 的配对证据，详见 [发布配对问题](https://github.com/calcit-lang/js-ffi/issues/195)。Respo 该 tag 已在原 CI 与 Demo 部署通过后发布；本模块仍须完成原门禁及自身发版，不将 main 当成已发布 tag。
+使用者影响：本次 `0.7.0-alpha.5` 候选对齐 Calcit `0.32.1`、Respo `0.17.1` 与 JS-FFI `0.2.9`。0.32 拒绝旧的 `:: 'Fn` 类型写法，旧依赖图无法加载，须同时升级到这组精确版本并重新生成 JS。本模块仍须完成原门禁及自身发版，不将 main 当成已发布 tag。
 
-## 当前 0.31 工具链配对
+## 当前 0.32 工具链配对
 
-Reel 0.7 系列配对正式 Calcit CLI / `@calcit/procs` `0.31.0`。当前候选
-`0.7.0-alpha.4` 使用已发布的 Respo `0.17.0-alpha.4` 和 JS FFI `0.2.7`；
+Reel 0.7 系列配对正式 Calcit CLI / `@calcit/procs` `0.32.1`。当前候选
+`0.7.0-alpha.5` 使用已发布的 Respo `0.17.1` 和 JS FFI `0.2.9`；
 消费者需协调 UI、Router 等上层模块的精确版本，重新安装并生成 JS，
 不能将此依赖图单独混入 0.30 维护线。
 
 本轮对齐依赖与版本元数据；另补齐原 Demo 声明但未实现的任务增改、切换和删除，
 并修正 Enter 清空的组件 cursor。库的 typed/旧 Map API、操作记录和历史重放算法保持，
-原测试与全部门禁保留；原独立消费者改用已发布 UI alpha.4，并启用严格 Caps 安装。完整 strict 和默认 proof audit 保留，
+原测试与全部门禁保留；原独立消费者改用已发布 UI 0.9.0，并启用严格 Caps 安装。完整 strict 和默认 proof audit 保留，
 现有开放展示边界仍需消费处校验。alpha.7 的空状态泛型修复、nominal-root 的
 实际形状守卫及旧 dispatcher 完整回调合同已随原迁移保留，不据此声称没有 Dynamic。
 

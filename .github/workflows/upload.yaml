@@ -69,7 +69,7 @@ jobs:
       uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
       with:
         repository: calcit-lang/respo-calcit-workflow
-        ref: e3da8015befbb46b7e7f9ddedf3757ae5cb4982a
+        ref: 34db518c93a097600d5890100ed13db80be02fc6
         path: .calcit/workflow-consumer
         persist-credentials: false
 
@@ -81,7 +81,7 @@ jobs:
         git rev-parse HEAD
         cp "$GITHUB_WORKSPACE/deps.cirru" "$GITHUB_WORKSPACE/package.json" "$GITHUB_WORKSPACE/yarn.lock" .
         # Reel no longer depends on respo-ui, but this consumer's own source still loads it.
-        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.9.0-alpha.4) #' deps.cirru
+        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.9.0) #' deps.cirru
         grep -q 'Respo/respo-ui.calcit' deps.cirru
         ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
         caps --strict --ci
