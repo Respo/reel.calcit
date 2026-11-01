@@ -2,13 +2,24 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 当前正式线与待发布的公共初值类型修正
+## 0.7.1 候选：协调 Respo 0.18 正式图
+
+使用者影响：CLI / `@calcit/procs` 仍配对正式 **0.32.1**，依赖从 Respo
+**0.17.1** 升为已发布的 **0.18.0**，JS-FFI **0.2.9** 保持。应用需与 UI、
+Router、Alerts 等模块统一精确图并重新生成 JS；直接构造 DomProps 的应用应按上游
+Option 字段迁移。本 PR 仅协调依赖和元数据，运行算法与操作历史沿用 main。
+
+候选包含下文已合入 main、尚未随 0.7.0 发布的公共初值 schema 修正。0.7.1 尚未发布，
+不能用 main/hash 替代正式依赖。独立模板源码夹具也必须选择同一宿主图的 UI，
+保留其全部检查和原断言，不放宽 Caps strict。生产路径与 COS 内置 verify 保持。
+
+## 0.7.0 历史配对与公共初值类型修正
 
 已发布 `0.7.0` 配对正式 Calcit CLI / `@calcit/procs` **0.32.1**、Respo **0.17.1**、JS-FFI **0.2.9**。从 0.6.x / Calcit 0.30.1 维护线升级时，须协调完整图、迁移旧类型写法并重新生成 JS，不能只改版本或关闭 Caps strict。
 
-本分支为既有 `reel.schema/reel` 补上实际的 `Map<Tag,Dynamic>` schema，避免未标注的下游 Ref 初始化直接变成 Dynamic（[#100](https://github.com/Respo/reel.calcit/issues/100)）。它只描述现有初值，不改变 Map 字段、nil 默认、身份、操作记录或回放算法；不把其他兼容入口的混合键 Map 伪造为 Tag-only。添加类型后，不符合该初值合同的后续用法可能更早被严格检查拒绝，不能据此宣称旧开放 API 已闭合。
+此前 #101 为既有 `reel.schema/reel` 补上实际的 `Map<Tag,Dynamic>` schema，避免未标注的下游 Ref 初始化直接变成 Dynamic（[#100](https://github.com/Respo/reel.calcit/issues/100)）。它只描述现有初值，不改变 Map 字段、nil 默认、身份、操作记录或回放算法；不把其他兼容入口的混合键 Map 伪造为 Tag-only。添加类型后，不符合该初值合同的后续用法可能更早被严格检查拒绝，不能据此宣称旧开放 API 已闭合。
 
-这项修正尚未发布，当前 Git 0.7.0 不包含它；模块版本/依赖不在这个元数据 PR 中再次升级，不移动已有 tag，不用 main/hash 冒充正式修复。后续发布状态以实际 Git tag 为准。
+这项修正由 #101 合入 main，当前 Git 0.7.0 不包含它；原元数据 PR 没有升级版本或依赖，本轮 0.7.1 候选将它与 Respo 0.18.0 图一起验收后发布。旧 tag 不移动，不用 main/hash 冒充正式修复。后续发布状态以实际 Git tag 为准。
 
 原类型门禁、native/JS 回归、独立消费者夹具和部署流程保持；没有预算豁免、强转、新 runner 或编译器改写规则。具体本轮结果见对应 PR。
 
