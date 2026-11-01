@@ -18,11 +18,11 @@
           :code $ quote $ defcomp comp-container (reel)
             let
                 store $ :store reel
-                states $ reel.schema/read-field store :states
+                states $ reel.schema/field-or store :states $ {}
               div
                 {} $ :class-name css/global
                 comp-todolist (>> states :todolist)
-                  decode-map-as (reel.schema/read-field store :tasks) (:: 'List 'Dynamic)
+                  decode-map-as (reel.schema/require-field store :tasks) (:: 'List 'Dynamic)
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
           :schema $ quote $ Fn
@@ -45,15 +45,15 @@
             div
               {} $ :style style-container
               div $ {} (:class-name css-done)
-                :style $ if (reel.schema/read-field task :done?)
+                :style $ if (reel.schema/field-or task :done? false)
                   {} $ :background-color $ hsl 42 100 60
                 :on-click $ fn (e d!)
-                  d! $ :: :task/toggle $ reel.schema/read-field task :id
+                  d! $ :: :task/toggle $ reel.schema/require-field task :id
               =< 8 nil
               input $ {} (:placeholder "|Content of task") (:class-name css/input)
-                :value $ reel.schema/read-field task :text
+                :value $ reel.schema/require-field task :text
                 :on-input $ fn (e d!)
-                  d! $ :: :task/edit (reel.schema/read-field task :id) (reel.schema/read-field e :value)
+                  d! $ :: :task/edit (reel.schema/require-field task :id) (reel.schema/field-or e :value |)
               =< 8 nil
               button
                 {} (:class-name css/button)
@@ -62,7 +62,7 @@
                     :color :white
                     :border :none
                   :on-click $ fn (e d!)
-                    d! $ :: :task/remove $ reel.schema/read-field task :id
+                    d! $ :: :task/remove $ reel.schema/require-field task :id
                 <> |Remove
           :examples $ []
           :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
@@ -91,18 +91,18 @@
         'comp-todolist $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-todolist (states tasks)
             let
-                cursor $ reel.schema/read-field states :cursor
-                state $ either (reel.schema/read-field states :data) |
+                cursor $ reel.schema/field-or states :cursor $ []
+                state $ reel.schema/field-or states :data |
               div
                 {} $ :class-name $ str-spaced css/fullscreen css-container
                 div ({})
                   input $ {} (:placeholder "|Task to add...") (:value state) (:class-name css/input)
                     :on-input $ fn (e d!)
-                      d! $ :: :states cursor $ reel.schema/read-field e :value
+                      d! $ :: :states cursor $ reel.schema/field-or e :value |
                       , &unit
                     :on-keydown $ fn (e d!)
                       if
-                        = (reel.schema/read-field e :keycode) 13
+                        = (reel.schema/field-or e :keycode 0) 13
                         do
                           d! $ :: :task/add state
                           d! $ :: :states cursor |
@@ -128,7 +128,7 @@
                       , &unit
                 list-> ({})
                   -> tasks $ map $ fn (task)
-                    [] (reel.schema/read-field task :id) (comp-task task)
+                    [] (reel.schema/require-field task :id) (comp-task task)
           :examples $ []
           :schema $ quote $ Fn Dynamic (List Dynamic) (-> respo.schema/Component)
         'css-container $ %{} 'CodeEntry (:doc |)
@@ -272,7 +272,7 @@
           :code $ quote $ defn read-tasks (store)
             decode-map-as
               .map
-                decode-map-as (reel.schema/read-field store :tasks) (:: 'List 'Dynamic)
+                decode-map-as (reel.schema/require-field store :tasks) (:: 'List 'Dynamic)
                 fn (raw)
                   if (struct? raw) (&struct:to-map raw) raw
               :: 'List 'Task
@@ -407,7 +407,9 @@
                   {}
                 :on-click $ on-recall idx
               ; <> $ to-lispy-string $ first record
-              comp-action $ .unwrap-or (first record) nil
+              match (first record)
+                (:some action) (comp-action action)
+                (:none) (comp-action |)
           :examples $ []
           :schema $ quote $ Fn (List Dynamic) Bool Number (-> respo.schema/Component)
         'comp-records $ %{} 'CodeEntry
@@ -422,10 +424,14 @@
                     hint-fn $ Fn Number Dynamic $ -> (List Dynamic)
                     let
                         checked-record $ decode-map-as record $ :: 'List 'Dynamic
-                        key $ .unwrap-or (last checked-record) nil
-                      [] key $ memo-comp-by key comp-record-item checked-record (&= pointer idx) idx
+                        pointed? $ = pointer $ Option :some idx
+                      match (last checked-record)
+                        (:some key)
+                          [] key $ memo-comp-by key comp-record-item checked-record pointed? idx
+                        (:none)
+                          [] nil $ memo-comp-by nil comp-record-item checked-record pointed? idx
           :examples $ []
-          :schema $ quote $ Fn (List Dynamic) Dynamic (-> respo.schema/Component)
+          :schema $ quote $ Fn (List Dynamic) (Option Number) (-> respo.schema/Component)
           :tests $ [] $ %{} 'TestEntry (:name |legacy-record-keys-and-memo-identity)
             :code $ quote $ let
                 element $ fn (node)
@@ -437,7 +443,7 @@
                   hint-fn $ Fn (List Dynamic)
                     -> $ List respo.schema/ChildPair
                   let
-                      view $ comp-records records nil
+                      view $ comp-records records $ Option :none
                       root $ element $ .unwrap (:tree view)
                       list-pair $ .unwrap $ first (:children root)
                       list-element $ element $ .unwrap (:node list-pair)
@@ -480,7 +486,7 @@
               respo.memo/finish-memo-frame!
               respo.core/clear-cache!
               let
-                  html $ respo.render.html/make-string $ comp-records records nil
+                  html $ respo.render.html/make-string $ comp-records records (Option :none)
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\"></span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">false</span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">0</span>"
@@ -492,19 +498,19 @@
                 do
                   comp-records
                     [] $ []
-                    , nil
+                    Option :none
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
                   comp-records
                     [] $ [] nil
-                    , nil
+                    Option :none
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
-                  comp-records ([] 42) nil
+                  comp-records ([] 42) (Option :none)
                   , :accepted
                 fn (error) :rejected
             :tags $ #{} :js-only :legacy-boundary :unit
@@ -616,28 +622,26 @@
           :schema $ quote $ Fn Bool (-> respo.schema/Component)
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles)
-            if (reel.schema/read-field reel :display?)
+            if (reel.schema/field-or reel :display? false)
               div
                 {}
                   :class-name $ str-spaced css/flex css/column css-reel
                   :style user-styles
-                memo-comp-by :operations comp-operations $ reel.schema/read-field reel :stopped?
+                memo-comp-by :operations comp-operations $ reel.schema/field-or reel :stopped? false
                 div
                   {} $ :class-name $ str-spaced css/expand css/row
-                  comp-records
-                    decode-map-as (reel.schema/read-field reel :records) (:: 'List 'Dynamic)
-                    reel.schema/read-field reel :pointer
+                  comp-records (reel.schema/records-of reel) (reel.schema/pointer-of reel)
                   div
                     {}
                       :class-name $ str-spaced css/column css/expand
                       :style $ {} (:overflow :auto) (:padding "|0 8px")
                         :border-left $ str "|1px solid " $ hsl 0 0 94
                     let
-                        records $ decode-map-as (reel.schema/read-field reel :records) 'List
-                        pointer $ reel.schema/read-field reel :pointer
-                        record $ if (reel.schema/read-field reel :stopped?)
+                        records $ reel.schema/records-of reel
+                        pointer $ reel.schema/pointer-of reel
+                        record $ if (reel.schema/field-or reel :stopped? false)
                           &let
-                            stopped-pointer $ decode-map-as pointer 'Number
+                            stopped-pointer $ reel.util/unwrap-option pointer
                             if (> stopped-pointer 0)
                               get records $ dec stopped-pointer
                               Option :none
@@ -658,13 +662,13 @@
                                 =< 8 nil
                                 <> $ str op-id
                               if
-                                and (non-nil? pointer)
-                                  not $ &= pointer 0
+                                and (.some? pointer)
+                                  not= pointer $ Option :some 0
                                 span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
                                   :style $ {} (:cursor :pointer) (:font-size 12)
                                     :color $ hsl 20 100 70
                                   :on-click $ fn (e d!)
-                                    d! $ :: :reel/remove $ reel.schema/read-field reel :pointer
+                                    d! $ :: :reel/remove $ reel.util/unwrap-option pointer
                             div
                               {} (:class-name css/expand)
                                 :style $ {} (:padding "|8px 0") (:white-space :pre)
@@ -673,7 +677,7 @@
                         <> |nil
                     div
                       {} $ :class-name $ str-spaced css/expand css/font-code css-snippet
-                      <> $ trim $ format-cirru-edn (reel.schema/read-field reel :store)
+                      <> $ trim $ format-cirru-edn (reel.schema/require-field reel :store)
               span $ {}
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic) (Map Dynamic Dynamic) (Map Dynamic Dynamic) (-> respo.schema/Component)
@@ -824,79 +828,86 @@
                   if (reel-control-op? op)
                     let
                         changes $ let
-                            pointer $ reel.schema/read-field reel :pointer
-                            records $ reel.schema/checked-records $ reel.schema/read-field reel :records
-                            base $ reel.schema/read-field reel :base
-                            stopped? $ .unwrap-or (get reel :stopped?) false
+                            pointer $ reel.schema/pointer-of reel
+                            records $ reel.schema/records-of reel
+                            stopped? $ reel.schema/field-or reel :stopped? false
                           match op
                             (:reel/toggle)
-                              {} $ :display? $ not (reel.schema/read-field reel :display?)
+                              {} $ :display? $ not (reel.schema/field-or reel :display? false)
                             (:reel/recall idx)
                               let
-                                  new-store $ play-records base records updater idx
-                                {} (:pointer idx) (:stopped? true) (:store new-store)
+                                  new-store $ play-records (reel.schema/require-field reel :base) records updater idx
+                                {}
+                                  :pointer $ Option :some idx
+                                  :stopped? true
+                                  :store new-store
                             (:reel/run)
                               let
-                                  new-store $ play-records base records updater $ count records
-                                {} (:store new-store) (:stopped? false) (:pointer nil)
+                                  new-store $ play-records (reel.schema/require-field reel :base) records updater $ count records
+                                {} (:store new-store) (:stopped? false)
+                                  :pointer $ Option :none
                             (:reel/step)
                               if stopped?
                                 if
                                   < (count records) 2
                                   , nil $ &let
-                                    step-pointer $ decode-map-as pointer 'Number
+                                    step-pointer $ reel.util/unwrap-option pointer
                                     if
                                       < step-pointer $ count records
                                       let
                                           next-pointer $ inc step-pointer
                                           next-record $ &list:nth records step-pointer
                                         let[] (old-op old-id old-time) (decode-map-as next-record 'List)
-                                          {} (:pointer next-pointer)
-                                            :store $ updater (reel.schema/read-field reel :store) old-op old-id old-time
-                                      {} (:store base) (:pointer 0)
+                                          {}
+                                            :pointer $ Option :some next-pointer
+                                            :store $ updater (reel.schema/require-field reel :store) old-op old-id old-time
+                                      {}
+                                        :store $ reel.schema/require-field reel :base
+                                        :pointer $ Option :some 0
                                 , nil
                             (:reel/merge)
                               if stopped?
-                                if (&= 0 pointer) ({})
+                                if
+                                  = (Option :some 0) pointer
+                                  {}
                                   let
-                                      new-store $ play-records base records updater pointer
-                                    {} (:store new-store) (:base new-store) (:pointer 0)
-                                      :records $ slice-records-from records $ decode-map-as pointer 'Number
+                                      merge-pointer $ reel.util/unwrap-option pointer
+                                      new-store $ play-records (reel.schema/require-field reel :base) records updater merge-pointer
+                                    {} (:store new-store) (:base new-store)
+                                      :pointer $ Option :some 0
+                                      :records $ slice-records-from records merge-pointer
                                       :merged? true
                                 {}
-                                  :base $ reel.schema/read-field reel :store
-                                  :pointer nil
+                                  :base $ reel.schema/require-field reel :store
+                                  :pointer $ Option :none
                                   :records $ []
                                   :merged? true
                             (:reel/reset)
                               if stopped?
-                                {} $ :records $ slice-records-until records (decode-map-as pointer 'Number)
+                                {} $ :records $ slice-records-until records (reel.util/unwrap-option pointer)
                                 {}
-                                  :store $ reel.schema/read-field reel :base
-                                  :pointer nil
+                                  :store $ reel.schema/require-field reel :base
+                                  :pointer $ Option :none
                                   :records $ []
                                   :stopped? false
                             (:reel/remove idx)
                               if (&= 0 idx) reel $ let
                                   remove-index $ decode-map-as idx 'Number
-                                -> reel (reel.util/update-map-dynamic :pointer dec)
-                                  reel.util/update-map-dynamic :records $ fn (records)
-                                    remove-record-at (reel.schema/checked-records records) remove-index
-                                  .assoc :store $ play-records base records updater $ dec remove-index
+                                -> reel
+                                  .assoc :pointer $ .map pointer dec
+                                  .assoc :records $ remove-record-at records remove-index
+                                  .assoc :store $ play-records (reel.schema/require-field reel :base) records updater $ dec remove-index
                             _ $ do
                               host/console-warn! $ str "|Unknown reel/ op:" op
                               , nil
                       if (nil? changes) reel $ merge reel $ decode-map-as changes (:: 'Map 'Tag 'Dynamic)
                     let
                         data-pack $ [] op op-id op-time
-                      if
-                        .unwrap-or (get reel :stopped?) false
-                        -> reel $ reel.util/update-map-dynamic :records $ fn (records)
-                          conj (reel.schema/checked-records records) data-pack
+                      if (reel.schema/field-or reel :stopped? false)
+                        .assoc reel :records $ conj (reel.schema/records-of reel) data-pack
                         -> reel
-                          .assoc :store $ updater (reel.schema/read-field reel :store) op op-id op-time
-                          reel.util/update-map-dynamic :records $ fn (records)
-                            conj (reel.schema/checked-records records) data-pack
+                          .assoc :store $ updater (reel.schema/require-field reel :store) op op-id op-time
+                          .assoc :records $ conj (reel.schema/records-of reel) data-pack
               if (identical? result reel) reel $ decode-map-as result $ :: 'Map 'Tag 'Dynamic
           :examples $ []
           :schema $ quote $ Fn
@@ -954,24 +965,24 @@
                   source $ {} (:base |base) (:store |base) (:stopped? false) (:extra |keep)
                     :records $ []
                   updated $ reel-updater updater source 5
-                  records $ reel.schema/checked-records $ reel.schema/read-field updated :records
+                  records $ reel.schema/records-of updated
                   record $ decode-map-as
                     .unwrap $ first records
                     , 'List
                   stopped $ .assoc source :stopped? true
                   stopped-updated $ reel-updater updater stopped 7
                 assert= 1 @calls
-                assert= |base5 $ reel.schema/read-field updated :store
-                assert= |keep $ reel.schema/read-field updated :extra
+                assert= |base5 $ reel.schema/require-field updated :store
+                assert= |keep $ reel.schema/require-field updated :extra
                 assert= 1 $ count records
                 assert= 3 $ count record
                 assert= 5 $ .unwrap $ first record
                 assert= true $ string? $ .unwrap (nth record 1)
                 assert= true $ number? $ .unwrap (nth record 2)
-                assert= |base $ reel.schema/read-field source :store
-                assert= ([]) (reel.schema/read-field source :records)
-                assert= |base $ reel.schema/read-field stopped-updated :store
-                assert= 1 $ count $ reel.schema/checked-records (reel.schema/read-field stopped-updated :records)
+                assert= |base $ reel.schema/require-field source :store
+                assert= ([]) (reel.schema/require-field source :records)
+                assert= |base $ reel.schema/require-field stopped-updated :store
+                assert= 1 $ count $ reel.schema/records-of stopped-updated
                 assert= :propagated $ try
                   do
                     reel-updater
@@ -983,10 +994,12 @@
         'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-reel (reel base updater)
             let
-                next-base $ if (reel.schema/read-field reel :merged?) (reel.schema/read-field reel :base) base
-                records $ reel.schema/checked-records $ reel.schema/read-field reel :records
+                next-base $ if (reel.schema/field-or reel :merged? false) (reel.schema/require-field reel :base) base
+                records $ reel.schema/records-of reel
               -> reel (assoc :base next-base)
-                assoc :store $ play-records next-base records updater $ if (reel.schema/read-field reel :stopped?) (reel.schema/read-field reel :pointer) (count records)
+                assoc :store $ play-records next-base records updater $ if (reel.schema/field-or reel :stopped? false)
+                  reel.util/unwrap-option $ reel.schema/pointer-of reel
+                  count records
           :examples $ []
           :schema $ quote $ Fn Dynamic Dynamic Dynamic (-> Dynamic) (:features :js-ffi)
           :tests $ []
@@ -995,7 +1008,7 @@
                   updater $ fn (store op id time)
                     hint-fn $ Fn String Number String Number $ -> String
                     str store op
-                assert= |next $ reel.schema/read-field
+                assert= |next $ reel.schema/require-field
                   refresh-reel
                     {} (:base |base) (:store |base)
                       :records $ []
@@ -1004,7 +1017,7 @@
                       :pointer nil
                     , |next updater
                   , :store
-                assert= |next5 $ reel.schema/read-field
+                assert= |next5 $ reel.schema/require-field
                   refresh-reel
                     {} (:base |base) (:store |base)
                       :records $ [] $ [] 5 |id 10
@@ -1042,16 +1055,16 @@
                   refreshed-nominal $ refresh-reel nominal |next updater
                 assert= (Option :some 1) (get refreshed |extra)
                 assert= (Option :some false) (get refreshed 42)
-                assert= |next $ reel.schema/read-field refreshed :base
-                assert= |next $ reel.schema/read-field refreshed :store
+                assert= |next $ reel.schema/require-field refreshed :base
+                assert= |next $ reel.schema/require-field refreshed :store
                 assert= (Option :none) (get source :base)
                 assert= (Option :none) (get source :store)
                 assert= (struct-definition nominal)
                   if (struct? refreshed-nominal) (struct-definition refreshed-nominal) (Option :none)
-                assert= |next $ reel.schema/read-field refreshed-nominal :base
-                assert= |next $ reel.schema/read-field refreshed-nominal :store
-                assert= |base $ reel.schema/read-field nominal :base
-                assert= |base $ reel.schema/read-field nominal :store
+                assert= |next $ reel.schema/require-field refreshed-nominal :base
+                assert= |next $ reel.schema/require-field refreshed-nominal :store
+                assert= |base $ reel.schema/require-field nominal :base
+                assert= |base $ reel.schema/require-field nominal :store
               :tags $ #{} :legacy-boundary :unit
         'remove-record-at $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-record-at (records idx)
@@ -1120,89 +1133,142 @@
                   hint-fn $ Fn String $ -> String
                   , error
             :tags $ #{} :unit
-        'read-field $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn read-field (value field)
-            if (struct? value)
-              .unwrap-or
-                get (&struct:to-map value) field
-                , nil
-              .unwrap-or
-                get (decode-map-as value 'Map) field
-                , nil
+        'field-option $ %{} 'CodeEntry
+          :doc "|Read a field of a legacy reel map, a record or a nominal struct as an Option: a missing key and a nil value are none, an Option value is used as it is, other values are present."
+          :code $ quote $ defn field-option (value field)
+            let
+                found $ if (struct? value)
+                  get (&struct:to-map value) field
+                  get (decode-map-as value 'Map) field
+              match found
+                (:some v)
+                  cond
+                      nil? v
+                      Option :none
+                    (and (enum? v) (= (&enum:definition v) (Option :some Option)))
+                      if
+                        = :some $ &enum:nth v 0
+                        Option :some $ &enum:nth v 1
+                        Option :none
+                    true $ Option :some v
+                (:none) (Option :none)
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag (-> Dynamic)
+          :schema $ quote $ Fn Dynamic Tag
+            -> $ Option Dynamic
           :tests $ []
             %{} 'TestEntry (:name |legacy-map-keeps-mixed-key-boundary)
               :code $ quote $ let
                   source $ {} (:value "|中文🐈") (|extra 1) (42 false)
-                assert= "|中文🐈" $ read-field source :value
-                assert= nil $ read-field source :missing
+                assert= (Option :some "|中文🐈") (field-option source :value)
+                assert= (Option :none) (field-option source :missing)
                 assert= 3 $ count source
               :tags $ #{} :legacy-boundary :unit
-            %{} 'TestEntry (:name |nil-false-and-zero-are-not-defaulted)
+            %{} 'TestEntry (:name |nil-is-none-false-and-zero-are-present)
               :code $ quote $ let
                   source $ {} (:nil-value nil) (:false-value false) (:zero-value 0)
-                assert= nil $ read-field source :nil-value
-                assert= false $ read-field source :false-value
-                assert= 0 $ read-field source :zero-value
+                    :option-value $ Option :some 3
+                    :none-value $ Option :none
+                assert= (Option :none) (field-option source :nil-value)
+                assert= (Option :some false) (field-option source :false-value)
+                assert= (Option :some 0) (field-option source :zero-value)
+                assert= (Option :some 3) (field-option source :option-value)
+                assert= (Option :none) (field-option source :none-value)
               :tags $ #{} :legacy-boundary :unit
             %{} 'TestEntry
               :name |nominal-record-fields-and-missing-key-remain-compatible
               :code $ quote $ let
                   record $ reel.typed/Record :op 42 :id "|记录🐈" :time 7
-                assert= 42 $ read-field record :op
-                assert= "|记录🐈" $ read-field record :id
-                assert= 7 $ read-field record :time
-                assert= nil $ read-field record :missing
+                assert= (Option :some 42) (field-option record :op)
+                assert= (Option :some "|记录🐈") (field-option record :id)
+                assert= (Option :some 7) (field-option record :time)
+                assert= (Option :none) (field-option record :missing)
               :tags $ #{} :legacy-boundary :unit
             %{} 'TestEntry (:name |non-struct-non-map-input-is-rejected)
               :code $ quote $ do
                 assert= :rejected $ try
-                  do (read-field nil :value) :accepted
+                  do (field-option nil :value) :accepted
                   fn (error) :rejected
                 assert= :rejected $ try
-                  do (read-field 42 :value) :accepted
+                  do (field-option 42 :value) :accepted
                   fn (error) :rejected
                 assert= :rejected $ try
-                  do (read-field false :value) :accepted
-                  fn (error) :rejected
-                assert= :rejected $ try
-                  do (read-field |text :value) :accepted
+                  do (field-option |text :value) :accepted
                   fn (error) :rejected
                 assert= :rejected $ try
                   do
-                    read-field ([]) :value
-                    , :accepted
-                  fn (error) :rejected
-                assert= :rejected $ try
-                  do
-                    read-field (:: :invalid) :value
+                    field-option ([]) :value
                     , :accepted
                   fn (error) :rejected
               :tags $ #{} :legacy-boundary :unit
-            %{} 'TestEntry (:name |legacy-empty-string-and-nil-struct-payload)
-              :code $ quote $ let
-                  record $ reel.typed/Record :op nil :id | :time 0
-                assert= | $ read-field
-                  {} $ :value |
-                  , :value
-                assert= nil $ read-field record :op
-                assert= | $ read-field record :id
-                assert= 0 $ read-field record :time
-                assert= nil $ read-field record :missing
-              :tags $ #{} :legacy-boundary :unit
+        'field-or $ %{} 'CodeEntry
+          :doc "|Read a field, or default when field-option gives none."
+          :code $ quote $ defn field-or (value field default)
+            match (field-option value field)
+              (:some v) v
+              (:none) default
+          :examples $ []
+          :schema $ quote $ Fn Dynamic Tag Dynamic (-> Dynamic)
+          :tests $ [] $ %{} 'TestEntry (:name |defaults-only-absent-fields)
+            :code $ quote $ do
+              assert= 1 $ field-or
+                {} $ :a nil
+                , :a 1
+              assert= false $ field-or
+                {} $ :a false
+                , :a true
+              assert= | $ field-or
+                {} $ :a |
+                , :a |x
+            :tags $ #{} :unit
+        'pointer-of $ %{} 'CodeEntry
+          :doc "|Pointer of a legacy reel map as an Option Number; a legacy number pointer counts as present."
+          :code $ quote $ defn pointer-of (reel)
+            match (field-option reel :pointer)
+              (:some pointer)
+                Option :some $ decode-map-as pointer 'Number
+              (:none) (Option :none)
+          :examples $ []
+          :schema $ quote $ Fn Dynamic
+            -> $ Option Number
+          :tests $ [] $ %{} 'TestEntry (:name |legacy-and-option-pointers)
+            :code $ quote $ do
+              assert= (Option :none)
+                pointer-of $ {} $ :pointer nil
+              assert= (Option :none)
+                pointer-of $ {} $ :pointer (Option :none)
+              assert= (Option :some 2)
+                pointer-of $ {} $ :pointer 2
+              assert= (Option :some 2)
+                pointer-of $ {} $ :pointer (Option :some 2)
+            :tags $ #{} :legacy-boundary :unit
+        'records-of $ %{} 'CodeEntry
+          :doc "|Records of a legacy reel map; a missing or non-list container raises."
+          :code $ quote $ defn records-of (reel)
+            match (field-option reel :records)
+              (:some records) (checked-records records)
+              (:none) (raise "|Reel records must be a List")
+          :examples $ []
+          :schema $ quote $ Fn Dynamic
+            -> $ List Dynamic
         'reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def reel
             {}
               :records $ []
-              :base nil
-              :store nil
-              :pointer nil
+              :pointer $ Option :none
               :stopped? false
               :display? false
               :merged? false
           :examples $ []
           :schema $ quote $ Map Tag Dynamic
+        'require-field $ %{} 'CodeEntry
+          :doc "|Read a field that must be present; raises with the field name when field-option gives none."
+          :code $ quote $ defn require-field (value field)
+            match (field-option value field)
+              (:some v) v
+              (:none)
+                raise $ str "|[reel] missing field " field
+          :examples $ []
+          :schema $ quote $ Fn Dynamic Tag (-> Dynamic)
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
@@ -1785,9 +1851,7 @@
                   hint-fn $ Fn (reel.typed/Record Op)
                     -> $ List Dynamic
                   [] (:op record) (:id record) (:time record)
-              :pointer $ match (:pointer reel)
-                (:some pointer) pointer
-                (:none) nil
+              :pointer $ :pointer reel
               :stopped? $ :stopped? reel
               :display? $ :display? reel
               :merged? $ :merged? reel
@@ -1803,7 +1867,7 @@
                 assert=
                   {} (:base |base) (:store |base)
                     :records $ []
-                    :pointer nil
+                    :pointer $ Option :none
                     :stopped? false
                     :display? false
                     :merged? false
@@ -1816,7 +1880,7 @@
                 assert=
                   {} (:base |base) (:store |current)
                     :records $ [] ([] 7 |first 10) ([] 9 |second 20)
-                    :pointer 0
+                    :pointer $ Option :some 0
                     :stopped? true
                     :display? true
                     :merged? false
@@ -1824,7 +1888,7 @@
                 assert=
                   {} (:base |base) (:store |current)
                     :records $ [] ([] 7 |first 10) ([] 9 |second 20)
-                    :pointer 2
+                    :pointer $ Option :some 2
                     :stopped? true
                     :display? false
                     :merged? true
@@ -1964,12 +2028,13 @@
                   hint-fn $ Fn String $ -> String
                   , error
             :tags $ #{} :unit
-        'update-map-dynamic $ %{} 'CodeEntry (:doc |)
+        'update-map-dynamic $ %{} 'CodeEntry
+          :doc "|Update key k of a map with f, which receives the current value as an Option (none when the key is missing)."
           :code $ quote $ defn update-map-dynamic (m k f)
             &let
               checked-map $ decode-map-as m 'Map
               &map:assoc checked-map k $ if (fn? f)
-                f $ .unwrap-or (get checked-map k) nil
+                f $ get checked-map k
                 raise "|update-map-dynamic expects a function"
           :examples $ []
           :schema $ quote $ Fn Dynamic Dynamic Dynamic
@@ -1977,12 +2042,14 @@
           :tests $ [] $ %{} 'TestEntry (:name |absence-migration-map-update-boundary)
             :code $ quote $ let
                 calls $ ref 0
-                record $ fn (value)
+                record $ fn (value-option)
                   reset! calls $ inc @calls
-                  , value
+                  match value-option
+                    (:some value) value
+                    (:none) :absent
                 source $ {} (:nil-value nil) (:false-value false) (:zero-value 0) (:empty-value |)
                 absent $ update-map-dynamic source :missing record
-              assert= nil $ .unwrap $ get (decode-map-as absent 'Map) :missing
+              assert= :absent $ .unwrap $ get (decode-map-as absent 'Map) :missing
               assert= source $ update-map-dynamic source :nil-value record
               assert= source $ update-map-dynamic source :false-value record
               assert= source $ update-map-dynamic source :zero-value record
@@ -2012,12 +2079,12 @@
                 {} (|key false) (42 0)
                 update-map-dynamic
                   {} (|key false) (42 0)
-                  , |key $ fn (value) value
+                  , |key record
               assert=
                 {} (|key false) (42 0)
                 update-map-dynamic
                   {} (|key false) (42 0)
-                  , 42 $ fn (value) value
+                  , 42 record
             :tags $ #{} :migration :unit
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.util

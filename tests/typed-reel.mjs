@@ -103,7 +103,8 @@ const legacyUpdater = (store, op) => { legacyUpdates += 1; return `${store}/${op
 const legacyBefore = to_js_data(legacyReel);
 const removedLegacy = to_js_data(reel_updater(legacyUpdater, legacyReel, parse_cirru_edn(":: :reel/remove 2")));
 assert.deepEqual(removedLegacy.records, [[5, "first", 10]]);
-assert.equal(removedLegacy.pointer, 1);
+// Pointers are Options; to_js_data shows them as tagged tuples.
+assert.deepEqual(removedLegacy.pointer, ['some', 1]);
 assert.equal(removedLegacy.store, "base/5");
 assert.equal(legacyUpdates, 1);
 assert.deepEqual(to_js_data(legacyReel), legacyBefore);
@@ -201,10 +202,10 @@ for (const message of [":: :app/update |text", ":: :reel/recall |bad", ":: :reel
 console.log("typed Reel JS: all control messages, rejected payloads, and stale deletion protection passed");
 assert.deepEqual(to_js_data(view_data(full)), {
   base: "base", store: "base57", records: [[5, "id", 10], [7, "second", 20]],
-  pointer: null, "stopped?": false, "display?": false, "merged?": false,
+  pointer: ['none'], "stopped?": false, "display?": false, "merged?": false,
 });
 const pausedView = to_js_data(view_data(paused));
-assert.equal(pausedView.pointer, 1);
+assert.deepEqual(pausedView.pointer, ['some', 1]);
 assert.equal(pausedView["stopped?"], true);
 assert.equal(pausedView.store, "base5");
 assert.deepEqual(pausedView.records, [[5, "id", 10], [7, "second", 20]]);
