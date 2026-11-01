@@ -1202,7 +1202,7 @@
               :display? false
               :merged? false
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote $ Map Tag Dynamic
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
