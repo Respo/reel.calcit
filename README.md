@@ -2,6 +2,17 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
+## 未发布：旧 Map API 改用 Option 表示缺省（calcit#2124）
+
+这是**不兼容改动**，发布时应升 minor：
+
+- `reel.schema/read-field`（缺失时返回 nil）已移除，改用 `field-option`（返回 Option，缺失和 nil 都是 none）、`field-or`、`require-field`，以及 `pointer-of`、`records-of`。
+- `reel.schema/reel` 模板不再带值为 nil 的 `:base`/`:store`，`:pointer` 是 `Option :none`；`reel-updater` 写入的 `:pointer` 也是 Option。旧数据里的数字指针和 nil 指针仍能读取。
+- `reel.util/update-map-dynamic` 的 callback 现在收到 `get` 的结果（Option），键缺失时为 none；原来收到 nil。迁移方式：callback 先 `match` 这个 Option，例如 `fn (v) (match v (:some x) (dec x) (:none) 0)`。
+- `typed-compat/view-data` 的 `:pointer` 直接给出 typed reel 的 Option。
+
+typed API 没有变化。
+
 ## 0.7.1 候选：协调 Respo 0.18 正式图
 
 使用者影响：CLI / `@calcit/procs` 仍配对正式 **0.32.1**，依赖从 Respo
@@ -31,7 +42,7 @@ Option 字段迁移。本 PR 仅协调依赖和元数据，运行算法与操作
 
 ## 兼容边界
 
-旧 Map API 保留缺失字段的 nil、已有 nil/false/0/空串和原错误传播。read-field 接受实际 Struct 或受检 Map；records 的外层 List 检查不代表所有开放 payload 已被深度解码。pointer=0 时不读取历史，旧 no-op 分支和回调求值次数保持。
+旧 Map API 用 Option 表示缺省：缺失字段和 nil 都按 none 处理，false/0/空串保持原值，原错误传播不变。field-option 接受实际 Struct 或受检 Map；records 的外层 List 检查不代表所有开放 payload 已被深度解码。pointer=0 时不读取历史，旧 no-op 分支和回调求值次数保持。
 
 refresh-reel 的旧兼容写入仍支持受检 Struct 与混合键 Map，不为消除调用而伪造 Tag-only 输入。typed API 更适合新应用；兼容入口未完成下游退场前不删除。具体合同见 [缺失值与旧展示边界](docs/option-boundaries.md)。
 
@@ -111,8 +122,8 @@ quote $ Ref $ reel.typed/State app.schema/AppOp app.schema/AppStore
 深层校验。旧 Map updater/refresh 的 records 消费边界用
 `reel.schema/checked-records` 校验外层 List，成员仍是 Dynamic；它不是
 Record decoder，也不会将错误数据补成空列表。
-`read-field` 保留 Struct 与任意键 Map 的读取；非 Struct 分支在读取前校验 Map。
-缺失字段仍返回 nil，nil/false/0 与混合键不被替换成默认值；其他容器明确拒绝。
+`field-option` 保留 Struct 与任意键 Map 的读取；非 Struct 分支在读取前校验 Map。
+缺失字段和 nil 为 none，false/0 与混合键保持原值；其他容器明确拒绝。
 旧历史重放在 pointer 非零、真正读取时校验 records 与单条 record 为 List，
 pointer 为零仍直接返回 store，不读取 records 或调用 updater。删除操作的索引
 在使用前校验 Number；零索引仍保留原状态。控制分支返回 nil 时显式保持原 Reel，

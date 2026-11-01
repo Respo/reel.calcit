@@ -12,7 +12,7 @@
 | `comp-records` 的开放成员 | `decode-map-as` 校验 List 一次，保留 List 外层类型传入 `comp-record-item` |
 | 单条记录 `last` 的 Option | 只在旧 ChildPair/memo key 出口编码 nil，绑定并复用一个 key |
 | 单条记录 `first` 的 Option | 只在旧 action 文本展示出口编码 nil，空记录和显式 nil 的显示不变 |
-| `State<Op,Store>.pointer: Option<Number>` | `typed-compat/view-data` 编码旧 nil/Number；Some 0 不是缺失 |
+| `State<Op,Store>.pointer: Option<Number>` | `typed-compat/view-data` 直接给出 Option；Some 0 不是缺失 |
 | `List<Record<Op>>` | adapter 逐项生成旧 `[op id time]`，不是仅对根 State 浅层转 Map |
 
 这些是旧展示格式的具名出口，不代表应用中的任意 None 都可以转 nil。
@@ -20,15 +20,16 @@ Record 的开放 Op 也不等于已经校验为某个具体业务操作。
 
 ## 旧 Map 的字段读取与回放
 
-`read-field` 接受 Struct 或任意键 Map，字段参数仍为 Tag；缺失与显式 nil
-按原旧合同合流，false、0、空串保持原值，其他容器拒绝。混合键 Map 不会
+`field-option` 接受 Struct 或任意键 Map，字段参数仍为 Tag，返回 Option；缺失与显式 nil
+都是 none，false、0、空串为 some，Option 值原样使用，其他容器拒绝。必须存在的字段用
+`require-field`，缺失时报出字段名。混合键 Map 不会
 因为查询一个 Tag 字段就被伪造为仅有 Tag 键的 Map。
 
 控制分支读取 pointer、records、base 时复用这个既有旧边界。Map 类型没有证明
 每个字段必然存在，不能对所有查询直接 `.unwrap`。但 records 仍在进入 control
 消息 match 之前由 `checked-records` 校验，不能为了让某个消息成功而延后错误。
-base 仍是开放业务 Store，nil 可能就是旧 Store；pointer 只在实际使用历史索引时
-校验 Number。两个 stopped? 消费点保留旧 truthiness：缺失、nil、false 为假，
+base/store 只在需要时用 `require-field` 读取；pointer 由 `pointer-of` 读成
+`Option Number`（旧的数字指针算有值），只在实际使用历史索引时才要求有值。两个 stopped? 消费点保留旧 truthiness：缺失、nil、false 为假，
 0 和空串仍为真，不把 `Some?` 当成业务布尔值。
 
 `play-records` 的 pointer 为 0 时直接返回原 store，不读取 records、不调用
@@ -39,8 +40,8 @@ updater。真正回放时先检查外层 List，首项 Option 缺失使用原空
 
 ## 开放 callback 不伪装成任意值都可调用
 
-`update-map-dynamic` 在受检真实 Map 上读取，缺失时仍将 nil 交给原 callback，
-单次调用后写回。callback 自己的异常直接传播。该旧 helper 不承诺业务字段类型，
+`update-map-dynamic` 在受检真实 Map 上读取，把 `get` 的结果（Option）交给 callback，
+键缺失时为 none，单次调用后写回。这是相对旧版本的不兼容改动：旧 callback 收到 nil。callback 自己的异常直接传播。该旧 helper 不承诺业务字段类型，
 也不因为一个 Number-only `dec` 调用就把整个 helper 谎称为接受任意
 `Fn<Dynamic,Dynamic>`。进一步收窄必须同时证明字段值和具体 callback 的关系。
 
