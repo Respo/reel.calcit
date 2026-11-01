@@ -2,15 +2,17 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 使用者影响：0.7.0 正式版候选
+## 当前正式线与待发布的公共初值类型修正
 
-候选 `0.7.0` 配对正式 Calcit CLI / `@calcit/procs` **0.32.1**、Respo **0.17.1**、JS-FFI **0.2.9**。从 0.6.x / Calcit 0.30.1 维护线升级时，须协调完整工具链与上层 UI/Router 的精确依赖图，迁移旧类型写法并重新生成 JS，不能只改一个版本或关闭 Caps strict。
+已发布 `0.7.0` 配对正式 Calcit CLI / `@calcit/procs` **0.32.1**、Respo **0.17.1**、JS-FFI **0.2.9**。从 0.6.x / Calcit 0.30.1 维护线升级时，须协调完整图、迁移旧类型写法并重新生成 JS，不能只改版本或关闭 Caps strict。
 
-相对已发布 0.7.0-alpha.5，最新 main 仅补齐 23 个定义的 schema：CSS class 为 String、实际样式 Map 为 Map<Tag,String>、Demo render-app! 返回 Unit；88 个定义的运行代码和原测试保持。原 typed/旧 Map API、记录与历史重放算法不变，本轮不修改 Snapshot。版本声明是候选，不等于 tag 已发布；发版状态以精确 Git tag 为准，不移动历史 tag。
+本分支为既有 `reel.schema/reel` 补上实际的 `Map<Tag,Dynamic>` schema，避免未标注的下游 Ref 初始化直接变成 Dynamic（[#100](https://github.com/Respo/reel.calcit/issues/100)）。它只描述现有初值，不改变 Map 字段、nil 默认、身份、操作记录或回放算法；不把其他兼容入口的混合键 Map 伪造为 Tag-only。添加类型后，不符合该初值合同的后续用法可能更早被严格检查拒绝，不能据此宣称旧开放 API 已闭合。
 
-本轮保留原全定义、完整 strict、公开 API、native/JS 原回归、独立消费者源码兼容夹具与 Demo 构建。不会将开放展示、旧 Map 或宿主边界冒称全部闭合类型；也不增加预算、强转、checker 或编译器迁移规则。
+这项修正尚未发布，当前 Git 0.7.0 不包含它；模块版本/依赖不在这个元数据 PR 中再次升级，不移动已有 tag，不用 main/hash 冒充正式修复。后续发布状态以实际 Git tag 为准。
 
-## 本轮验证
+原类型门禁、native/JS 回归、独立消费者夹具和部署流程保持；没有预算豁免、强转、新 runner 或编译器改写规则。具体本轮结果见对应 PR。
+
+## 0.7.0 发布时的历史验证
 
 正式工具链和已发布宿主图通过 Caps strict/toolchain、immutable、canonical、240 项全定义、38 项公开定义、完整 strict（diagnostics=[]）、原 30 项 native / 33 项生成 JS 回归、原 native 入口和独立模板源码夹具（190 项全定义、strict、原 1 项测试、JS/Vite 构建及源码不变检查）。原旧 Struct `.assoc` 的两条运行时警告保留，不据此改写兼容合同。
 
