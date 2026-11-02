@@ -2,7 +2,15 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 未发布：旧 Map API 改用 Option 表示缺省（calcit#2124）
+## 0.8.0 候选：Calcit 0.34.1 与明确的缺省值
+
+使用者影响：CLI / `@calcit/procs` 同步正式 **0.34.1**，Respo **0.18.0**、JS-FFI **0.2.9** 保持正式版本。请重新安装精确依赖图、生成 JS 并完整刷新。此版本包含下述 main 已合入、尚未随 0.7.1 发布的旧 Map API 不兼容改动，因此升 minor，不作为 patch 发布。
+
+动作列表的返回值明确为 `List<ActionEntryPart>`，其中 `ActionEntryPart = Number | Element`；该类型只约束元素种类，不承诺列表长度或位置。按钮返回 Element；既有样式常量为 `Map<Tag,StyleDataValue>`，值只含 Number、Tag，不改变样式。旧开放 payload、回调和 truthiness 合同保持，未用强转假装闭合。两个可选样式/子节点改为显式 Option，缺席时不添加占位节点。保留 HUD、原测试、完整 strict 与独立消费者检查，不放宽门禁，不新增 runner。
+
+本轮原 31 项 native / 34 项生成 JS 附着回归、native 入口、249 项全定义、42 项公开定义和完整 strict 通过；README、JS/Vite 构建及错误 Bool 类型的反例检查通过。独立模板源码夹具固定到 [模板 PR #64](https://github.com/calcit-lang/respo-calcit-workflow/pull/64) 的 `6d5a32b`（仅源码夹具，不是依赖版本），用本候选 Reel 与正式 UI 0.11.0 检查；保留其全定义、strict、原测试、构建与源码不变断言。未新增浏览器交互或存档恢复验收；下文浏览器记录属于历史版本。
+
+### 旧 Map API 改用 Option 表示缺省（calcit#2124）
 
 这是**不兼容改动**，发布时应升 minor：
 
@@ -13,14 +21,14 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 typed API 没有变化。
 
-## 0.7.1 候选：协调 Respo 0.18 正式图
+## 0.7.1 历史：协调 Respo 0.18 正式图
 
 使用者影响：CLI / `@calcit/procs` 仍配对正式 **0.32.1**，依赖从 Respo
 **0.17.1** 升为已发布的 **0.18.0**，JS-FFI **0.2.9** 保持。应用需与 UI、
 Router、Alerts 等模块统一精确图并重新生成 JS；直接构造 DomProps 的应用应按上游
 Option 字段迁移。本 PR 仅协调依赖和元数据，运行算法与操作历史沿用 main。
 
-候选包含下文已合入 main、尚未随 0.7.0 发布的公共初值 schema 修正。0.7.1 尚未发布，
+0.7.1 已发布，包含下文未随 0.7.0 发布的公共初值 schema 修正。
 不能用 main/hash 替代正式依赖。独立模板源码夹具也必须选择同一宿主图的 UI，
 保留其全部检查和原断言，不放宽 Caps strict。生产路径与 COS 内置 verify 保持。
 
@@ -30,7 +38,7 @@ Option 字段迁移。本 PR 仅协调依赖和元数据，运行算法与操作
 
 此前 #101 为既有 `reel.schema/reel` 补上实际的 `Map<Tag,Dynamic>` schema，避免未标注的下游 Ref 初始化直接变成 Dynamic（[#100](https://github.com/Respo/reel.calcit/issues/100)）。它只描述现有初值，不改变 Map 字段、nil 默认、身份、操作记录或回放算法；不把其他兼容入口的混合键 Map 伪造为 Tag-only。添加类型后，不符合该初值合同的后续用法可能更早被严格检查拒绝，不能据此宣称旧开放 API 已闭合。
 
-这项修正由 #101 合入 main，当前 Git 0.7.0 不包含它；原元数据 PR 没有升级版本或依赖，本轮 0.7.1 候选将它与 Respo 0.18.0 图一起验收后发布。旧 tag 不移动，不用 main/hash 冒充正式修复。后续发布状态以实际 Git tag 为准。
+这项修正由 #101 合入 main，当前 Git 0.7.0 不包含它；原元数据 PR 没有升级版本或依赖，0.7.1 已将它与 Respo 0.18.0 图一起验收发布。旧 tag 不移动，不用 main/hash 冒充正式修复。后续发布状态以实际 Git tag 为准。
 
 原类型门禁、native/JS 回归、独立消费者夹具和部署流程保持；没有预算豁免、强转、新 runner 或编译器改写规则。具体本轮结果见对应 PR。
 

@@ -22,7 +22,8 @@
               div
                 {} $ :class-name css/global
                 comp-todolist (>> states :todolist)
-                  decode-map-as (reel.schema/require-field store :tasks) (:: 'List 'Dynamic)
+                  decode-map-as (reel.schema/require-field store :tasks)
+                    quote $ List Dynamic
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
           :schema $ quote $ Fn
@@ -46,7 +47,8 @@
               {} $ :style style-container
               div $ {} (:class-name css-done)
                 :style $ if (reel.schema/field-or task :done? false)
-                  {} $ :background-color $ hsl 42 100 60
+                  Option :some $ {} $ :background-color (hsl 42 100 60)
+                  Option :none
                 :on-click $ fn (e d!)
                   d! $ :: :task/toggle $ reel.schema/require-field task :id
               =< 8 nil
@@ -248,23 +250,23 @@
           :code $ quote $ defenum Op
             :states
               quote $ List Dynamic
-              , 'Dynamic
-            :task/add 'Dynamic
-            :task/toggle 'Dynamic
-            :task/edit 'Dynamic 'Dynamic
-            :task/remove 'Dynamic
-            :try 'Dynamic 'Dynamic
+              , Dynamic
+            :task/add Dynamic
+            :task/toggle Dynamic
+            :task/edit Dynamic Dynamic
+            :task/remove Dynamic
+            :try Dynamic Dynamic
             :reel/toggle
-            :reel/recall 'Number
+            :reel/recall Number
             :reel/run
             :reel/step
             :reel/merge
             :reel/reset
-            :reel/remove 'Number
+            :reel/remove Number
           :examples $ []
           :schema $ quote EnumDef
         'Task $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defstruct Task (:id 'String) (:text 'String) (:done? 'Bool)
+          :code $ quote $ defstruct Task (:id String) (:text String) (:done? Bool)
           :examples $ []
           :schema $ quote StructDef
         'read-tasks $ %{} 'CodeEntry
@@ -272,10 +274,11 @@
           :code $ quote $ defn read-tasks (store)
             decode-map-as
               .map
-                decode-map-as (reel.schema/require-field store :tasks) (:: 'List 'Dynamic)
+                decode-map-as (reel.schema/require-field store :tasks)
+                  quote $ List Dynamic
                 fn (raw)
                   if (struct? raw) (&struct:to-map raw) raw
-              :: 'List 'Task
+              quote $ List Task
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
             -> $ List Task
@@ -285,7 +288,7 @@
               (:states cursor s)
                 decode-map-as
                   update-states store (decode-map-as cursor 'List) s
-                  :: 'Map 'Dynamic 'Dynamic
+                  quote $ Map Dynamic Dynamic
               (:task/add text)
                 .assoc store :tasks $ .append (read-tasks store)
                   Task :id op-id :text (decode-map-as text 'String) :done? false
@@ -350,10 +353,10 @@
                     {}
                       :states $ {}
                       :tasks $ []
-                    :: 'Map 'Dynamic 'Dynamic
+                    quote $ Map Dynamic Dynamic
                   initial-reel $ decode-map-as
                     .to-map $ reel.typed/new-reel initial-store
-                    :: 'reel.typed/State 'reel.app.updater/Op $ :: 'Map 'Dynamic 'Dynamic
+                    quote $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
                   added $ reel.typed/record-op updater initial-reel (reel.app.updater/Op :task/add "|原文") |stable-031 100
                   edited $ reel.typed/record-op updater added (reel.app.updater/Op :task/edit |stable-031 "|改写🐈") |edit-031 101
                   paused $ reel.typed/recall updater edited 0
@@ -379,6 +382,16 @@
             js-ffi.shared :as host
     'reel.comp.records $ %{} 'FileEntry
       :defs $ {}
+        'ActionEntryPart $ %{} 'CodeEntry
+          :doc "|Member kinds of the existing index/Element list returned by render-action-item; this does not encode list length or positions."
+          :code $ quote $ defunion ActionEntryPart Number respo.schema/Element
+          :examples $ []
+          :schema $ quote UnionDef
+        'StyleDataValue $ %{} 'CodeEntry
+          :doc "|Value kinds used by the existing style-data constant; the CSS map remains unchanged."
+          :code $ quote $ defunion StyleDataValue Number Tag
+          :examples $ []
+          :schema $ quote UnionDef
         'comp-action $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-action (action)
             if (literal? action)
@@ -423,7 +436,7 @@
                   fn (idx record)
                     hint-fn $ Fn Number Dynamic $ -> (List Dynamic)
                     let
-                        checked-record $ decode-map-as record $ :: 'List 'Dynamic
+                        checked-record $ decode-map-as record $ quote (List Dynamic)
                         pointed? $ = pointer $ Option :some idx
                       match (last checked-record)
                         (:some key)
@@ -548,7 +561,7 @@
                 <> $ str $ type-of item
           :examples $ []
           :schema $ quote $ Fn Number Dynamic
-            -> $ List Dynamic
+            -> $ List reel.comp.records/ActionEntryPart
         'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shallow-data? (item)
             or (literal? item)
@@ -565,7 +578,7 @@
           :code $ quote $ def style-data
             {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
           :examples $ []
-          :schema $ quote Dynamic
+          :schema $ quote $ Map Tag reel.comp.records/StyleDataValue
         'style-type-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle style-type-tag
             {}
@@ -664,11 +677,12 @@
                               if
                                 and (.some? pointer)
                                   not= pointer $ Option :some 0
-                                span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
+                                Option :some $ span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
                                   :style $ {} (:cursor :pointer) (:font-size 12)
                                     :color $ hsl 20 100 70
                                   :on-click $ fn (e d!)
                                     d! $ :: :reel/remove $ reel.util/unwrap-option pointer
+                                Option :none
                             div
                               {} (:class-name css/expand)
                                 :style $ {} (:padding "|8px 0") (:white-space :pre)
@@ -716,7 +730,7 @@
                 :on-click $ if enabled? on-click $ fn (e d!)
               <> guide
           :examples $ []
-          :schema $ quote $ Fn String Dynamic Dynamic (-> Dynamic) (:features :js-ffi)
+          :schema $ quote $ Fn String Dynamic Dynamic (-> respo.schema/Element) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.reel
           :require
@@ -900,7 +914,8 @@
                             _ $ do
                               host/console-warn! $ str "|Unknown reel/ op:" op
                               , nil
-                      if (nil? changes) reel $ merge reel $ decode-map-as changes (:: 'Map 'Tag 'Dynamic)
+                      if (nil? changes) reel $ merge reel $ decode-map-as changes
+                        quote $ Map Tag Dynamic
                     let
                         data-pack $ [] op op-id op-time
                       if (reel.schema/field-or reel :stopped? false)
@@ -908,7 +923,7 @@
                         -> reel
                           .assoc :store $ updater (reel.schema/require-field reel :store) op op-id op-time
                           .assoc :records $ conj (reel.schema/records-of reel) data-pack
-              if (identical? result reel) reel $ decode-map-as result $ :: 'Map 'Tag 'Dynamic
+              if (identical? result reel) reel $ decode-map-as result $ quote (Map Tag Dynamic)
           :examples $ []
           :schema $ quote $ Fn
             Fn Dynamic Dynamic Dynamic Dynamic $ -> Dynamic
@@ -1369,7 +1384,7 @@
                   str store op
                 initial $ decode-map-as
                   .to-map $ typed/new-reel |base
-                  :: 'reel.typed/State 'Number 'String
+                  quote $ reel.typed/State Number String
                 live $ typed/record-op updater initial 5 |one 10
                 queued $ typed/record-op updater (typed/recall updater live 0) 7 |two 20
                 running $ typed/resume updater queued
@@ -1390,20 +1405,20 @@
     'reel.typed $ %{} 'FileEntry
       :defs $ {}
         'Control $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defenum Control (:toggle) (:recall 'Number) (:run) (:step) (:merge) (:reset) (:remove 'Number)
+          :code $ quote $ defenum Control (:toggle) (:recall Number) (:run) (:step) (:merge) (:reset) (:remove Number)
           :examples $ []
           :schema $ quote EnumDef
         'Record $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defstruct Record ([] 'Op) (:op 'Op) (:id 'String) (:time 'Number)
+          :code $ quote $ defstruct Record ([] Op) (:op Op) (:id String) (:time Number)
           :examples $ []
           :schema $ quote StructDef
         'State $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defstruct State ([] 'Op 'Store) (:base 'Store) (:store 'Store)
+          :code $ quote $ defstruct State ([] Op Store) (:base Store) (:store Store)
             :records $ quote $ List (reel.typed/Record Op)
             :pointer $ quote $ Option Number
-            :stopped? 'Bool
-            :display? 'Bool
-            :merged? 'Bool
+            :stopped? Bool
+            :display? Bool
+            :merged? Bool
           :examples $ []
           :schema $ quote StructDef
         'apply-control $ %{} 'CodeEntry (:doc |)

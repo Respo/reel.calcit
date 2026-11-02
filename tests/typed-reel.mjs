@@ -52,8 +52,7 @@ async function replayAttachedTests() {
       operations.push(["edit", "def", target, "--input-format", "json-ast", "--code",
         JSON.stringify(["defn", target.split("/")[1], [], test.code, "&unit"])]);
       operations.push(["edit", "schema", target, "--input-format", "json-ast", "--code",
-        JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
-          [":features", ["#{}", ...ownerFeatures]]]])]);
+        JSON.stringify(["Fn", ["->", "Unit"], ...(ownerFeatures.length ? [[":features", ...ownerFeatures]] : [])])]);
       calls.push([target]);
       if (!test.tags.includes("js-only")) {
         nativeCalls.push([target]);
@@ -69,8 +68,7 @@ async function replayAttachedTests() {
       operations.push(["edit", "def", target, "--input-format", "json-ast", "--code",
         JSON.stringify(["defn", target.split("/")[1], [], ...selectedCalls, "&unit"])]);
       operations.push(["edit", "schema", target, "--input-format", "json-ast", "--code",
-        JSON.stringify(["::", "'Fn", ["{}", [":args", ["[]"]], [":return", "'Unit"],
-          [":features", ["#{}", ...selectedFeatures]]]])]);
+        JSON.stringify(["Fn", ["->", "Unit"], ...(selectedFeatures.size ? [[":features", ...selectedFeatures]] : [])])]);
     }
     const code = JSON.stringify(operations);
     const preview = JSON.parse(invoke(snapshot, "edit", "transaction", "--code", code, "--dry-run", "--format", "json"));
