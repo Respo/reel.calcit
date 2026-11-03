@@ -2,6 +2,16 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
+## 0.9.0 候选：保留历史异构 key，迁往 Respo 0.19
+
+使用者影响：配对正式 Calcit / `@calcit/procs` **0.34.2**，目标宿主为 Respo **0.19.2**、JS-FFI **0.2.10**。历史记录里的 false、0、空串等 key 继续保留；memo 按原 key 缓存，只有列表的 DOM 坐标由 Respo `data-list->` 适配为稳定 String。操作历史、typed `Record` 的 String ID、指针和回放算法不变，nil 记录 key 的原拒绝行为保持。
+
+**展示入口需要同步迁移：** `comp-reel` / `comp-typed-reel` 展开历史时必须在同步 managed memo 帧内构造。浏览器用 `respo.core/render-with!`，SSR/自定义 renderer 用 `respo.memo/with-memo-frame` 包住建树与渲染；不要先构造组件再进入帧。Demo 已改为 `render-with!`，保留原 HUD、dispatch 和热更新处理。直接检查虚拟 DOM child key 的调用方应按 CoordKey 渲染合同处理，不能把内部 String 坐标当成原始操作 key。
+
+六处已弃用的横向间距调用改为同尺寸 `space-x`，不改页面尺寸；原断言保留，历史 key 回归改为检查边界适配后的坐标，同时继续检查 false/0/空串显示、memo 身份、空记录和错误输入拒绝。原生/JS、完整 strict、公开 API、独立模板源码夹具与原部署流程都保留，不放宽门禁、不新增 runner。
+
+已通过正式 Respo 0.19.2 / JS-FFI 0.2.10 的 Caps strict、toolchain 与 Yarn immutable 安装，本库 253 个定义、完整 strict、31 项 native、34 项生成 JS 附带测试、原 devtools 回归、README 和生产构建通过，弃用调用为零。独立模板源码夹具仍待 Router/UI 正式维护图协调后验收，不能把本库通过当成完整发布证明；最终状态以精确 PR CI、评审与正式 tag 为准。
+
 ## 0.8.0 候选：Calcit 0.34.1 与明确的缺省值
 
 使用者影响：CLI / `@calcit/procs` 同步正式 **0.34.1**，Respo **0.18.0**、JS-FFI **0.2.9** 保持正式版本。请重新安装精确依赖图、生成 JS 并完整刷新。此版本包含下述 main 已合入、尚未随 0.7.1 发布的旧 Map API 不兼容改动，因此升 minor，不作为 patch 发布。

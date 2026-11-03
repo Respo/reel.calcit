@@ -51,12 +51,12 @@
                   Option :none
                 :on-click $ fn (e d!)
                   d! $ :: :task/toggle $ reel.schema/require-field task :id
-              =< 8 nil
+              space-x 8
               input $ {} (:placeholder "|Content of task") (:class-name css/input)
                 :value $ reel.schema/require-field task :text
                 :on-input $ fn (e d!)
                   d! $ :: :task/edit (reel.schema/require-field task :id) (reel.schema/field-or e :value |)
-              =< 8 nil
+              space-x 8
               button
                 {} (:class-name css/button)
                   :style $ {}
@@ -86,7 +86,7 @@
             respo.core :refer $ defcomp <> div button input
             respo.css :refer $ defstyle
             respo.util.format :refer $ hsl
-            respo.comp.space :refer $ =<
+            respo.comp.space :refer $ space-x
             reel.style :as css
     'reel.app.comp.todolist $ %{} 'FileEntry
       :defs $ {}
@@ -109,7 +109,7 @@
                           d! $ :: :task/add state
                           d! $ :: :states cursor |
                       , &unit
-                  =< 8 nil
+                  space-x 8
                   button
                     {} (:class-name css/button)
                       :on-click $ fn (e d!)
@@ -117,7 +117,7 @@
                         d! $ :: :states cursor |
                         , &unit
                     <> |Add
-                  =< 8 nil
+                  space-x 8
                   button $ {} (:inner-text |Try) (:class-name css/button)
                     :on-click $ fn (e d!)
                       d! $ :: :try
@@ -143,7 +143,7 @@
           :require
             respo.core :refer $ defcomp <> div span button input list->
             respo.css :refer $ defstyle
-            respo.comp.space :refer $ =<
+            respo.comp.space :refer $ space-x
             reel.style :as css
             reel.app.comp.task :refer $ comp-task
     'reel.app.main $ %{} 'FileEntry
@@ -223,16 +223,16 @@
           :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
-            render! mount-target
-              comp-container $ assert-type @*reel $ quote
-                reel.typed/State Enum $ Map Dynamic Dynamic
+            render-with! mount-target
+              fn () $ comp-container $ assert-type @*reel
+                quote $ reel.typed/State Enum $ Map Dynamic Dynamic
               , dispatch!
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.main
           :require
-            respo.core :refer $ render! clear-cache!
+            respo.core :refer $ render-with! clear-cache!
             reel.app.comp.container :refer $ comp-container
             reel.util :refer $ listen-devtools!
             reel.schema :as schema
@@ -403,7 +403,7 @@
                   div
                     {} $ :class-name css/row-middle
                     <> $ str tag
-                    =< 2 nil
+                    space-x 2
                     list-> ({}) (reel.util/map-indexed-dynamic params render-action-item)
                 <> $ str action
           :examples $ []
@@ -426,15 +426,15 @@
           :examples $ []
           :schema $ quote $ Fn (List Dynamic) Bool Number (-> respo.schema/Component)
         'comp-records $ %{} 'CodeEntry
-          :doc "|每条旧历史只校验一次 List，复用同一个 child/memo key；nil key 保留绕过缓存，false、0、空串保留原 key。"
+          :doc "|逐条校验历史 List；memo 保留原 false/0/空串等记录 key，整组渲染坐标由 data-list-> 适配。需在 managed memo 帧内建树。nil key 的原拒绝行为及 memo bypass 保留。"
           :code $ quote $ defcomp comp-records (records pointer)
             div
               {} $ :class-name $ str-spaced css/font-code css-records
-              list-> ({})
+              respo.core/data-list-> ({})
                 reel.util/map-indexed-dynamic
                   prepend records $ [] :base nil :base
                   fn (idx record)
-                    hint-fn $ Fn Number Dynamic $ -> (List Dynamic)
+                    hint-fn $ Fn Number Dynamic $ -> (Tuple Dynamic respo.schema/Component)
                     let
                         checked-record $ decode-map-as record $ quote (List Dynamic)
                         pointed? $ = pointer $ Option :some idx
@@ -475,7 +475,9 @@
                   next-rows $ rows records
                   empty-first $ memo-comp-by nil comp-record-item ([]) false 1
                   empty-next $ memo-comp-by nil comp-record-item ([]) false 1
-                assert= ([] :base false 0 | 8 7)
+                assert=
+                  map ([] :base false 0 | 8 7)
+                    fn (key) (respo.memo/data-key key)
                   map first-rows $ fn (pair)
                     hint-fn $ Fn respo.schema/ChildPair $ -> Dynamic
                     :key pair
@@ -499,7 +501,8 @@
               respo.memo/finish-memo-frame!
               respo.core/clear-cache!
               let
-                  html $ respo.render.html/make-string $ comp-records records (Option :none)
+                  html $ respo.render.html/make-string $ respo.memo/with-memo-frame
+                    fn () $ comp-records records $ Option :none
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\"></span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">false</span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">0</span>"
@@ -509,21 +512,21 @@
                 respo.render.html/make-string $ comp-record-item ([] nil) false 1
               assert= :rejected $ try
                 do
-                  comp-records
+                  respo.memo/with-memo-frame $ fn () $ comp-records
                     [] $ []
                     Option :none
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
-                  comp-records
+                  respo.memo/with-memo-frame $ fn () $ comp-records
                     [] $ [] nil
                     Option :none
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
-                  comp-records ([] 42) (Option :none)
+                  respo.memo/with-memo-frame $ fn () $ comp-records ([] 42) (Option :none)
                   , :accepted
                 fn (error) :rejected
             :tags $ #{} :js-only :legacy-boundary :unit
@@ -599,7 +602,7 @@
             respo.core :refer $ defcomp <> div span style list-> memo-comp-by
             respo.css :refer $ defstyle
             reel.style :as css
-            respo.comp.space :refer $ =<
+            respo.comp.space :refer $ space-x
             reel.style :as reel-style
             respo.util.format :refer $ hsl
             reel.util :refer $ tab-echo!
@@ -672,7 +675,7 @@
                                   str "|1px solid " $ hsl 0 0 94
                               div ({})
                                 <> $ str op-time
-                                =< 8 nil
+                                space-x 8
                                 <> $ str op-id
                               if
                                 and (.some? pointer)
@@ -739,7 +742,7 @@
             respo.util.format :refer $ hsl
             respo.comp.inspect :refer $ comp-inspect
             reel.style :as css
-            respo.comp.space :refer $ =<
+            respo.comp.space :refer $ space-x
             reel.comp.records :refer $ comp-records
             respo-value.comp.value :refer $ comp-value
             reel.style :as style

@@ -9,6 +9,7 @@ import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_ } fro
 import { view_data } from "../test-js-out/reel.typed-compat.mjs";
 import { map_indexed_dynamic } from "../test-js-out/reel.util.mjs";
 import { comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
+import { with_memo_frame } from "../test-js-out/respo.memo.mjs";
 import { make_string } from "../test-js-out/respo.render.html.mjs";
 import { reel_updater } from "../test-js-out/reel.core.mjs";
 
@@ -216,7 +217,7 @@ assert.deepEqual(to_js_data(map_indexed_dynamic(parse_cirru_edn("[]"), () => {
 })), []);
 assert.deepEqual(to_js_data(map_indexed_dynamic(parse_cirru_edn("[] |a |b"), (index, value) => `${index}:${value}`)), ["0:a", "1:b"]);
 for (const reel of [initial, full, paused]) {
-  const html = make_string(comp_typed_reel(parse_cirru_edn("{} (:cursor $ [])"), toggle_display(reel), parse_cirru_edn("{}")));
+  const html = with_memo_frame(() => make_string(comp_typed_reel(parse_cirru_edn("{} (:cursor $ [])"), toggle_display(reel), parse_cirru_edn("{}"))));
   assert.match(html, /Merge/);
   assert.match(html, /Reset/);
 }
