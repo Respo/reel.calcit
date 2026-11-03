@@ -10,7 +10,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 六处已弃用的横向间距调用改为同尺寸 `space-x`，不改页面尺寸；原断言保留，历史 key 回归改为检查边界适配后的坐标，同时继续检查 false/0/空串显示、memo 身份、空记录和错误输入拒绝。原生/JS、完整 strict、公开 API、独立模板源码夹具与原部署流程都保留，不放宽门禁、不新增 runner。
 
-已通过正式 Respo 0.19.2 / JS-FFI 0.2.10 的 Caps strict、toolchain 与 Yarn immutable 安装，本库 253 个定义、完整 strict、31 项 native、34 项生成 JS 附带测试、原 devtools 回归、README 和生产构建通过，弃用调用为零。独立模板源码夹具仍待 Router/UI 正式维护图协调后验收，不能把本库通过当成完整发布证明；最终状态以精确 PR CI、评审与正式 tag 为准。
+已通过正式 Respo 0.19.2 / JS-FFI 0.2.10 的 Caps strict、toolchain 与 Yarn immutable 安装，本库 253 个定义、完整 strict、31 项 native、34 项生成 JS 附带测试、原 devtools 回归、README 和生产构建通过，弃用调用为零。独立模板原源码 6d5a32b 使用正式 UI 0.14.1 / Router 0.11.2 / Respo 0.19.2 宿主图与本 Reel 候选，通过 198 个定义、完整 strict、原一项测试和 JS/Vite 构建，源码不变断言保留。这是候选源码兼容验收，不是模板自身生产依赖或部署图的证明；最终状态以精确 PR CI、评审与正式 tag 为准。
 
 ## 历史 0.8.1 兼容维护线：使用者影响
 
