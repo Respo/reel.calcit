@@ -2,7 +2,13 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.9.1 候选：配对正式 Calcit 0.35.0
+## 0.9.2 候选：配对正式 Calcit 0.35.1
+
+使用者影响：CLI / `@calcit/procs` 配对正式 **0.35.1**，Respo **0.19.4**、JS-FFI **0.2.13** 须统一精确依赖图并重新生成 JS；正式 tag 发布前仍为候选。typed API、旧历史异构 key、memo identity、回放、HUD、既有 union 和泛型保持。
+
+本 patch 纳入此前已合并 #109 的 AnyEnum 同义拼写，候选自身不修改 Snapshot。独立模板原源码夹具的宿主 UI 同步正式 **0.15.1**，以保持 Caps 精确图一致；保留原源码不变断言，不把夹具当作模板自己的部署验收。原测试、完整 strict、门禁、COS 内置 verify 和部署路径保留，本轮精确结果以 PR 为准。
+
+## 历史 0.9.1：配对正式 Calcit 0.35.0
 
 使用者影响：CLI 与 `@calcit/procs` 同步 **0.35.0**，Respo **0.19.3**、JS-FFI **0.2.12** 需统一精确依赖图并重新生成 JS。公共 typed API、旧历史异构 key、操作记录、回放和 HUD 保持。原有 `ActionEntryPart`、样式 union 和 State/Record 泛型继续保留。
 
