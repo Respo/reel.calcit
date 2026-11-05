@@ -25,7 +25,7 @@
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
           :schema $ quote $ Fn
-            reel.typed/State Enum $ Map Dynamic Dynamic
+            reel.typed/State AnyEnum $ Map Dynamic Dynamic
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.container
@@ -150,28 +150,28 @@
           :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
           :schema $ quote $ Ref
-            reel.typed/State Enum $ Map Dynamic Dynamic
+            reel.typed/State AnyEnum $ Map Dynamic Dynamic
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
             match (typed/decode-control op)
               (:some control)
                 typed/apply-control updater
-                  assert-type @*reel $ reel.typed/State Enum $ Map Dynamic Dynamic
+                  assert-type @*reel $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
                   , control
               (:none)
                 typed/record-op updater
-                  assert-type @*reel $ reel.typed/State Enum $ Map Dynamic Dynamic
+                  assert-type @*reel $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
                   , op (generate-id!)
                     :timestamp $ host/date-now-snapshot
           :examples $ []
-          :schema $ quote $ Fn Enum
-            -> $ reel.typed/State Enum $ Map Dynamic Dynamic
+          :schema $ quote $ Fn AnyEnum
+            -> $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Enum (-> Unit)
+          :schema $ quote $ Fn AnyEnum (-> Unit)
         'get-mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-mount-target ()
             unsafe-coerce
@@ -183,8 +183,8 @@
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch! *reel :changes $ fn (reel prev)
               hint-fn $ Fn
-                reel.typed/State Enum $ Map Dynamic Dynamic
-                reel.typed/State Enum $ Map Dynamic Dynamic
+                reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                reel.typed/State AnyEnum $ Map Dynamic Dynamic
                 -> Unit
               render-app!
               , &unit
@@ -204,16 +204,16 @@
               do (remove-watch! *reel :changes) (clear-cache!)
                 add-watch! *reel :changes $ fn (reel prev)
                   hint-fn $ Fn
-                    reel.typed/State Enum $ Map Dynamic Dynamic
-                    reel.typed/State Enum $ Map Dynamic Dynamic
+                    reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                    reel.typed/State AnyEnum $ Map Dynamic Dynamic
                     -> Unit
                   render-app!
                   , &unit
                 let
                     refreshed $ typed/refresh updater
-                      assert-type @*reel $ reel.typed/State Enum $ Map Dynamic Dynamic
+                      assert-type @*reel $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
                       , schema/store
-                  reset! *reel $ assert-type refreshed $ reel.typed/State Enum (Map Dynamic Dynamic)
+                  reset! *reel $ assert-type refreshed $ reel.typed/State AnyEnum (Map Dynamic Dynamic)
                 hud! |ok~ |Ok
               hud! |error build-errors
           :examples $ []
@@ -222,7 +222,7 @@
           :code $ quote $ defn render-app! ()
             render-with! mount-target
               fn () $ comp-container $ assert-type @*reel
-                reel.typed/State Enum $ Map Dynamic Dynamic
+                reel.typed/State AnyEnum $ Map Dynamic Dynamic
               , dispatch!
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
@@ -315,7 +315,7 @@
                 host/console-warn! $ str "|Unknown op" op
                 , store
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) Enum String Number
+          :schema $ quote $ Fn (Map Dynamic Dynamic) AnyEnum String Number
             -> $ Map Dynamic Dynamic
             :features :js-ffi
           :tests $ []
@@ -696,7 +696,7 @@
           :code $ quote $ defcomp comp-typed-reel (states reel user-styles)
             assert-type
               comp-reel states (typed-compat/view-data reel) user-styles
-              , Struct
+              , respo.schema/Component
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic) (reel.typed/State Op Store) (Map Dynamic Dynamic) (-> respo.schema/Component) (:generics Op Store)
         'css-reel $ %{} 'CodeEntry (:doc |)
@@ -1498,7 +1498,7 @@
                   Option :none
               _ $ Option :none
           :examples $ []
-          :schema $ quote $ Fn Enum
+          :schema $ quote $ Fn AnyEnum
             -> $ calcit.core/Option reel.typed/Control
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
@@ -1944,7 +1944,7 @@
             , &unit
           :examples $ []
           :schema $ quote $ Fn String
-            Fn Enum $ -> Unit
+            Fn AnyEnum $ -> Unit
             -> Unit
             :features :js-ffi
         'map-indexed-dynamic $ %{} 'CodeEntry (:doc |)
