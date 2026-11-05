@@ -21,9 +21,7 @@
                 states $ reel.schema/field-or store :states $ {}
               div
                 {} $ :class-name css/global
-                comp-todolist (>> states :todolist)
-                  decode-map-as (reel.schema/require-field store :tasks)
-                    quote $ List Dynamic
+                comp-todolist (>> states :todolist) (reel.app.updater/read-tasks store)
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
           :schema $ quote $ Fn
@@ -67,7 +65,7 @@
                     d! $ :: :task/remove $ reel.schema/require-field task :id
                 <> |Remove
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
+          :schema $ quote $ Fn reel.app.updater/Task (-> respo.schema/Component)
         'css-done $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-done
             {} $ |$0 $ {} (:width 32) (:height 32) (:display :inline-block)
@@ -132,7 +130,7 @@
                   -> tasks $ map $ fn (task)
                     [] (reel.schema/require-field task :id) (comp-task task)
           :examples $ []
-          :schema $ quote $ Fn Dynamic (List Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn Dynamic (List reel.app.updater/Task) (-> respo.schema/Component)
         'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-container
             {} $ |$0 $ {} (:padding 8) (:overflow :auto)
@@ -158,11 +156,11 @@
             match (typed/decode-control op)
               (:some control)
                 typed/apply-control updater
-                  assert-type @*reel $ quote $ reel.typed/State Enum (Map Dynamic Dynamic)
+                  assert-type @*reel $ reel.typed/State Enum $ Map Dynamic Dynamic
                   , control
               (:none)
                 typed/record-op updater
-                  assert-type @*reel $ quote $ reel.typed/State Enum (Map Dynamic Dynamic)
+                  assert-type @*reel $ reel.typed/State Enum $ Map Dynamic Dynamic
                   , op (generate-id!)
                     :timestamp $ host/date-now-snapshot
           :examples $ []
@@ -213,10 +211,9 @@
                   , &unit
                 let
                     refreshed $ typed/refresh updater
-                      assert-type @*reel $ quote $ reel.typed/State Enum (Map Dynamic Dynamic)
+                      assert-type @*reel $ reel.typed/State Enum $ Map Dynamic Dynamic
                       , schema/store
-                  reset! *reel $ assert-type refreshed $ quote
-                    reel.typed/State Enum $ Map Dynamic Dynamic
+                  reset! *reel $ assert-type refreshed $ reel.typed/State Enum (Map Dynamic Dynamic)
                 hud! |ok~ |Ok
               hud! |error build-errors
           :examples $ []
@@ -225,7 +222,7 @@
           :code $ quote $ defn render-app! ()
             render-with! mount-target
               fn () $ comp-container $ assert-type @*reel
-                quote $ reel.typed/State Enum $ Map Dynamic Dynamic
+                reel.typed/State Enum $ Map Dynamic Dynamic
               , dispatch!
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
@@ -248,9 +245,7 @@
         'Op $ %{} 'CodeEntry
           :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Includes the :reel/* controls that comp-reel sends."
           :code $ quote $ defenum Op
-            :states
-              quote $ List Dynamic
-              , Dynamic
+            :states (List Dynamic) Dynamic
             :task/add Dynamic
             :task/toggle Dynamic
             :task/edit Dynamic Dynamic
@@ -274,11 +269,10 @@
           :code $ quote $ defn read-tasks (store)
             decode-map-as
               .map
-                decode-map-as (reel.schema/require-field store :tasks)
-                  quote $ List Dynamic
+                decode-map-as (reel.schema/require-field store :tasks) (List Dynamic)
                 fn (raw)
                   if (struct? raw) (&struct:to-map raw) raw
-              quote $ List Task
+              List Task
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic)
             -> $ List Task
@@ -288,7 +282,7 @@
               (:states cursor s)
                 decode-map-as
                   update-states store (decode-map-as cursor 'List) s
-                  quote $ Map Dynamic Dynamic
+                  Map Dynamic Dynamic
               (:task/add text)
                 .assoc store :tasks $ .append (read-tasks store)
                   Task :id op-id :text (decode-map-as text 'String) :done? false
@@ -436,7 +430,7 @@
                   fn (idx record)
                     hint-fn $ Fn Number Dynamic $ -> (Tuple Dynamic respo.schema/Component)
                     let
-                        checked-record $ decode-map-as record $ quote (List Dynamic)
+                        checked-record $ decode-map-as record $ List Dynamic
                         pointed? $ = pointer $ Option :some idx
                       match (last checked-record)
                         (:some key)
@@ -917,8 +911,7 @@
                             _ $ do
                               host/console-warn! $ str "|Unknown reel/ op:" op
                               , nil
-                      if (nil? changes) reel $ merge reel $ decode-map-as changes
-                        quote $ Map Tag Dynamic
+                      if (nil? changes) reel $ merge reel $ decode-map-as changes (Map Tag Dynamic)
                     let
                         data-pack $ [] op op-id op-time
                       if (reel.schema/field-or reel :stopped? false)
@@ -926,7 +919,7 @@
                         -> reel
                           .assoc :store $ updater (reel.schema/require-field reel :store) op op-id op-time
                           .assoc :records $ conj (reel.schema/records-of reel) data-pack
-              if (identical? result reel) reel $ decode-map-as result $ quote (Map Tag Dynamic)
+              if (identical? result reel) reel $ decode-map-as result $ Map Tag Dynamic
           :examples $ []
           :schema $ quote $ Fn
             Fn Dynamic Dynamic Dynamic Dynamic $ -> Dynamic
@@ -1065,10 +1058,10 @@
                     :merged? false
                     :stopped? false
                   refreshed $ refresh-reel source |next updater
-                  LegacyRefresh $ defstruct LegacyRefresh (:base 'String) (:store 'String)
+                  LegacyRefresh $ defstruct LegacyRefresh (:base String) (:store String)
                     :records $ quote $ List Number
-                    :merged? 'Bool
-                    :stopped? 'Bool
+                    :merged? Bool
+                    :stopped? Bool
                   nominal $ LegacyRefresh :base |base :store |base :records ([]) :merged? false :stopped? false
                   refreshed-nominal $ refresh-reel nominal |next updater
                 assert= (Option :some 1) (get refreshed |extra)
@@ -1114,7 +1107,7 @@
         'checked-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn checked-records (value)
             if (list? value)
-              assert-type value $ quote $ List Dynamic
+              assert-type value $ List Dynamic
               raise "|Reel records must be a List"
           :examples $ []
           :schema $ quote $ Fn Dynamic
@@ -1387,7 +1380,7 @@
                   str store op
                 initial $ decode-map-as
                   .to-map $ typed/new-reel |base
-                  quote $ reel.typed/State Number String
+                  reel.typed/State Number String
                 live $ typed/record-op updater initial 5 |one 10
                 queued $ typed/record-op updater (typed/recall updater live 0) 7 |two 20
                 running $ typed/resume updater queued
@@ -1417,8 +1410,8 @@
           :schema $ quote StructDef
         'State $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstruct State ([] Op Store) (:base Store) (:store Store)
-            :records $ quote $ List (reel.typed/Record Op)
-            :pointer $ quote $ Option Number
+            :records $ List $ reel.typed/Record Op
+            :pointer $ Option Number
             :stopped? Bool
             :display? Bool
             :merged? Bool
@@ -1919,8 +1912,8 @@
       :defs $ {}
         'BrowserStringHost $ %{} 'CodeEntry (:doc |)
           :code $ quote $ deftrait BrowserStringHost
-            .toUpperCase $ quote $ Fn (-> BrowserStringHost)
-            .charCodeAt $ quote $ Fn Number (-> Number)
+            .toUpperCase $ Fn $ -> BrowserStringHost
+            .charCodeAt $ Fn Number $ -> Number
           :examples $ []
           :ffi $ {} (:backend :js) (:kind :external-object) (:target :browser)
           :schema $ quote Trait

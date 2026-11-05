@@ -2,7 +2,15 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.9.0 候选：保留历史异构 key，迁往 Respo 0.19
+## 0.9.1 候选：配对正式 Calcit 0.35.0
+
+使用者影响：CLI 与 `@calcit/procs` 同步 **0.35.0**，Respo **0.19.3**、JS-FFI **0.2.12** 需统一精确依赖图并重新生成 JS。公共 typed API、旧历史异构 key、操作记录、回放和 HUD 保持。原有 `ActionEntryPart`、样式 union 和 State/Record 泛型继续保留。
+
+Demo 的任务展示现在复用既有 `read-tasks` 字段解码器，两个内部组件明确接收 `Task` / `List Task`，减少两处 schema Dynamic。旧 Map/Struct 任务经原解码器转换后显示；字段不完整的输入会在渲染前被拒绝，不再带着未知字段类型进入组件。该变化只涉及 Demo 内部入口，开放历史 payload 与外部 key 合同不收窄。其余源码仅由官方 formatter 迁移 0.35 类型语法。
+
+原测试、完整 strict、质量预算和部署路径保留；独立模板源码夹具的宿主 UI 对齐正式 **0.15.0**，保留源码不变检查。夹具属于候选源码兼容性验证，不代表模板自己的部署图。
+
+## 0.9.0 历史：保留历史异构 key，迁往 Respo 0.19
 
 使用者影响：配对正式 Calcit / `@calcit/procs` **0.34.2**，目标宿主为 Respo **0.19.2**、JS-FFI **0.2.10**。历史记录里的 false、0、空串等 key 继续保留；memo 按原 key 缓存，只有列表的 DOM 坐标由 Respo `data-list->` 适配为稳定 String。操作历史、typed `Record` 的 String ID、指针和回放算法不变，nil 记录 key 的原拒绝行为保持。
 
