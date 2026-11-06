@@ -1963,7 +1963,7 @@
               dispatch! $ :: :reel/toggle
           :examples $ []
           :schema $ quote $ Fn String
-            Fn *dispatch-op $ -> Unit
+            Fn AnyEnum $ -> Unit
             -> Unit
             :features :js-ffi
         'listen-devtools-toggle! $ %{} 'CodeEntry (:doc |)
