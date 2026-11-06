@@ -2,7 +2,11 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.9.2 候选：配对正式 Calcit 0.35.1
+## 0.10.0 候选：类型化快捷键和 Demo 操作
+
+新增 `listen-devtools-toggle!`，接收 `Fn (-> Unit)`，快捷键仍是 Shift+Meta+Alt 加指定字符。旧 `listen-devtools!` 保留原匿名 `:reel/toggle` 合同。Demo 历史使用本地 `Op`，任务 ID 和文本用 String，游标用 `CoordKey`；原应用边界会先解码操作。
+
+## 历史 0.9.2：配对正式 Calcit 0.35.1
 
 使用者影响：CLI / `@calcit/procs` 配对正式 **0.35.1**，Respo **0.19.4**、JS-FFI **0.2.13** 须统一精确依赖图并重新生成 JS；正式 tag 发布前仍为候选。typed API、旧历史异构 key、memo identity、回放、HUD、既有 union 和泛型保持。
 
@@ -113,9 +117,8 @@ refresh-reel 的旧兼容写入仍支持受检 Struct 与混合键 Map，不为�
 - `decode-control message`：将旧 devtools 消息解析为 `Option<Control>`。
   将已识别的控制交给 `apply-control updater reel control`，业务操作交给
   `record-op`；未知或错误的控制 payload 不应冒充业务默认值。
-  **当前 demo 的限制**：`dispatch!` 对 `:none` 一律走 `record-op`，包括
-  payload 错误的 `:reel/` 消息，因此这类消息仍会进入历史。应用接线时应
-  在业务 fallback 前另行拒绝 malformed 控制消息；本次不改变旧路由行为。
+  **当前 Demo 的路由**：`dispatch!` 先解码 Reel 控制消息，再解码业务操作。
+  两者都无法识别时，Demo 记录警告并保持历史不变。例如 `:: :reel/recall |bad` 会在入口被拒绝。
 - `recall updater reel pointer`：pointer 是 `[0, records.length]` 范围内的
   整数前缀长度；直接调用的非法 pointer 会报错。通过 `apply-control`
   接收的非法 recall 保持原状态。
