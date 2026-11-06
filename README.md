@@ -2,7 +2,11 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.9.2 候选：配对正式 Calcit 0.35.1
+## 0.10.0 候选：类型化快捷键和 Demo 操作
+
+新增 `listen-devtools-toggle!`，接收 `Fn (-> Unit)`，快捷键仍是 Shift+Meta+Alt 加指定字符。旧 `listen-devtools!` 保留原匿名 `:reel/toggle` 合同。Demo 历史使用本地 `Op`，任务 ID 和文本用 String，游标用 `CoordKey`；原应用边界会先解码操作。
+
+## 历史 0.9.2：配对正式 Calcit 0.35.1
 
 使用者影响：CLI / `@calcit/procs` 配对正式 **0.35.1**，Respo **0.19.4**、JS-FFI **0.2.13** 须统一精确依赖图并重新生成 JS；正式 tag 发布前仍为候选。typed API、旧历史异构 key、memo identity、回放、HUD、既有 union 和泛型保持。
 

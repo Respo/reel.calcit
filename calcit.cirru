@@ -25,7 +25,7 @@
                 comp-typed-reel (>> states :reel) reel $ {}
           :examples $ []
           :schema $ quote $ Fn
-            reel.typed/State AnyEnum $ Map Dynamic Dynamic
+            reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.container
@@ -150,22 +150,28 @@
           :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
           :schema $ quote $ Ref
-            reel.typed/State AnyEnum $ Map Dynamic Dynamic
+            reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
             match (typed/decode-control op)
               (:some control)
                 typed/apply-control updater
-                  assert-type @*reel $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                  assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
                   , control
               (:none)
-                typed/record-op updater
-                  assert-type @*reel $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
-                  , op (generate-id!)
-                    :timestamp $ host/date-now-snapshot
+                match (reel.app.updater/decode-op op)
+                  (:some checked)
+                    typed/record-op updater
+                      assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                      , checked (generate-id!)
+                        :timestamp $ host/date-now-snapshot
+                  (:none)
+                    do
+                      host/console-warn! $ str "|Unknown op" op
+                      , @*reel
           :examples $ []
           :schema $ quote $ Fn AnyEnum
-            -> $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
+            -> $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
@@ -183,13 +189,21 @@
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch! *reel :changes $ fn (reel prev)
               hint-fn $ Fn
-                reel.typed/State AnyEnum $ Map Dynamic Dynamic
-                reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
                 -> Unit
               render-app!
               , &unit
-            listen-devtools! |k dispatch!
-            dispatch! $ :: :reel/toggle
+            let
+                toggle! $ fn ()
+                  hint-fn $ Fn $ -> Unit
+                  println |Dispatch! $ :: :reel/toggle
+                  reset! *reel $ typed/apply-control updater
+                    assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                    typed/Control :toggle
+                  , &unit
+              listen-devtools-toggle! |k toggle!
+              toggle!
             println "|App started!"
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
@@ -204,16 +218,16 @@
               do (remove-watch! *reel :changes) (clear-cache!)
                 add-watch! *reel :changes $ fn (reel prev)
                   hint-fn $ Fn
-                    reel.typed/State AnyEnum $ Map Dynamic Dynamic
-                    reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                    reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                    reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
                     -> Unit
                   render-app!
                   , &unit
                 let
                     refreshed $ typed/refresh updater
-                      assert-type @*reel $ reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                      assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
                       , schema/store
-                  reset! *reel $ assert-type refreshed $ reel.typed/State AnyEnum (Map Dynamic Dynamic)
+                  reset! *reel $ assert-type refreshed $ reel.typed/State reel.app.updater/Op (Map Dynamic Dynamic)
                 hud! |ok~ |Ok
               hud! |error build-errors
           :examples $ []
@@ -222,7 +236,7 @@
           :code $ quote $ defn render-app! ()
             render-with! mount-target
               fn () $ comp-container $ assert-type @*reel
-                reel.typed/State AnyEnum $ Map Dynamic Dynamic
+                reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
               , dispatch!
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
@@ -231,7 +245,7 @@
           :require
             respo.core :refer $ render-with! clear-cache!
             reel.app.comp.container :refer $ comp-container
-            reel.util :refer $ listen-devtools!
+            reel.util :refer $ listen-devtools-toggle!
             reel.schema :as schema
             reel.app.updater :refer $ updater
             |./calcit.build-errors :default build-errors
@@ -245,12 +259,12 @@
         'Op $ %{} 'CodeEntry
           :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Includes the :reel/* controls that comp-reel sends."
           :code $ quote $ defenum Op
-            :states (List Dynamic) Dynamic
-            :task/add Dynamic
-            :task/toggle Dynamic
-            :task/edit Dynamic Dynamic
-            :task/remove Dynamic
-            :try Dynamic Dynamic
+            :states (List respo.schema/CoordKey) Dynamic
+            :task/add String
+            :task/toggle String
+            :task/edit String String
+            :task/remove String
+            :try (Map Tag Dynamic) (Map Tag Dynamic)
             :reel/toggle
             :reel/recall Number
             :reel/run
@@ -264,6 +278,29 @@
           :code $ quote $ defstruct Task (:id String) (:text String) (:done? Bool)
           :examples $ []
           :schema $ quote StructDef
+        'decode-op $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn decode-op (raw)
+            match raw
+              (:states v0 v1)
+                Option :some $ Op :states
+                  decode-map-as v0 $ List respo.schema/CoordKey
+                  , v1
+              (:task/add v0)
+                Option :some $ Op :task/add $ decode-map-as v0 String
+              (:task/toggle v0)
+                Option :some $ Op :task/toggle $ decode-map-as v0 String
+              (:task/edit v0 v1)
+                Option :some $ Op :task/edit (decode-map-as v0 String) (decode-map-as v1 String)
+              (:task/remove v0)
+                Option :some $ Op :task/remove $ decode-map-as v0 String
+              (:try v0 v1)
+                Option :some $ Op :try
+                  decode-map-as v0 $ Map Tag Dynamic
+                  decode-map-as v1 $ Map Tag Dynamic
+              _ $ Option :none
+          :examples $ []
+          :schema $ quote $ Fn AnyEnum
+            -> $ Option reel.app.updater/Op
         'read-tasks $ %{} 'CodeEntry
           :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
           :code $ quote $ defn read-tasks (store)
@@ -280,42 +317,32 @@
           :code $ quote $ defn updater (store op op-id op-time)
             match op
               (:states cursor s)
-                decode-map-as
-                  update-states store (decode-map-as cursor 'List) s
-                  Map Dynamic Dynamic
+                decode-map-as (update-states store cursor s) (Map Dynamic Dynamic)
               (:task/add text)
-                .assoc store :tasks $ .append (read-tasks store)
-                  Task :id op-id :text (decode-map-as text 'String) :done? false
-              (:task/toggle raw-id)
-                let
-                    id $ decode-map-as raw-id 'String
-                  .assoc store :tasks $ .map (read-tasks store)
-                    fn (task)
-                      if
-                        = id $ :id task
-                        .assoc task :done? $ not $ :done? task
-                        , task
-              (:task/edit raw-id raw-text)
-                let
-                    id $ decode-map-as raw-id 'String
-                    text $ decode-map-as raw-text 'String
-                  .assoc store :tasks $ .map (read-tasks store)
-                    fn (task)
-                      if
-                        = id $ :id task
-                        .assoc task :text text
-                        , task
-              (:task/remove raw-id)
-                let
-                    id $ decode-map-as raw-id 'String
-                  .assoc store :tasks $ .filter (read-tasks store)
-                    fn (task)
-                      not= id $ :id task
+                .assoc store :tasks $ .append (read-tasks store) (Task :id op-id :text text :done? false)
+              (:task/toggle id)
+                .assoc store :tasks $ .map (read-tasks store)
+                  fn (task)
+                    if
+                      = id $ :id task
+                      .assoc task :done? $ not $ :done? task
+                      , task
+              (:task/edit id text)
+                .assoc store :tasks $ .map (read-tasks store)
+                  fn (task)
+                    if
+                      = id $ :id task
+                      .assoc task :text text
+                      , task
+              (:task/remove id)
+                .assoc store :tasks $ .filter (read-tasks store)
+                  fn (task)
+                    not= id $ :id task
               _ $ do
                 host/console-warn! $ str "|Unknown op" op
                 , store
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) AnyEnum String Number
+          :schema $ quote $ Fn (Map Dynamic Dynamic) reel.app.updater/Op String Number
             -> $ Map Dynamic Dynamic
             :features :js-ffi
           :tests $ []
@@ -1931,20 +1958,28 @@
           :schema $ quote $ Fn String (-> Number) (:features :js-ffi)
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn listen-devtools! (keyboard dispatch!)
+            listen-devtools-toggle! keyboard $ fn ()
+              hint-fn $ Fn $ -> Unit
+              dispatch! $ :: :reel/toggle
+          :examples $ []
+          :schema $ quote $ Fn String
+            Fn AnyEnum $ -> Unit
+            -> Unit
+            :features :js-ffi
+        'listen-devtools-toggle! $ %{} 'CodeEntry (:doc |)
+          :code $ quote $ defn listen-devtools-toggle! (keyboard toggle!)
             browser/add-event-listener! |keydown $ fn (event)
               let
                   keyboard-event $ browser/keyboard-event-host event
                 if
                   and (keyboard-event :shift-key?) (keyboard-event :meta-key?) (keyboard-event :alt-key?)
                     = (keyboard-code keyboard) (keyboard-event :key-code)
-                  do
-                    dispatch! $ :: :reel/toggle
-                    , &unit
+                  do (toggle!) &unit
                   , &unit
             , &unit
           :examples $ []
           :schema $ quote $ Fn String
-            Fn AnyEnum $ -> Unit
+            Fn $ -> Unit
             -> Unit
             :features :js-ffi
         'map-indexed-dynamic $ %{} 'CodeEntry (:doc |)
