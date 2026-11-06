@@ -4,7 +4,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.10.0 候选：类型化快捷键和 Demo 操作
 
-新增 `listen-devtools-toggle!`，接收 `Fn (-> Unit)`，快捷键仍是 Shift+Meta+Alt 加指定字符。旧 `listen-devtools!` 保留原匿名 `:reel/toggle` 合同。Demo 历史使用本地 `Op`，任务 ID 和文本用 String，游标用 `CoordKey`；原应用边界会先解码操作。
+新增 `listen-devtools-toggle!`，接收 `Fn (-> Unit)`，快捷键仍是 Shift+Meta+Alt 加指定字符。旧 `listen-devtools!` 保留原匿名 `:reel/toggle` 合同，回调仍是 `Fn AnyEnum (-> Unit)`；`dispatch!` 只接受自己 Op 的应用请改用 `listen-devtools-toggle!`，在自己的代码里发 `:: :reel/toggle`。Demo 的 `dispatch!` 等入口直接写 `reel.app.updater/Op`。`decode-control` 仍接收 `AnyEnum`，它需要对任意 enum 做反射解码。Demo 历史使用本地 `Op`，任务 ID 和文本用 String，游标用 `CoordKey`；原应用边界会先解码操作。
 
 ## 历史 0.9.2：配对正式 Calcit 0.35.1
 

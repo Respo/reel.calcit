@@ -170,14 +170,14 @@
                       host/console-warn! $ str "|Unknown op" op
                       , @*reel
           :examples $ []
-          :schema $ quote $ Fn AnyEnum
+          :schema $ quote $ Fn reel.app.updater/Op
             -> $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
             , &unit
           :examples $ []
-          :schema $ quote $ Fn AnyEnum (-> Unit)
+          :schema $ quote $ Fn reel.app.updater/Op (-> Unit)
         'get-mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-mount-target ()
             unsafe-coerce
@@ -299,7 +299,7 @@
                   decode-map-as v1 $ Map Tag Dynamic
               _ $ Option :none
           :examples $ []
-          :schema $ quote $ Fn AnyEnum
+          :schema $ quote $ Fn reel.app.updater/Op
             -> $ Option reel.app.updater/Op
         'read-tasks $ %{} 'CodeEntry
           :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
