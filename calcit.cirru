@@ -431,7 +431,7 @@
           :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
         'comp-record-item $ %{} 'CodeEntry
           :doc "|接收展示入口已校验的历史 List；只在开放 action 的展示出口将缺失首项编码为原 nil。"
-          :code $ quote $ defcomp comp-record-item (record pointed? idx)
+          :code $ quote $ defcomp comp-record-item (record pointed? idx on-control)
             div
               {} (:class-name css-record)
                 :style $ if pointed?
@@ -439,16 +439,18 @@
                     :background-color $ hsl 220 20 56
                     :color :white
                   {}
-                :on-click $ on-recall idx
+                :on-click $ reel.comp.records/control-handler (reel.typed/Control :recall idx) on-control
               ; <> $ to-lispy-string $ first record
               match (first record)
                 (:some action) (comp-action action)
                 (:none) (comp-action |)
           :examples $ []
-          :schema $ quote $ Fn (List Dynamic) Bool Number (-> respo.schema/Component)
+          :schema $ quote $ Fn (List Dynamic) Bool Number
+            Option $ Fn reel.typed/Control $ -> Unit
+            -> respo.schema/Component
         'comp-records $ %{} 'CodeEntry
           :doc "|逐条校验历史 List；memo 保留原 false/0/空串等记录 key，整组渲染坐标由 data-list-> 适配。需在 managed memo 帧内建树。nil key 的原拒绝行为及 memo bypass 保留。"
-          :code $ quote $ defcomp comp-records (records pointer)
+          :code $ quote $ defcomp comp-records (records pointer on-control)
             div
               {} $ :class-name $ str-spaced css/font-code css-records
               respo.core/data-list-> ({})
@@ -461,11 +463,13 @@
                         pointed? $ = pointer $ Option :some idx
                       match (last checked-record)
                         (:some key)
-                          [] key $ memo-comp-by key comp-record-item checked-record pointed? idx
+                          [] key $ memo-comp-by key comp-record-item checked-record pointed? idx on-control
                         (:none)
-                          [] nil $ memo-comp-by nil comp-record-item checked-record pointed? idx
+                          [] nil $ memo-comp-by nil comp-record-item checked-record pointed? idx on-control
           :examples $ []
-          :schema $ quote $ Fn (List Dynamic) (Option Number) (-> respo.schema/Component)
+          :schema $ quote $ Fn (List Dynamic) (Option Number)
+            Option $ Fn reel.typed/Control $ -> Unit
+            -> respo.schema/Component
           :tests $ [] $ %{} 'TestEntry (:name |legacy-record-keys-and-memo-identity)
             :code $ quote $ let
                 element $ fn (node)
@@ -551,6 +555,37 @@
                   , :accepted
                 fn (error) :rejected
             :tags $ #{} :js-only :legacy-boundary :unit
+        'control-handler $ %{} 'CodeEntry
+          :doc "|Send a nominal Control to the callback. The legacy path emits the original anonymous Reel event."
+          :code $ quote $ defn control-handler (control on-control)
+            fn (event dispatch!)
+              hint-fn $ Fn respo.schema/RespoEvent
+                Fn AnyEnum $ -> Unit
+                -> Unit
+              match on-control
+                (:some callback) (callback control)
+                (:none)
+                  match control
+                    (:toggle)
+                      dispatch! $ :: :reel/toggle
+                    (:recall index)
+                      dispatch! $ :: :reel/recall index
+                    (:run)
+                      dispatch! $ :: :reel/run
+                    (:step)
+                      dispatch! $ :: :reel/step
+                    (:merge)
+                      dispatch! $ :: :reel/merge
+                    (:reset)
+                      dispatch! $ :: :reel/reset
+                    (:remove index)
+                      dispatch! $ :: :reel/remove index
+          :examples $ []
+          :schema $ quote $ Fn reel.typed/Control
+            Option $ Fn reel.typed/Control $ -> Unit
+            -> $ Fn respo.schema/RespoEvent
+              Fn AnyEnum $ -> Unit
+              -> Unit
         'css-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-record
             {}
@@ -570,10 +605,13 @@
           :schema $ quote $ Fn Dynamic (-> Bool) (:features :js-ffi)
         'on-recall $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-recall (idx)
-            fn (e dispatch!)
-              dispatch! $ :: :reel/recall idx
+            reel.comp.records/control-handler $ reel.typed/Control :recall idx
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Dynamic) (:features :js-ffi)
+          :schema $ quote $ Fn Number
+            -> $ Fn respo.schema/RespoEvent
+              Fn AnyEnum $ -> Unit
+              -> Unit
+            :features :js-ffi
         'render-action-item $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-action-item (idx item)
             [] idx $ if (shallow-data? item)
@@ -629,45 +667,51 @@
             reel.util :refer $ tab-echo!
     'reel.comp.reel $ %{} 'FileEntry
       :defs $ {}
+        'comp-controlled-reel $ %{} 'CodeEntry
+          :doc "|Render typed Reel devtools and deliver Control through a separate callback from app dispatch."
+          :code $ quote $ defcomp comp-controlled-reel (reel user-styles on-control)
+            comp-reel ({}) (typed-compat/view-data reel) user-styles $ Option :some on-control
+          :examples $ []
+          :schema $ quote $ Fn (reel.typed/State Op Store) (Map Dynamic Dynamic)
+            Fn reel.typed/Control $ -> Unit
+            -> respo.schema/Component
+            :generics Op Store
         'comp-operations $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-operations (stopped?)
+          :code $ quote $ defcomp comp-operations (stopped? on-control)
             div
               {} $ :style $ {}
                 :border-bottom $ str "|1px solid " $ hsl 0 0 90
                 :padding "|0 4px"
               render-button |Merge
-                fn (e d!)
-                  d! $ :: :reel/merge
+                reel.comp.records/control-handler (reel.typed/Control :merge) on-control
                 , true
               render-button |Reset
-                fn (e d!)
-                  d! $ :: :reel/reset
+                reel.comp.records/control-handler (reel.typed/Control :reset) on-control
                 , true
               render-button |Step
-                fn (e d!)
-                  d! $ :: :reel/step
+                reel.comp.records/control-handler (reel.typed/Control :step) on-control
                 , stopped?
               render-button |Run
-                fn (e d!)
-                  d! $ :: :reel/run
+                reel.comp.records/control-handler (reel.typed/Control :run) on-control
                 , stopped?
               render-button |Close
-                fn (e d!)
-                  d! $ :: :reel/toggle
+                reel.comp.records/control-handler (reel.typed/Control :toggle) on-control
                 not stopped?
           :examples $ []
-          :schema $ quote $ Fn Bool (-> respo.schema/Component)
+          :schema $ quote $ Fn Bool
+            Option $ Fn reel.typed/Control $ -> Unit
+            -> respo.schema/Component
         'comp-reel $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-reel (states reel user-styles)
+          :code $ quote $ defcomp comp-reel (states reel user-styles on-control)
             if (reel.schema/field-or reel :display? false)
               div
                 {}
                   :class-name $ str-spaced css/flex css/column css-reel
                   :style user-styles
-                memo-comp-by :operations comp-operations $ reel.schema/field-or reel :stopped? false
+                memo-comp-by :operations comp-operations (reel.schema/field-or reel :stopped? false) on-control
                 div
                   {} $ :class-name $ str-spaced css/expand css/row
-                  comp-records (reel.schema/records-of reel) (reel.schema/pointer-of reel)
+                  comp-records (reel.schema/records-of reel) (reel.schema/pointer-of reel) on-control
                   div
                     {}
                       :class-name $ str-spaced css/column css/expand
@@ -704,8 +748,9 @@
                                 Option :some $ span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
                                   :style $ {} (:cursor :pointer) (:font-size 12)
                                     :color $ hsl 20 100 70
-                                  :on-click $ fn (e d!)
-                                    d! $ :: :reel/remove $ reel.util/unwrap-option pointer
+                                  :on-click $ reel.comp.records/control-handler
+                                    reel.typed/Control :remove $ .unwrap pointer
+                                    , on-control
                                 Option :none
                             div
                               {} (:class-name css/expand)
@@ -718,7 +763,9 @@
                       <> $ trim $ format-cirru-edn (reel.schema/require-field reel :store)
               span $ {}
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) (Map Dynamic Dynamic) (Map Dynamic Dynamic) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) (Map Dynamic Dynamic) (Map Dynamic Dynamic)
+            Option $ Fn reel.typed/Control $ -> Unit
+            -> respo.schema/Component
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-typed-reel (states reel user-styles)
             assert-type
@@ -752,9 +799,17 @@
                   {} (:user-select :none)
                     :color $ hsl 0 0 90
                 :on-click $ if enabled? on-click $ fn (e d!)
+                  hint-fn $ Fn respo.schema/RespoEvent
+                    Fn AnyEnum $ -> Unit
+                    -> Unit
+                  , &unit
               <> guide
           :examples $ []
-          :schema $ quote $ Fn String Dynamic Dynamic (-> respo.schema/Element) (:features :js-ffi)
+          :schema $ quote $ Fn String
+            Fn respo.schema/RespoEvent
+              Fn AnyEnum $ -> Unit
+              -> Unit
+            , Bool (-> respo.schema/Element) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.reel
           :require

@@ -4,11 +4,11 @@ import { copyFile, mkdir, mkdtemp, readFile, rm, symlink } from "node:fs/promise
 import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { main_$x_ } from "../test-js-out/reel.test-typed.mjs";
-import { new_reel, record_op, recall, resume, reset_reel, refresh, toggle_display, merge_reel, step, remove_current, decode_control, apply_control } from "../test-js-out/reel.typed.mjs";
-import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_ } from "../test-js-out/calcit.core.mjs";
+import { Control, new_reel, record_op, recall, resume, reset_reel, refresh, toggle_display, merge_reel, step, remove_current, decode_control, apply_control } from "../test-js-out/reel.typed.mjs";
+import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_, listToArray, pairs_map, turn_tag } from "../test-js-out/calcit.core.mjs";
 import { view_data } from "../test-js-out/reel.typed-compat.mjs";
 import { map_indexed_dynamic } from "../test-js-out/reel.util.mjs";
-import { comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
+import { comp_controlled_reel, comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
 import { with_memo_frame } from "../test-js-out/respo.memo.mjs";
 import { make_string } from "../test-js-out/respo.render.html.mjs";
 import { reel_updater } from "../test-js-out/reel.core.mjs";
@@ -222,3 +222,46 @@ for (const reel of [initial, full, paused]) {
   assert.match(html, /Reset/);
 }
 console.log("typed Reel JS: indexed mapping and open devtools render for empty, live, and paused history");
+
+function panelClicks(panel) {
+  const clicks = new Map();
+  function visit(node) {
+    const element = node.get(1);
+    if (node.tag.value === "component") return visit(option_$o_unwrap(element.get("tree")));
+    const children = listToArray(element.get("children"))
+      .map(pair => pair.get("node"))
+      .filter(child => !option_$o_none_$q_(child))
+      .map(child => visit(option_$o_unwrap(child)));
+    const text = pairs_map(element.get("attrs")).get(turn_tag("inner-text")) ?? children.join("");
+    const click = element.get("event").get(turn_tag("click"));
+    if (click) clicks.set(text, click);
+    return text;
+  }
+  visit(option_$o_unwrap(panel.get("tree")));
+  return clicks;
+}
+
+const noStyles = parse_cirru_edn("{}");
+const pausedPanel = toggle_display(paused);
+const livePanel = toggle_display(full);
+const received = [];
+const onControl = value => { received.push(value); };
+const unexpectedDispatch = () => assert.fail("controlled Reel must not dispatch into the app");
+const pausedClicks = with_memo_frame(() => panelClicks(comp_controlled_reel(pausedPanel, noStyles, onControl)));
+for (const label of ["Merge", "Reset", "Step", "Run", "5", "Remove", "Close"]) {
+  pausedClicks.get(label)(undefined, unexpectedDispatch);
+}
+const liveClicks = with_memo_frame(() => panelClicks(comp_controlled_reel(livePanel, noStyles, onControl)));
+liveClicks.get("Close")(undefined, unexpectedDispatch);
+assert.deepEqual(received.map(value => to_js_data(value)), [
+  ["merge"], ["reset"], ["step"], ["run"], ["recall", 1], ["remove", 1], ["toggle"],
+]);
+assert.ok(received.every(value => value.enumPrototype === Control));
+
+const legacyClicks = with_memo_frame(() => panelClicks(comp_typed_reel(noStyles, pausedPanel, noStyles)));
+const legacyEvents = [];
+for (const label of ["Merge", "5", "Remove"]) {
+  legacyClicks.get(label)(undefined, value => { legacyEvents.push(value); });
+}
+assert.deepEqual(legacyEvents.map(value => to_js_data(value)), [["reel/merge"], ["reel/recall", 1], ["reel/remove", 1]]);
+assert.ok(legacyEvents.every(value => value.enumPrototype === null));
