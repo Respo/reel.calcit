@@ -69,7 +69,7 @@ jobs:
       uses: actions/checkout@v7.0.1
       with:
         repository: calcit-lang/respo-calcit-workflow
-        ref: 6d5a32bc693c584fe2a7463b11cd84f6e37f6632
+        ref: 3071a328800761c6a044100a0f9e60d31398178a
         path: .calcit/workflow-consumer
         persist-credentials: false
 
