@@ -6,7 +6,7 @@
     :default $ {} (:description |) (:init-fn 'reel.app.main/main!) (:mode :js) (:reload-fn 'reel.app.main/reload!) (:target :browser)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/
-      :type-slots $ {} $ :dispatch-op |reel.app.updater/Op
+      :type-slots $ {} $ :dispatch-op 'reel.app.updater/Op
     :test $ {} (:description "|Pure typed Reel native regression") (:init-fn 'reel.test-typed/main!) (:mode :native) (:reload-fn 'reel.test-typed/main!) (:target :native)
       :feature-policy $ {}
       :modules $ [] |respo.calcit/
@@ -374,10 +374,10 @@
                     {}
                       :states $ {}
                       :tasks $ []
-                    quote $ Map Dynamic Dynamic
+                    Map Dynamic Dynamic
                   initial-reel $ decode-map-as
                     .to-map $ reel.typed/new-reel initial-store
-                    quote $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                    reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
                   added $ reel.typed/record-op updater initial-reel (reel.app.updater/Op :task/add "|原文") |stable-031 100
                   edited $ reel.typed/record-op updater added (reel.app.updater/Op :task/edit |stable-031 "|改写🐈") |edit-031 101
                   paused $ reel.typed/recall updater edited 0
@@ -1086,7 +1086,7 @@
                     :stopped? false
                   refreshed $ refresh-reel source |next updater
                   LegacyRefresh $ defstruct LegacyRefresh (:base String) (:store String)
-                    :records $ quote $ List Number
+                    :records $ List Number
                     :merged? Bool
                     :stopped? Bool
                   nominal $ LegacyRefresh :base |base :store |base :records ([]) :merged? false :stopped? false
@@ -1482,8 +1482,7 @@
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base)
-                      quote $ reel.typed/State Number String
+                    assert-type (new-reel |base) (reel.typed/State Number String)
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1585,8 +1584,7 @@
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base)
-                      quote $ reel.typed/State Number String
+                    assert-type (new-reel |base) (reel.typed/State Number String)
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1622,8 +1620,7 @@
             :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |empty-typed-state)
             :code $ quote $ let
-                reel $ assert-type (new-reel |initial)
-                  quote $ reel.typed/State Number String
+                reel $ assert-type (new-reel |initial) (reel.typed/State Number String)
               do
                 assert= |initial $ :base reel
                 assert= |initial $ :store reel
@@ -1675,8 +1672,7 @@
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 live $ record-op updater
-                  assert-type (new-reel |base)
-                    quote $ reel.typed/State Number String
+                  assert-type (new-reel |base) (reel.typed/State Number String)
                   , 5 |one 10
                 stopped $ recall updater live 0
                 queued $ record-op updater stopped 7 |two 20
@@ -1713,8 +1709,7 @@
                 updater $ fn (store op id time)
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
-                initial $ assert-type (new-reel |base)
-                  quote $ reel.typed/State Number String
+                initial $ assert-type (new-reel |base) (reel.typed/State Number String)
                 live $ record-op updater initial 5 |id-1 100
                 paused $ record-op updater
                   struct-with live $ :stopped? true
@@ -1780,8 +1775,7 @@
                 updater $ fn (store op id time)
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
-                initial $ assert-type (new-reel |base)
-                  quote $ reel.typed/State Number String
+                initial $ assert-type (new-reel |base) (reel.typed/State Number String)
                 live $ record-op updater (record-op updater initial 5 |one 10) 7 |two 20
                 paused $ recall updater live 1
                 reset-paused $ reset-reel paused
@@ -1844,8 +1838,7 @@
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 one $ record-op updater
-                  assert-type (new-reel |base)
-                    quote $ reel.typed/State Number String
+                  assert-type (new-reel |base) (reel.typed/State Number String)
                   , 5 |one 10
                 live $ record-op updater (record-op updater one 7 |two 20) 9 |three 30
                 zero $ recall updater live 0
@@ -1900,8 +1893,7 @@
           :tests $ []
             %{} 'TestEntry (:name |legacy-view-shape)
               :code $ quote $ let
-                  initial $ assert-type (typed/new-reel |base)
-                    quote $ reel.typed/State Number String
+                  initial $ assert-type (typed/new-reel |base) (reel.typed/State Number String)
                 assert=
                   {} (:base |base) (:store |base)
                     :records $ []
