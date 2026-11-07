@@ -69,8 +69,7 @@ jobs:
       uses: actions/checkout@v7.0.1
       with:
         repository: calcit-lang/respo-calcit-workflow
-        # 0.37 candidate (branch claude/calcit-0.37.0); repin to main after that PR merges.
-        ref: e708db403628423d833868f1bceae419d63bcd8e
+        ref: 8357935671b16b6483a4b85fd49012bc31f09f0d
         path: .calcit/workflow-consumer
         persist-credentials: false
 
