@@ -10,7 +10,9 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 `listen-devtools-toggle!` 把 `Control :toggle` 传给同一个回调。
 
 现有三参数 `comp-typed-reel` 和 `comp-reel` 继续派发原来的 `:reel/*` 事件。
-面板仍须在 managed memo 帧内构造，沿用 Calcit 0.37.0 的依赖图。
+面板仍须在 managed memo 帧内构造。当前候选配对正式 Calcit / `@calcit/procs` **0.38.0**，升级后请重新安装依赖、生成 JS 并刷新。
+
+Demo 的任务交互发送具名 `Op`，任务列表使用 Respo 的 `ChildPair`。Enter 根据键名提交，热更新仍通过 HUD 报告结果。
 
 ## 历史 0.10.0 类型化快捷键和 Demo 操作
 
