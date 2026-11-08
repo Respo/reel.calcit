@@ -9,7 +9,17 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 应用的 Respo dispatch 可以继续只接收自己的 Op。需要绑定快捷键时，使用
 `listen-devtools-toggle!` 把 `Control :toggle` 传给同一个回调。
 
-现有三参数 `comp-typed-reel` 和 `comp-reel` 继续派发原来的 `:reel/*` 事件。
+**不兼容：面板不再往应用 dispatch 里发 `:: :reel/*` 匿名事件。**
+`comp-reel`、`comp-typed-reel` 的 `on-control` 改为必传的 `Fn reel.typed/Control (-> Unit)`
+（`comp-typed-reel states reel styles on-control`，原先的 `Option` 包装去掉）；
+`listen-devtools! keyboard on-control` 也改为接收同一个回调。
+面板按钮的事件回调写成 `Fn RespoEvent (Fn *dispatch-op (-> Unit)) (-> Unit)`，
+不再需要 `AnyEnum`，下游可以把 dispatch 写成自己的 Op。
+
+迁移：在应用里加一个 `on-control!`，例如
+`reset! *reel $ reel.typed/apply-control updater @*reel control`，传给面板和 `listen-devtools!`。
+`decode-control` / `reel.core/reel-updater` 仍能处理应用自己派发的 `:reel/*` 操作，签名标 `(:open :reflect)`。
+Demo 的 Op 去掉了 `:reel/*` 变体。CI 的 respo-calcit-workflow 夹具改指向它的 on-control 候选提交。
 面板仍须在 managed memo 帧内构造。当前候选配对正式 Calcit / `@calcit/procs` **0.38.0**，升级后请重新安装依赖、生成 JS 并刷新。
 
 Demo 的任务交互发送具名 `Op`，任务列表使用 Respo 的 `ChildPair`。Enter 根据键名提交，热更新仍通过 HUD 报告结果。
@@ -131,8 +141,8 @@ refresh-reel 的旧兼容写入仍支持受检 Struct 与混合键 Map，不为�
 - `decode-control message`：将旧 devtools 消息解析为 `Option<Control>`。
   将已识别的控制交给 `apply-control updater reel control`，业务操作交给
   `record-op`；未知或错误的控制 payload 不应冒充业务默认值。
-  **当前 Demo 的路由**：`dispatch!` 先解码 Reel 控制消息，再解码业务操作。
-  两者都无法识别时，Demo 记录警告并保持历史不变。例如 `:: :reel/recall |bad` 会在入口被拒绝。
+  **当前 Demo 的路由**：`dispatch!` 只接收应用 `Op`，解码后交给 `record-op`；无法识别时记录警告并保持历史不变。
+  面板通过 `on-control!` 把 `Control` 交给 `apply-control`，不经过 `dispatch!`。
 - `recall updater reel pointer`：pointer 是 `[0, records.length]` 范围内的
   整数前缀长度；直接调用的非法 pointer 会报错。通过 `apply-control`
   接收的非法 recall 保持原状态。
@@ -181,7 +191,7 @@ quote $ Ref $ reel.typed/State app.schema/AppOp app.schema/AppStore
 
 ## 渲染、watch 和旧展示边界
 
-使用 `reel.comp.reel/comp-typed-reel states reel styles` 渲染 typed 状态。
+使用 `reel.comp.reel/comp-typed-reel states reel styles on-control` 渲染 typed 状态。
 模块内部的 `reel.typed-compat/view-data` 会将**每一条 Record**转换为旧
 三元组，并将 Option pointer 转为旧 nil/Number 布局。不要只对根 State
 调用浅层 `to-map` 就传给 `comp-reel`。
@@ -199,7 +209,7 @@ pointer 为零仍直接返回 store，不读取 records 或调用 updater。删�
 
 watch 使用 `add-watch!` / `remove-watch!`。回调接收**新值和旧值**两个
 参数，应标记真实 State 类型与 Unit 返回值；可参考
-`reel.app.main/main!` 和 `reload!`。通过 `listen-devtools! "k" dispatch!`
+`reel.app.main/main!` 和 `reload!`。通过 `listen-devtools! "k" on-control!`
 启用 `Command Option Shift k` 面板快捷键。
 
 Demo 的 updater 已实现任务新增、编辑、切换和删除，相关修复见 [#95](https://github.com/Respo/reel.calcit/issues/95)。任务 id 来自记录的 op-id，历史重放不生成新 id；输入受检为具体 Task，缺失 id 的操作保持其余任务与顺序。原回放与 Demo 回归继续保留。
