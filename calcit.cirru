@@ -45,16 +45,16 @@
             div
               {} $ :style style-container
               div $ {} (:class-name css-done)
-                :style $ if (reel.schema/field-or task :done? false)
+                :style $ if (:done? task)
                   Option :some $ {} $ :background-color (hsl 42 100 60)
                   Option :none
                 :on-click $ fn (e d!)
-                  d! $ :: :task/toggle $ reel.schema/require-field task :id
+                  d! $ reel.app.updater/Op :task/toggle $ :id task
               space-x 8
               input $ {} (:placeholder "|Content of task") (:class-name css/input)
-                :value $ reel.schema/require-field task :text
+                :value $ :text task
                 :on-input $ fn (e d!)
-                  d! $ :: :task/edit (reel.schema/require-field task :id) (reel.schema/field-or e :value |)
+                  d! $ reel.app.updater/Op :task/edit (:id task) (event-value e)
               space-x 8
               button
                 {} (:class-name css/button)
@@ -63,7 +63,7 @@
                     :color :white
                     :border :none
                   :on-click $ fn (e d!)
-                    d! $ :: :task/remove $ reel.schema/require-field task :id
+                    d! $ reel.app.updater/Op :task/remove $ :id task
                 <> |Remove
           :examples $ []
           :schema $ quote $ Fn reel.app.updater/Task (-> respo.schema/Component)
@@ -82,7 +82,7 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.task
           :require
-            respo.core :refer $ defcomp <> div button input
+            respo.core :refer $ defcomp <> div button input event-value
             respo.css :refer $ defstyle
             respo.util.format :refer $ hsl
             respo.comp.space :refer $ space-x
@@ -92,34 +92,38 @@
         'comp-todolist $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-todolist (states tasks)
             let
-                cursor $ reel.schema/field-or states :cursor $ []
-                state $ reel.schema/field-or states :data |
+                cursor $ decode-map-as
+                  reel.schema/field-or states :cursor $ []
+                  List respo.schema/CoordKey
+                state $ decode-map-as (reel.schema/field-or states :data |) 'String
               div
                 {} $ :class-name $ str-spaced css/fullscreen css-container
                 div ({})
                   input $ {} (:placeholder "|Task to add...") (:value state) (:class-name css/input)
                     :on-input $ fn (e d!)
-                      d! $ :: :states cursor $ reel.schema/field-or e :value |
+                      d! $ reel.app.updater/Op :states cursor $ event-value e
                       , &unit
                     :on-keydown $ fn (e d!)
                       if
-                        = (reel.schema/field-or e :keycode 0) 13
+                        =
+                          :key $ keyboard-info e
+                          , |Enter
                         do
-                          d! $ :: :task/add state
-                          d! $ :: :states cursor |
+                          d! $ reel.app.updater/Op :task/add state
+                          d! $ reel.app.updater/Op :states cursor |
                       , &unit
                   space-x 8
                   button
                     {} (:class-name css/button)
                       :on-click $ fn (e d!)
-                        d! $ :: :task/add state
-                        d! $ :: :states cursor |
+                        d! $ reel.app.updater/Op :task/add state
+                        d! $ reel.app.updater/Op :states cursor |
                         , &unit
                     <> |Add
                   space-x 8
                   button $ {} (:inner-text |Try) (:class-name css/button)
                     :on-click $ fn (e d!)
-                      d! $ :: :try
+                      d! $ reel.app.updater/Op :try
                         {}
                           :a $ [] :b :w
                           :c $ {} $ :d :e
@@ -127,11 +131,11 @@
                           :a $ [] :b :w
                           :c $ {} $ :d :e
                       , &unit
-                list-> ({})
+                keyed-> ({})
                   -> tasks $ map $ fn (task)
-                    [] (reel.schema/require-field task :id) (comp-task task)
+                    keyed-component (:id task) (comp-task task)
           :examples $ []
-          :schema $ quote $ Fn Dynamic (List reel.app.updater/Task) (-> respo.schema/Component)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) (List reel.app.updater/Task) (-> respo.schema/Component)
         'css-container $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-container
             {} $ |$0 $ {} (:padding 8) (:overflow :auto)
@@ -140,7 +144,7 @@
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.todolist
           :require
-            respo.core :refer $ defcomp <> div span button input list->
+            respo.core :refer $ defcomp <> div span button input keyed-> keyed-component event-value keyboard-info
             respo.css :refer $ defstyle
             respo.comp.space :refer $ space-x
             reel.style :as css
@@ -175,11 +179,9 @@
           :schema $ quote $ Fn reel.app.updater/Op (-> Unit)
         'get-mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-mount-target ()
-            unsafe-coerce
-              option:unwrap $ browser/query-selector |.app
-              quote Dynamic
+            .unwrap $ dom/query-selector |.app
           :examples $ []
-          :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
+          :schema $ quote $ Fn (-> respo.dom/DomElement) (:features :js-ffi)
         'main! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch! *reel :changes $ fn (reel prev)
@@ -203,8 +205,7 @@
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'mount-target $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ def mount-target
-            .unwrap $ dom/query-selector |.app
+          :code $ quote $ def mount-target (get-mount-target)
           :examples $ []
           :schema $ quote respo.dom/DomElement
         'on-control! $ %{} 'CodeEntry
@@ -234,8 +235,9 @@
                   reset! *reel $ assert-type refreshed $ reel.typed/State reel.app.updater/Op (Map Dynamic Dynamic)
                 hud! |ok~ |Ok
               hud! |error build-errors
+            , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Dynamic) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render-with! mount-target
@@ -257,7 +259,6 @@
             |bottom-tip :default hud!
             reel.typed :as typed
             js-ffi.shared :as host
-            js-ffi.browser :as browser
             respo.ffi.browser :as dom
     'reel.app.updater $ %{} 'FileEntry
       :defs $ {}
