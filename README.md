@@ -20,7 +20,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 `reset! *reel $ reel.typed/apply-control updater @*reel control`，传给面板和 `listen-devtools!`。
 `decode-control` / `reel.core/reel-updater` 仍能处理应用自己派发的 `:reel/*` 操作，签名标 `(:open :reflect)`。
 Demo 的 Op 去掉了 `:reel/*` 变体。CI 的 respo-calcit-workflow 夹具指向其 main 上的 `49cab03`（[模板 #68](https://github.com/calcit-lang/respo-calcit-workflow/pull/68)，已改用 on-control）。
-面板仍须在 managed memo 帧内构造。当前候选配对正式 Calcit / `@calcit/procs` **0.38.0**，升级后请重新安装依赖、生成 JS 并刷新。
+面板仍须在 managed memo 帧内构造。0.11.0 配对正式 Calcit / `@calcit/procs` **0.38.0**，升级后请重新安装依赖、生成 JS 并刷新。
 
 Demo 的任务交互发送具名 `Op`，任务列表使用 Respo 的 `ChildPair`。Enter 根据键名提交，热更新仍通过 HUD 报告结果。
 
