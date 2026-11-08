@@ -2,7 +2,17 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.10.0 候选：类型化快捷键和 Demo 操作
+## 0.11.0 候选
+
+应用可以用 `reel.comp.reel/comp-controlled-reel reel styles on-control` 渲染开发面板。
+`on-control` 接收 `reel.typed/Control`，可交给 `reel.typed/apply-control`。
+应用的 Respo dispatch 可以继续只接收自己的 Op。需要绑定快捷键时，使用
+`listen-devtools-toggle!` 把 `Control :toggle` 传给同一个回调。
+
+现有三参数 `comp-typed-reel` 和 `comp-reel` 继续派发原来的 `:reel/*` 事件。
+面板仍须在 managed memo 帧内构造，沿用 Calcit 0.37.0 的依赖图。
+
+## 历史 0.10.0 类型化快捷键和 Demo 操作
 
 工具链：CLI / `@calcit/procs` 配对正式 **0.37.0**，Respo **0.19.5**、JS-FFI **0.2.13**。CI 的 respo-calcit-workflow 源码夹具改指向其 0.37 候选提交（原 `3071a32` 用字符串类型槽，0.37 不再接受），并为它补上 UI **0.15.2**。
 
