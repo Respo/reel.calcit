@@ -15,17 +15,18 @@
     'reel.app.comp.container $ %{} 'FileEntry
       :defs $ {} $ 'comp-container
         %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-container (reel)
+          :code $ quote $ defcomp comp-container (reel on-control)
             let
                 store $ :store reel
                 states $ reel.schema/field-or store :states $ {}
               div
                 {} $ :class-name css/global
                 comp-todolist (>> states :todolist) (reel.app.updater/read-tasks store)
-                comp-typed-reel (>> states :reel) reel $ {}
+                comp-typed-reel (>> states :reel) reel ({}) on-control
           :examples $ []
           :schema $ quote $ Fn
             reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+            Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.container
@@ -153,22 +154,16 @@
             reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
-            match (typed/decode-control op)
-              (:some control)
-                typed/apply-control updater
+            match (reel.app.updater/decode-op op)
+              (:some checked)
+                typed/record-op updater
                   assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
-                  , control
+                  , checked (generate-id!)
+                    :timestamp $ host/date-now-snapshot
               (:none)
-                match (reel.app.updater/decode-op op)
-                  (:some checked)
-                    typed/record-op updater
-                      assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
-                      , checked (generate-id!)
-                        :timestamp $ host/date-now-snapshot
-                  (:none)
-                    do
-                      host/console-warn! $ str "|Unknown op" op
-                      , @*reel
+                do
+                  host/console-warn! $ str "|Unknown op" op
+                  , @*reel
           :examples $ []
           :schema $ quote $ Fn reel.app.updater/Op
             -> $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
@@ -212,6 +207,15 @@
             .unwrap $ dom/query-selector |.app
           :examples $ []
           :schema $ quote respo.dom/DomElement
+        'on-control! $ %{} 'CodeEntry
+          :doc "|Apply a devtools Control to the Reel state; comp-reel calls it instead of dispatching :reel/* events."
+          :code $ quote $ defn on-control! (control) (println |Control! control)
+            reset! *reel $ typed/apply-control updater
+              assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+              , control
+            , &unit
+          :examples $ []
+          :schema $ quote $ Fn reel.typed/Control (-> Unit)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -235,8 +239,9 @@
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render-with! mount-target
-              fn () $ comp-container $ assert-type @*reel
-                reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+              fn () $ comp-container
+                assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                , on-control!
               , dispatch!
           :examples $ []
           :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
@@ -257,7 +262,7 @@
     'reel.app.updater $ %{} 'FileEntry
       :defs $ {}
         'Op $ %{} 'CodeEntry
-          :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Includes the :reel/* controls that comp-reel sends."
+          :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Reel devtools controls go through on-control, not through this Op."
           :code $ quote $ defenum Op
             :states (List respo.schema/CoordKey) Dynamic
             :task/add String
@@ -265,13 +270,6 @@
             :task/edit String String
             :task/remove String
             :try (Map Tag Dynamic) (Map Tag Dynamic)
-            :reel/toggle
-            :reel/recall Number
-            :reel/run
-            :reel/step
-            :reel/merge
-            :reel/reset
-            :reel/remove Number
           :examples $ []
           :schema $ quote EnumDef
         'Task $ %{} 'CodeEntry (:doc |)
@@ -446,7 +444,7 @@
                 (:none) (comp-action |)
           :examples $ []
           :schema $ quote $ Fn (List Dynamic) Bool Number
-            Option $ Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
         'comp-records $ %{} 'CodeEntry
           :doc "|逐条校验历史 List；memo 保留原 false/0/空串等记录 key，整组渲染坐标由 data-list-> 适配。需在 managed memo 帧内建树。nil key 的原拒绝行为及 memo bypass 保留。"
@@ -468,10 +466,13 @@
                           [] nil $ memo-comp-by nil comp-record-item checked-record pointed? idx on-control
           :examples $ []
           :schema $ quote $ Fn (List Dynamic) (Option Number)
-            Option $ Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
           :tests $ [] $ %{} 'TestEntry (:name |legacy-record-keys-and-memo-identity)
             :code $ quote $ let
+                ignore-control $ fn (control)
+                  hint-fn $ Fn reel.typed/Control $ -> Unit
+                  , &unit
                 element $ fn (node)
                   hint-fn $ Fn respo.schema/RenderNode $ -> respo.schema/Element
                   match node
@@ -481,7 +482,7 @@
                   hint-fn $ Fn (List Dynamic)
                     -> $ List respo.schema/ChildPair
                   let
-                      view $ comp-records records $ Option :none
+                      view $ comp-records records (Option :none) ignore-control
                       root $ element $ .unwrap (:tree view)
                       list-pair $ .unwrap $ first (:children root)
                       list-element $ element $ .unwrap (:node list-pair)
@@ -498,8 +499,8 @@
               let
                   first-rows $ rows records
                   next-rows $ rows records
-                  empty-first $ memo-comp-by nil comp-record-item ([]) false 1
-                  empty-next $ memo-comp-by nil comp-record-item ([]) false 1
+                  empty-first $ memo-comp-by nil comp-record-item ([]) false 1 ignore-control
+                  empty-next $ memo-comp-by nil comp-record-item ([]) false 1 ignore-control
                 assert=
                   map ([] :base false 0 | 8 7)
                     fn (key) (respo.memo/data-key key)
@@ -527,19 +528,20 @@
               respo.core/clear-cache!
               let
                   html $ respo.render.html/make-string $ respo.memo/with-memo-frame
-                    fn () $ comp-records records $ Option :none
+                    fn () $ comp-records records (Option :none) ignore-control
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\"></span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">false</span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">0</span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">:op</span>"
               assert=
-                respo.render.html/make-string $ comp-record-item ([]) false 1
-                respo.render.html/make-string $ comp-record-item ([] nil) false 1
+                respo.render.html/make-string $ comp-record-item ([]) false 1 ignore-control
+                respo.render.html/make-string $ comp-record-item ([] nil) false 1 ignore-control
               assert= :rejected $ try
                 do
                   respo.memo/with-memo-frame $ fn () $ comp-records
                     [] $ []
                     Option :none
+                    , ignore-control
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
@@ -547,44 +549,28 @@
                   respo.memo/with-memo-frame $ fn () $ comp-records
                     [] $ [] nil
                     Option :none
+                    , ignore-control
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
-                  respo.memo/with-memo-frame $ fn () $ comp-records ([] 42) (Option :none)
+                  respo.memo/with-memo-frame $ fn () $ comp-records ([] 42) (Option :none) ignore-control
                   , :accepted
                 fn (error) :rejected
             :tags $ #{} :js-only :legacy-boundary :unit
         'control-handler $ %{} 'CodeEntry
-          :doc "|Send a nominal Control to the callback. The legacy path emits the original anonymous Reel event."
+          :doc "|Send a nominal Control to the callback. The app's Respo dispatch is not used, so it can keep accepting only the app's own Op."
           :code $ quote $ defn control-handler (control on-control)
             fn (event dispatch!)
               hint-fn $ Fn respo.schema/RespoEvent
-                Fn AnyEnum $ -> Unit
+                Fn *dispatch-op $ -> Unit
                 -> Unit
-              match on-control
-                (:some callback) (callback control)
-                (:none)
-                  match control
-                    (:toggle)
-                      dispatch! $ :: :reel/toggle
-                    (:recall index)
-                      dispatch! $ :: :reel/recall index
-                    (:run)
-                      dispatch! $ :: :reel/run
-                    (:step)
-                      dispatch! $ :: :reel/step
-                    (:merge)
-                      dispatch! $ :: :reel/merge
-                    (:reset)
-                      dispatch! $ :: :reel/reset
-                    (:remove index)
-                      dispatch! $ :: :reel/remove index
+              on-control control
           :examples $ []
           :schema $ quote $ Fn reel.typed/Control
-            Option $ Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control $ -> Unit
             -> $ Fn respo.schema/RespoEvent
-              Fn AnyEnum $ -> Unit
+              Fn *dispatch-op $ -> Unit
               -> Unit
         'css-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-record
@@ -604,12 +590,13 @@
           :examples $ []
           :schema $ quote $ Fn Dynamic (-> Bool) (:features :js-ffi)
         'on-recall $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn on-recall (idx)
-            reel.comp.records/control-handler $ reel.typed/Control :recall idx
+          :code $ quote $ defn on-recall (idx on-control)
+            reel.comp.records/control-handler (reel.typed/Control :recall idx) on-control
           :examples $ []
           :schema $ quote $ Fn Number
+            Fn reel.typed/Control $ -> Unit
             -> $ Fn respo.schema/RespoEvent
-              Fn AnyEnum $ -> Unit
+              Fn *dispatch-op $ -> Unit
               -> Unit
             :features :js-ffi
         'render-action-item $ %{} 'CodeEntry (:doc |)
@@ -670,7 +657,7 @@
         'comp-controlled-reel $ %{} 'CodeEntry
           :doc "|Render typed Reel devtools and deliver Control through a separate callback from app dispatch."
           :code $ quote $ defcomp comp-controlled-reel (reel user-styles on-control)
-            comp-reel ({}) (typed-compat/view-data reel) user-styles $ Option :some on-control
+            comp-reel ({}) (typed-compat/view-data reel) user-styles on-control
           :examples $ []
           :schema $ quote $ Fn (reel.typed/State Op Store) (Map Dynamic Dynamic)
             Fn reel.typed/Control $ -> Unit
@@ -699,7 +686,7 @@
                 not stopped?
           :examples $ []
           :schema $ quote $ Fn Bool
-            Option $ Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles on-control)
@@ -764,15 +751,18 @@
               span $ {}
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic) (Map Dynamic Dynamic) (Map Dynamic Dynamic)
-            Option $ Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defcomp comp-typed-reel (states reel user-styles)
+          :code $ quote $ defcomp comp-typed-reel (states reel user-styles on-control)
             assert-type
-              comp-reel states (typed-compat/view-data reel) user-styles
+              comp-reel states (typed-compat/view-data reel) user-styles on-control
               , respo.schema/Component
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) (reel.typed/State Op Store) (Map Dynamic Dynamic) (-> respo.schema/Component) (:generics Op Store)
+          :schema $ quote $ Fn (Map Dynamic Dynamic) (reel.typed/State Op Store) (Map Dynamic Dynamic)
+            Fn reel.typed/Control $ -> Unit
+            -> respo.schema/Component
+            :generics Op Store
         'css-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-reel
             {} $ |$0 $ {} (:width |60%) (:height |80%) (:right |0px) (:bottom |0px) (:position :fixed)
@@ -800,14 +790,14 @@
                     :color $ hsl 0 0 90
                 :on-click $ if enabled? on-click $ fn (e d!)
                   hint-fn $ Fn respo.schema/RespoEvent
-                    Fn AnyEnum $ -> Unit
+                    Fn *dispatch-op $ -> Unit
                     -> Unit
                   , &unit
               <> guide
           :examples $ []
           :schema $ quote $ Fn String
             Fn respo.schema/RespoEvent
-              Fn AnyEnum $ -> Unit
+              Fn *dispatch-op $ -> Unit
               -> Unit
             , Bool (-> respo.schema/Element) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
@@ -1581,6 +1571,7 @@
           :examples $ []
           :schema $ quote $ Fn AnyEnum
             -> $ calcit.core/Option reel.typed/Control
+            :open :reflect
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
@@ -2004,13 +1995,13 @@
           :examples $ []
           :schema $ quote $ Fn String (-> Number) (:features :js-ffi)
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defn listen-devtools! (keyboard dispatch!)
+          :code $ quote $ defn listen-devtools! (keyboard on-control)
             listen-devtools-toggle! keyboard $ fn ()
               hint-fn $ Fn $ -> Unit
-              dispatch! $ :: :reel/toggle
+              on-control $ reel.typed/Control :toggle
           :examples $ []
           :schema $ quote $ Fn String
-            Fn AnyEnum $ -> Unit
+            Fn reel.typed/Control $ -> Unit
             -> Unit
             :features :js-ffi
         'listen-devtools-toggle! $ %{} 'CodeEntry (:doc |)

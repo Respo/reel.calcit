@@ -217,7 +217,7 @@ assert.deepEqual(to_js_data(map_indexed_dynamic(parse_cirru_edn("[]"), () => {
 })), []);
 assert.deepEqual(to_js_data(map_indexed_dynamic(parse_cirru_edn("[] |a |b"), (index, value) => `${index}:${value}`)), ["0:a", "1:b"]);
 for (const reel of [initial, full, paused]) {
-  const html = with_memo_frame(() => make_string(comp_typed_reel(parse_cirru_edn("{} (:cursor $ [])"), toggle_display(reel), parse_cirru_edn("{}"))));
+  const html = with_memo_frame(() => make_string(comp_typed_reel(parse_cirru_edn("{} (:cursor $ [])"), toggle_display(reel), parse_cirru_edn("{}"), () => assert.fail("rendering must not emit controls"))));
   assert.match(html, /Merge/);
   assert.match(html, /Reset/);
 }
@@ -258,10 +258,10 @@ assert.deepEqual(received.map(value => to_js_data(value)), [
 ]);
 assert.ok(received.every(value => value.enumPrototype === Control));
 
-const legacyClicks = with_memo_frame(() => panelClicks(comp_typed_reel(noStyles, pausedPanel, noStyles)));
-const legacyEvents = [];
+const typedReceived = [];
+const typedClicks = with_memo_frame(() => panelClicks(comp_typed_reel(noStyles, pausedPanel, noStyles, value => { typedReceived.push(value); })));
 for (const label of ["Merge", "5", "Remove"]) {
-  legacyClicks.get(label)(undefined, value => { legacyEvents.push(value); });
+  typedClicks.get(label)(undefined, unexpectedDispatch);
 }
-assert.deepEqual(legacyEvents.map(value => to_js_data(value)), [["reel/merge"], ["reel/recall", 1], ["reel/remove", 1]]);
-assert.ok(legacyEvents.every(value => value.enumPrototype === null));
+assert.deepEqual(typedReceived.map(value => to_js_data(value)), [["merge"], ["recall", 1], ["remove", 1]]);
+assert.ok(typedReceived.every(value => value.enumPrototype === Control));
