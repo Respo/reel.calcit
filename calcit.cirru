@@ -25,7 +25,7 @@
                 comp-typed-reel (>> states :reel) reel ({}) on-control
           :examples $ []
           :schema $ quote $ Fn
-            reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+            reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
             Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
       :ns $ %{} 'NsEntry (:doc |)
@@ -155,13 +155,13 @@
           :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
           :schema $ quote $ Ref
-            reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+            reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
             match (reel.app.updater/decode-op op)
               (:some checked)
                 typed/record-op updater
-                  assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                  assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                   , checked (generate-id!)
                     :timestamp $ host/date-now-snapshot
               (:none)
@@ -170,7 +170,7 @@
                   , @*reel
           :examples $ []
           :schema $ quote $ Fn reel.app.updater/Op
-            -> $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+            -> $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
@@ -186,8 +186,8 @@
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch! *reel :changes $ fn (reel prev)
               hint-fn $ Fn
-                reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
-                reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                 -> Unit
               render-app!
               , &unit
@@ -196,7 +196,7 @@
                   hint-fn $ Fn $ -> Unit
                   println |Dispatch! $ :: :reel/toggle
                   reset! *reel $ typed/apply-control updater
-                    assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                    assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                     typed/Control :toggle
                   , &unit
               listen-devtools-toggle! |k toggle!
@@ -212,7 +212,7 @@
           :doc "|Apply a devtools Control to the Reel state; comp-reel calls it instead of dispatching :reel/* events."
           :code $ quote $ defn on-control! (control) (println |Control! control)
             reset! *reel $ typed/apply-control updater
-              assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+              assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
               , control
             , &unit
           :examples $ []
@@ -223,16 +223,16 @@
               do (remove-watch! *reel :changes) (clear-cache!)
                 add-watch! *reel :changes $ fn (reel prev)
                   hint-fn $ Fn
-                    reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
-                    reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                    reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                    reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                     -> Unit
                   render-app!
                   , &unit
                 let
                     refreshed $ typed/refresh updater
-                      assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                      assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                       , schema/store
-                  reset! *reel $ assert-type refreshed $ reel.typed/State reel.app.updater/Op (Map Dynamic Dynamic)
+                  reset! *reel $ assert-type refreshed $ reel.typed/State reel.app.updater/Op (Map Tag Dynamic)
                 hud! |ok~ |Ok
               hud! |error build-errors
             , &unit
@@ -242,7 +242,7 @@
           :code $ quote $ defn render-app! ()
             render-with! mount-target
               fn () $ comp-container
-                assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                 , on-control!
               , dispatch!
           :examples $ []
@@ -310,13 +310,13 @@
                   if (struct? raw) (&struct:to-map raw) raw
               List Task
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic)
+          :schema $ quote $ Fn (Map Tag Dynamic)
             -> $ List Task
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
               (:states cursor s)
-                decode-map-as (update-states store cursor s) (Map Dynamic Dynamic)
+                decode-map-as (update-states store cursor s) (Map Tag Dynamic)
               (:task/add text)
                 .assoc store :tasks $ .append (read-tasks store) (Task :id op-id :text text :done? false)
               (:task/toggle id)
@@ -341,8 +341,8 @@
                 host/console-warn! $ str "|Unknown op" op
                 , store
           :examples $ []
-          :schema $ quote $ Fn (Map Dynamic Dynamic) reel.app.updater/Op String Number
-            -> $ Map Dynamic Dynamic
+          :schema $ quote $ Fn (Map Tag Dynamic) reel.app.updater/Op String Number
+            -> $ Map Tag Dynamic
             :features :js-ffi
           :tests $ []
             %{} 'TestEntry
@@ -373,10 +373,10 @@
                     {}
                       :states $ {}
                       :tasks $ []
-                    Map Dynamic Dynamic
+                    Map Tag Dynamic
                   initial-reel $ decode-map-as
                     .to-map $ reel.typed/new-reel initial-store
-                    reel.typed/State reel.app.updater/Op $ Map Dynamic Dynamic
+                    reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
                   added $ reel.typed/record-op updater initial-reel (reel.app.updater/Op :task/add "|原文") |stable-031 100
                   edited $ reel.typed/record-op updater added (reel.app.updater/Op :task/edit |stable-031 "|改写🐈") |edit-031 101
                   paused $ reel.typed/recall updater edited 0
