@@ -427,7 +427,7 @@
                     respo.core/create-keyed-element :div ({}) (reel.util/map-indexed-dynamic params render-action-item)
                 <> $ str action
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
+          :schema $ quote $ Fn T (-> respo.schema/Component) (:generics T)
         'comp-record-item $ %{} 'CodeEntry
           :doc "|接收展示入口已校验的历史 List；只在开放 action 的展示出口将缺失首项编码为原 nil。"
           :code $ quote $ defcomp comp-record-item (record pointed? idx on-control)
@@ -444,9 +444,10 @@
                 (:some action) (comp-action action)
                 (:none) (comp-action |)
           :examples $ []
-          :schema $ quote $ Fn (List Dynamic) Bool Number
+          :schema $ quote $ Fn (List T) Bool Number
             Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
+            :generics T
         'comp-records $ %{} 'CodeEntry
           :doc "|逐条校验历史 List；memo 保留原 false/0/空串等记录 key，整组渲染坐标由 data-list-> 适配。需在 managed memo 帧内建树。nil key 的原拒绝行为及 memo bypass 保留。"
           :code $ quote $ defcomp comp-records (records pointer on-control)
@@ -587,7 +588,7 @@
           :code $ quote $ defn literal? (x)
             or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Bool) (:features :js-ffi)
+          :schema $ quote $ Fn T (-> Bool) (:generics T) (:features :js-ffi)
         'on-recall $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn on-recall (idx on-control)
             reel.comp.records/control-handler (reel.typed/Control :recall idx) on-control
@@ -608,14 +609,14 @@
                   :on-click $ fn (e d!) (tab-echo! item)
                 <> $ str $ type-of item
           :examples $ []
-          :schema $ quote $ Fn Number Dynamic (-> respo.schema/ChildPair)
+          :schema $ quote $ Fn Number T (-> respo.schema/ChildPair) (:generics T)
         'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shallow-data? (item)
             or (literal? item)
               and (list? item) (every? item literal?)
               and (map? item) (every? item shallow-data?)
           :examples $ []
-          :schema $ quote $ Fn Dynamic (-> Bool) (:features :js-ffi)
+          :schema $ quote $ Fn T (-> Bool) (:generics T) (:features :js-ffi)
         'style-action-sep $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle style-action-sep
             {} $ |& $ {} (:margin "|0 4px")
