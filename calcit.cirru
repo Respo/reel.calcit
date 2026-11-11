@@ -46,8 +46,8 @@
               {} $ :style style-container
               div $ {} (:class-name css-done)
                 :style $ if (:done? task)
-                  Option :some $ {} $ :background-color (hsl 42 100 60)
-                  Option :none
+                  Some $ {} $ :background-color (hsl 42 100 60)
+                  , None
                 :on-click $ fn (e d!)
                   d! $ reel.app.updater/Op :task/toggle $ :id task
               space-x 8
@@ -155,7 +155,7 @@
           :code $ quote $ defref *reel (typed/new-reel schema/store)
           :examples $ []
           :schema $ quote $ Ref
-            reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+            typed/State reel.app.updater/Op $ Map Tag Dynamic
         'apply-control-op $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn apply-control-op (op)
             match (reel.app.updater/decode-op op)
@@ -170,7 +170,7 @@
                   , @*reel
           :examples $ []
           :schema $ quote $ Fn reel.app.updater/Op
-            -> $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+            -> $ typed/State reel.app.updater/Op $ Map Tag Dynamic
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
@@ -216,7 +216,7 @@
               , control
             , &unit
           :examples $ []
-          :schema $ quote $ Fn reel.typed/Control (-> Unit)
+          :schema $ quote $ Fn typed/Control (-> Unit)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -281,25 +281,25 @@
           :code $ quote $ defn decode-op (raw)
             match raw
               (:states v0 v1)
-                Option :some $ Op :states
+                Some $ Op :states
                   decode-map-as v0 $ List respo.schema/CoordKey
                   , v1
               (:task/add v0)
-                Option :some $ Op :task/add $ decode-map-as v0 String
+                Some $ Op :task/add $ decode-map-as v0 String
               (:task/toggle v0)
-                Option :some $ Op :task/toggle $ decode-map-as v0 String
+                Some $ Op :task/toggle $ decode-map-as v0 String
               (:task/edit v0 v1)
-                Option :some $ Op :task/edit (decode-map-as v0 String) (decode-map-as v1 String)
+                Some $ Op :task/edit (decode-map-as v0 String) (decode-map-as v1 String)
               (:task/remove v0)
-                Option :some $ Op :task/remove $ decode-map-as v0 String
+                Some $ Op :task/remove $ decode-map-as v0 String
               (:try v0 v1)
-                Option :some $ Op :try
+                Some $ Op :try
                   decode-map-as v0 $ Map Tag Dynamic
                   decode-map-as v1 $ Map Tag Dynamic
-              _ $ Option :none
+              _ None
           :examples $ []
-          :schema $ quote $ Fn reel.app.updater/Op
-            -> $ Option reel.app.updater/Op
+          :schema $ quote $ Fn Op
+            -> $ Option Op
         'read-tasks $ %{} 'CodeEntry
           :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
           :code $ quote $ defn read-tasks (store)
@@ -341,7 +341,7 @@
                 host/console-warn! $ str "|Unknown op" op
                 , store
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic) reel.app.updater/Op String Number
+          :schema $ quote $ Fn (Map Tag Dynamic) Op String Number
             -> $ Map Tag Dynamic
             :features :js-ffi
           :tests $ []
@@ -424,7 +424,7 @@
                     {} $ :class-name css/row-middle
                     <> $ str tag
                     space-x 2
-                    list-> ({}) (reel.util/map-indexed-dynamic params render-action-item)
+                    respo.core/create-keyed-element :div ({}) (reel.util/map-indexed-dynamic params render-action-item)
                 <> $ str action
           :examples $ []
           :schema $ quote $ Fn Dynamic (-> respo.schema/Component)
@@ -459,7 +459,7 @@
                     hint-fn $ Fn Number Dynamic $ -> (Tuple Dynamic respo.schema/Component)
                     let
                         checked-record $ decode-map-as record $ List Dynamic
-                        pointed? $ = pointer $ Option :some idx
+                        pointed? $ = pointer $ Some idx
                       match (last checked-record)
                         (:some key)
                           [] key $ memo-comp-by key comp-record-item checked-record pointed? idx on-control
@@ -483,7 +483,7 @@
                   hint-fn $ Fn (List Dynamic)
                     -> $ List respo.schema/ChildPair
                   let
-                      view $ comp-records records (Option :none) ignore-control
+                      view $ comp-records records None ignore-control
                       root $ element $ .unwrap (:tree view)
                       list-pair $ .unwrap $ first (:children root)
                       list-element $ element $ .unwrap (:node list-pair)
@@ -529,7 +529,7 @@
               respo.core/clear-cache!
               let
                   html $ respo.render.html/make-string $ respo.memo/with-memo-frame
-                    fn () $ comp-records records (Option :none) ignore-control
+                    fn () $ comp-records records None ignore-control
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\"></span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">false</span>"
                 assert= true $ .includes? html "|<span data-comp=\"comp-action\">0</span>"
@@ -541,21 +541,19 @@
                 do
                   respo.memo/with-memo-frame $ fn () $ comp-records
                     [] $ []
-                    Option :none
-                    , ignore-control
+                    , None ignore-control
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
                   respo.memo/with-memo-frame $ fn () $ comp-records
                     [] $ [] nil
-                    Option :none
-                    , ignore-control
+                    , None ignore-control
                   , :accepted
                 fn (error) :rejected
               assert= :rejected $ try
                 do
-                  respo.memo/with-memo-frame $ fn () $ comp-records ([] 42) (Option :none) ignore-control
+                  respo.memo/with-memo-frame $ fn () $ comp-records ([] 42) None ignore-control
                   , :accepted
                 fn (error) :rejected
             :tags $ #{} :js-only :legacy-boundary :unit
@@ -602,7 +600,7 @@
             :features :js-ffi
         'render-action-item $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-action-item (idx item)
-            [] idx $ if (shallow-data? item)
+            respo.core/keyed-element idx $ if (shallow-data? item)
               <> (to-lispy-string item) style-action-sep
               div
                 {} (:class-name style-type-tag)
@@ -610,8 +608,7 @@
                   :on-click $ fn (e d!) (tab-echo! item)
                 <> $ str $ type-of item
           :examples $ []
-          :schema $ quote $ Fn Number Dynamic
-            -> $ List reel.comp.records/ActionEntryPart
+          :schema $ quote $ Fn Number Dynamic (-> respo.schema/ChildPair)
         'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shallow-data? (item)
             or (literal? item)
@@ -628,7 +625,7 @@
           :code $ quote $ def style-data
             {} (:max-width 100) (:overflow :hidden) (:text-overflow :ellipsis) (:white-space :nowrap) (:display :inline-block) (:vertical-align :middle)
           :examples $ []
-          :schema $ quote $ Map Tag reel.comp.records/StyleDataValue
+          :schema $ quote $ Map Tag StyleDataValue
         'style-type-tag $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle style-type-tag
             {}
@@ -713,9 +710,9 @@
                             stopped-pointer $ reel.util/unwrap-option pointer
                             if (> stopped-pointer 0)
                               get records $ dec stopped-pointer
-                              Option :none
+                              , None
                           last records
-                      if (option:some? record)
+                      if (.some? record)
                         let[] (action op-id op-time)
                           decode-map-as (reel.util/unwrap-option record) 'List
                           div
@@ -732,14 +729,14 @@
                                 <> $ str op-id
                               if
                                 and (.some? pointer)
-                                  not= pointer $ Option :some 0
-                                Option :some $ span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
+                                  not= pointer $ Some 0
+                                Some $ span $ {} (:inner-text |Remove) (:class-name css/font-fancy)
                                   :style $ {} (:cursor :pointer) (:font-size 12)
                                     :color $ hsl 20 100 70
                                   :on-click $ reel.comp.records/control-handler
                                     reel.typed/Control :remove $ .unwrap pointer
                                     , on-control
-                                Option :none
+                                , None
                             div
                               {} (:class-name css/expand)
                                 :style $ {} (:padding "|8px 0") (:white-space :pre)
@@ -922,14 +919,13 @@
                               let
                                   new-store $ play-records (reel.schema/require-field reel :base) records updater idx
                                 {}
-                                  :pointer $ Option :some idx
+                                  :pointer $ Some idx
                                   :stopped? true
                                   :store new-store
                             (:reel/run)
                               let
                                   new-store $ play-records (reel.schema/require-field reel :base) records updater $ count records
-                                {} (:store new-store) (:stopped? false)
-                                  :pointer $ Option :none
+                                {} (:store new-store) (:stopped? false) (:pointer None)
                             (:reel/step)
                               if stopped?
                                 if
@@ -943,27 +939,27 @@
                                           next-record $ &list:nth records step-pointer
                                         let[] (old-op old-id old-time) (decode-map-as next-record 'List)
                                           {}
-                                            :pointer $ Option :some next-pointer
+                                            :pointer $ Some next-pointer
                                             :store $ updater (reel.schema/require-field reel :store) old-op old-id old-time
                                       {}
                                         :store $ reel.schema/require-field reel :base
-                                        :pointer $ Option :some 0
+                                        :pointer $ Some 0
                                 , nil
                             (:reel/merge)
                               if stopped?
                                 if
-                                  = (Option :some 0) pointer
+                                  = (Some 0) pointer
                                   {}
                                   let
                                       merge-pointer $ reel.util/unwrap-option pointer
                                       new-store $ play-records (reel.schema/require-field reel :base) records updater merge-pointer
                                     {} (:store new-store) (:base new-store)
-                                      :pointer $ Option :some 0
+                                      :pointer $ Some 0
                                       :records $ slice-records-from records merge-pointer
                                       :merged? true
                                 {}
                                   :base $ reel.schema/require-field reel :store
-                                  :pointer $ Option :none
+                                  :pointer None
                                   :records $ []
                                   :merged? true
                             (:reel/reset)
@@ -971,7 +967,7 @@
                                 {} $ :records $ slice-records-until records (reel.util/unwrap-option pointer)
                                 {}
                                   :store $ reel.schema/require-field reel :base
-                                  :pointer $ Option :none
+                                  :pointer None
                                   :records $ []
                                   :stopped? false
                             (:reel/remove idx)
@@ -1137,14 +1133,14 @@
                     :stopped? Bool
                   nominal $ LegacyRefresh :base |base :store |base :records ([]) :merged? false :stopped? false
                   refreshed-nominal $ refresh-reel nominal |next updater
-                assert= (Option :some 1) (get refreshed |extra)
-                assert= (Option :some false) (get refreshed 42)
+                assert= (Some 1) (get refreshed |extra)
+                assert= (Some false) (get refreshed 42)
                 assert= |next $ reel.schema/require-field refreshed :base
                 assert= |next $ reel.schema/require-field refreshed :store
-                assert= (Option :none) (get source :base)
-                assert= (Option :none) (get source :store)
+                assert= None $ get source :base
+                assert= None $ get source :store
                 assert= (struct-definition nominal)
-                  if (struct? refreshed-nominal) (struct-definition refreshed-nominal) (Option :none)
+                  if (struct? refreshed-nominal) (struct-definition refreshed-nominal) None
                 assert= |next $ reel.schema/require-field refreshed-nominal :base
                 assert= |next $ reel.schema/require-field refreshed-nominal :store
                 assert= |base $ reel.schema/require-field nominal :base
@@ -1210,9 +1206,7 @@
                   hint-fn $ Fn String $ -> String
                   , error
               assert= "|Reel records must be a List" $ try
-                let ()
-                  checked-records $ Option :none
-                  , |unexpected-success
+                let () (checked-records None) |unexpected-success
                 fn (error)
                   hint-fn $ Fn String $ -> String
                   , error
@@ -1228,14 +1222,14 @@
                 (:some v)
                   cond
                       nil? v
-                      Option :none
-                    (and (enum? v) (= (&enum:definition v) (Option :some Option)))
+                      , None
+                    (and (enum? v) (= (&enum:definition v) (Some Option)))
                       if
                         = :some $ &enum:nth v 0
-                        Option :some $ &enum:nth v 1
-                        Option :none
-                    true $ Option :some v
-                (:none) (Option :none)
+                        Some $ &enum:nth v 1
+                        , None
+                    true $ Some v
+                (:none) None
           :examples $ []
           :schema $ quote $ Fn Dynamic Tag
             -> $ Option Dynamic
@@ -1243,29 +1237,29 @@
             %{} 'TestEntry (:name |legacy-map-keeps-mixed-key-boundary)
               :code $ quote $ let
                   source $ {} (:value "|中文🐈") (|extra 1) (42 false)
-                assert= (Option :some "|中文🐈") (field-option source :value)
-                assert= (Option :none) (field-option source :missing)
+                assert= (Some "|中文🐈") (field-option source :value)
+                assert= None $ field-option source :missing
                 assert= 3 $ count source
               :tags $ #{} :legacy-boundary :unit
             %{} 'TestEntry (:name |nil-is-none-false-and-zero-are-present)
               :code $ quote $ let
                   source $ {} (:nil-value nil) (:false-value false) (:zero-value 0)
-                    :option-value $ Option :some 3
-                    :none-value $ Option :none
-                assert= (Option :none) (field-option source :nil-value)
-                assert= (Option :some false) (field-option source :false-value)
-                assert= (Option :some 0) (field-option source :zero-value)
-                assert= (Option :some 3) (field-option source :option-value)
-                assert= (Option :none) (field-option source :none-value)
+                    :option-value $ Some 3
+                    :none-value None
+                assert= None $ field-option source :nil-value
+                assert= (Some false) (field-option source :false-value)
+                assert= (Some 0) (field-option source :zero-value)
+                assert= (Some 3) (field-option source :option-value)
+                assert= None $ field-option source :none-value
               :tags $ #{} :legacy-boundary :unit
             %{} 'TestEntry
               :name |nominal-record-fields-and-missing-key-remain-compatible
               :code $ quote $ let
                   record $ reel.typed/Record :op 42 :id "|记录🐈" :time 7
-                assert= (Option :some 42) (field-option record :op)
-                assert= (Option :some "|记录🐈") (field-option record :id)
-                assert= (Option :some 7) (field-option record :time)
-                assert= (Option :none) (field-option record :missing)
+                assert= (Some 42) (field-option record :op)
+                assert= (Some "|记录🐈") (field-option record :id)
+                assert= (Some 7) (field-option record :time)
+                assert= None $ field-option record :missing
               :tags $ #{} :legacy-boundary :unit
             %{} 'TestEntry (:name |non-struct-non-map-input-is-rejected)
               :code $ quote $ do
@@ -1309,21 +1303,19 @@
           :code $ quote $ defn pointer-of (reel)
             match (field-option reel :pointer)
               (:some pointer)
-                Option :some $ decode-map-as pointer 'Number
-              (:none) (Option :none)
+                Some $ decode-map-as pointer 'Number
+              (:none) None
           :examples $ []
           :schema $ quote $ Fn Dynamic
             -> $ Option Number
           :tests $ [] $ %{} 'TestEntry (:name |legacy-and-option-pointers)
             :code $ quote $ do
-              assert= (Option :none)
-                pointer-of $ {} $ :pointer nil
-              assert= (Option :none)
-                pointer-of $ {} $ :pointer (Option :none)
-              assert= (Option :some 2)
+              assert= None $ pointer-of $ {} (:pointer nil)
+              assert= None $ pointer-of $ {} (:pointer None)
+              assert= (Some 2)
                 pointer-of $ {} $ :pointer 2
-              assert= (Option :some 2)
-                pointer-of $ {} $ :pointer (Option :some 2)
+              assert= (Some 2)
+                pointer-of $ {} $ :pointer (Some 2)
             :tags $ #{} :legacy-boundary :unit
         'records-of $ %{} 'CodeEntry
           :doc "|Records of a legacy reel map; a missing or non-list container raises."
@@ -1338,7 +1330,7 @@
           :code $ quote $ def reel
             {}
               :records $ []
-              :pointer $ Option :none
+              :pointer None
               :stopped? false
               :display? false
               :merged? false
@@ -1460,7 +1452,9 @@
               assert= |base $ :store queued
               assert= |base57 $ :store running
               assert= false $ :stopped? running
-              assert= true $ option:none? $ :pointer running
+              assert= true $
+                :pointer running
+                , .none?
               assert=
                 [] (typed/new-record 5 |one 10) (typed/new-record 7 |two 20)
                 :records running
@@ -1508,18 +1502,18 @@
               (:remove pointer)
                 if
                   and
-                    option:some? $ :pointer reel
+                    .some? $ :pointer reel
                     =
-                      option:unwrap $ :pointer reel
+                      .unwrap $ :pointer reel
                       , pointer
                   remove-current updater reel
                   , reel
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
-            , reel.typed/Control
-              -> $ reel.typed/State Op Store
+            State Op Store
+            , Control
+              -> $ State Op Store
               :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |dispatch-equivalence)
             :code $ quote $ let
@@ -1551,57 +1545,54 @@
           :code $ quote $ defn decode-control (op)
             match op
               (:reel/toggle)
-                Option :some $ Control :toggle
+                Some $ Control :toggle
               (:reel/recall pointer)
                 if (number? pointer)
-                  Option :some $ Control :recall pointer
-                  Option :none
+                  Some $ Control :recall pointer
+                  , None
               (:reel/run)
-                Option :some $ Control :run
+                Some $ Control :run
               (:reel/step)
-                Option :some $ Control :step
+                Some $ Control :step
               (:reel/merge)
-                Option :some $ Control :merge
+                Some $ Control :merge
               (:reel/reset)
-                Option :some $ Control :reset
+                Some $ Control :reset
               (:reel/remove pointer)
                 if (number? pointer)
-                  Option :some $ Control :remove pointer
-                  Option :none
-              _ $ Option :none
+                  Some $ Control :remove pointer
+                  , None
+              _ None
           :examples $ []
           :schema $ quote $ Fn AnyEnum
-            -> $ calcit.core/Option reel.typed/Control
+            -> $ Option Control
             :open :reflect
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
-                Option :some $ %:: Control :toggle
+                Some $ %:: Control :toggle
                 decode-control $ :: :reel/toggle
               assert=
-                Option :some $ %:: Control :recall 2
+                Some $ %:: Control :recall 2
                 decode-control $ :: :reel/recall 2
               assert=
-                Option :some $ %:: Control :run
+                Some $ %:: Control :run
                 decode-control $ :: :reel/run
               assert=
-                Option :some $ %:: Control :step
+                Some $ %:: Control :step
                 decode-control $ :: :reel/step
               assert=
-                Option :some $ %:: Control :merge
+                Some $ %:: Control :merge
                 decode-control $ :: :reel/merge
               assert=
-                Option :some $ %:: Control :reset
+                Some $ %:: Control :reset
                 decode-control $ :: :reel/reset
               assert=
-                Option :some $ %:: Control :remove 1
+                Some $ %:: Control :remove 1
                 decode-control $ :: :reel/remove 1
-              assert= (Option :none)
-                decode-control $ :: :app/update |text
-              assert= (Option :none)
-                decode-control $ :: :reel/recall |bad
-              assert= (Option :none)
-                decode-control $ :: :reel/remove |bad
+              assert= None $ decode-control $ :: :app/update |text
+              assert= None $ decode-control $ :: :reel/recall |bad
+              assert= None $ decode-control $ :: :reel/remove |bad
         'merge-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn merge-reel (updater reel)
             if (:stopped? reel)
@@ -1611,18 +1602,18 @@
                     base $ play-records updater (:base reel) (:records reel) pointer
                   struct-with reel (:base base) (:store base)
                     :records $ &list:slice (:records reel) pointer $ count (:records reel)
-                    :pointer $ Option :some 0
+                    :pointer $ Some 0
                     :merged? true
               struct-with reel
                 :base $ :store reel
                 :records $ []
-                :pointer $ Option :none
+                :pointer None
                 :merged? true
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
-            -> $ reel.typed/State Op Store
+            State Op Store
+            -> $ State Op Store
             :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |paused-and-live-merge)
             :code $ quote $ let
@@ -1640,7 +1631,7 @@
               do
                 assert= |base5 $ :base merged
                 assert= |base5 $ :store merged
-                assert= (Option :some 0) (:pointer merged)
+                assert= (Some 0) (:pointer merged)
                 assert=
                   [] $ new-record 7 |two 20
                   :records merged
@@ -1660,10 +1651,10 @@
             :generics Op
         'new-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn new-reel (base)
-            State :base base :store base :records ([]) :pointer (Option :none) :stopped? false :display? false :merged? false
+            State :base base :store base :records ([]) :pointer None :stopped? false :display? false :merged? false
           :examples $ []
           :schema $ quote $ Fn Store
-            -> $ reel.typed/State Op Store
+            -> $ State Op Store
             :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |empty-typed-state)
             :code $ quote $ let
@@ -1672,7 +1663,9 @@
                 assert= |initial $ :base reel
                 assert= |initial $ :store reel
                 assert= 0 $ count $ :records reel
-                assert= true $ option:none? $ :pointer reel
+                assert= true $
+                  :pointer reel
+                  , .none?
                 assert= false $ :stopped? reel
                 assert= false $ :display? reel
                 assert= false $ :merged? reel
@@ -1704,14 +1697,14 @@
               = pointer $ floor pointer
             struct-with reel
               :store $ play-records updater (:base reel) (:records reel) pointer
-              :pointer $ Option :some pointer
+              :pointer $ Some pointer
               :stopped? true
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
+            State Op Store
             , Number
-              -> $ reel.typed/State Op Store
+              -> $ State Op Store
               :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |recall-queue-resume)
             :code $ quote $ let
@@ -1727,12 +1720,14 @@
               do
                 assert= |base $ :store stopped
                 assert= true $ :stopped? stopped
-                assert= (Option :some 0) (:pointer stopped)
+                assert= (Some 0) (:pointer stopped)
                 assert= |base $ :store queued
                 assert= 2 $ count $ :records queued
                 assert= |base57 $ :store running
                 assert= false $ :stopped? running
-                assert= true $ option:none? $ :pointer running
+                assert= true $
+                  :pointer running
+                  , .none?
                 assert= |base5 $ :store $ recall updater running 1
                 assert= |base57 $ :store $ recall updater running 2
         'record-op $ %{} 'CodeEntry (:doc |)
@@ -1747,9 +1742,9 @@
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
+            State Op Store
             , Op String Number
-              -> $ reel.typed/State Op Store
+              -> $ State Op Store
               :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |live-and-paused)
             :code $ quote $ let
@@ -1781,9 +1776,9 @@
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
+            State Op Store
             , Store
-              -> $ reel.typed/State Op Store
+              -> $ State Op Store
               :generics Op Store
         'remove-current $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn remove-current (updater reel)
@@ -1800,8 +1795,8 @@
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
-            -> $ reel.typed/State Op Store
+            State Op Store
+            -> $ State Op Store
             :generics Op Store
         'reset-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reset-reel (reel)
@@ -1811,11 +1806,11 @@
               struct-with reel
                 :store $ :base reel
                 :records $ []
-                :pointer $ Option :none
+                :pointer None
                 :stopped? false
           :examples $ []
-          :schema $ quote $ Fn (reel.typed/State Op Store)
-            -> $ reel.typed/State Op Store
+          :schema $ quote $ Fn (State Op Store)
+            -> $ State Op Store
             :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |reset-and-refresh)
             :code $ quote $ let
@@ -1830,7 +1825,7 @@
               do
                 assert= |base5 $ :store reset-paused
                 assert= 1 $ count $ :records reset-paused
-                assert= (Option :some 1) (:pointer reset-paused)
+                assert= (Some 1) (:pointer reset-paused)
                 assert= |base $ :store reset-live
                 assert= 0 $ count $ :records reset-live
                 assert= |next57 $ :store $ refresh updater live |next
@@ -1845,13 +1840,13 @@
             struct-with reel
               :store $ play-records updater (:base reel) (:records reel)
                 count $ :records reel
-              :pointer $ Option :none
+              :pointer None
               :stopped? false
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
-            -> $ reel.typed/State Op Store
+            State Op Store
+            -> $ State Op Store
             :generics Op Store
         'step $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn step (updater reel)
@@ -1865,19 +1860,19 @@
                 if
                   < pointer $ count $ :records reel
                   struct-with reel
-                    :pointer $ Option :some $ inc pointer
+                    :pointer $ Some $ inc pointer
                     :store $ play-records updater (:store reel)
                       &list:slice (:records reel) pointer $ inc pointer
                       , 1
                   struct-with reel
-                    :pointer $ Option :some 0
+                    :pointer $ Some 0
                     :store $ :base reel
               , reel
           :examples $ []
           :schema $ quote $ Fn
             Fn Store Op String Number $ -> Store
-            reel.typed/State Op Store
-            -> $ reel.typed/State Op Store
+            State Op Store
+            -> $ State Op Store
             :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |stepping-and-removal)
             :code $ quote $ let
@@ -1898,7 +1893,7 @@
                 assert= |base57 $ :store step-two
                 assert= |base $ :store $ step updater (step updater step-two)
                 assert= |base5 $ :store removed
-                assert= (Option :some 1) (:pointer removed)
+                assert= (Some 1) (:pointer removed)
                 assert=
                   [] (new-record 5 |one 10) (new-record 9 |three 30)
                   :records removed
@@ -1912,8 +1907,8 @@
           :code $ quote $ defn toggle-display (reel)
             struct-with reel $ :display? $ not (:display? reel)
           :examples $ []
-          :schema $ quote $ Fn (reel.typed/State Op Store)
-            -> $ reel.typed/State Op Store
+          :schema $ quote $ Fn (State Op Store)
+            -> $ State Op Store
             :generics Op Store
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.typed
@@ -1934,7 +1929,7 @@
               :display? $ :display? reel
               :merged? $ :merged? reel
           :examples $ []
-          :schema $ quote $ Fn (reel.typed/State Op Store)
+          :schema $ quote $ Fn (typed/State Op Store)
             -> $ Map Tag Dynamic
             :generics Op Store
           :tests $ []
@@ -1944,7 +1939,7 @@
                 assert=
                   {} (:base |base) (:store |base)
                     :records $ []
-                    :pointer $ Option :none
+                    :pointer None
                     :stopped? false
                     :display? false
                     :merged? false
@@ -1952,12 +1947,12 @@
             %{} 'TestEntry (:name |present-pointer-and-records-keep-legacy-shape)
               :code $ quote $ let
                   records $ [] (typed/Record :op 7 :id |first :time 10) (typed/Record :op 9 :id |second :time 20)
-                  zero $ typed/State :base |base :store |current :records records :pointer (Option :some 0) :stopped? true :display? true :merged? false
-                  later $ typed/State :base |base :store |current :records records :pointer (Option :some 2) :stopped? true :display? false :merged? true
+                  zero $ typed/State :base |base :store |current :records records :pointer (Some 0) :stopped? true :display? true :merged? false
+                  later $ typed/State :base |base :store |current :records records :pointer (Some 2) :stopped? true :display? false :merged? true
                 assert=
                   {} (:base |base) (:store |current)
                     :records $ [] ([] 7 |first 10) ([] 9 |second 20)
-                    :pointer $ Option :some 0
+                    :pointer $ Some 0
                     :stopped? true
                     :display? true
                     :merged? false
@@ -1965,7 +1960,7 @@
                 assert=
                   {} (:base |base) (:store |current)
                     :records $ [] ([] 7 |first 10) ([] 9 |second 20)
-                    :pointer $ Option :some 2
+                    :pointer $ Some 2
                     :stopped? true
                     :display? false
                     :merged? true
@@ -1986,7 +1981,7 @@
         'browser-window $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn browser-window () (browser/window-host)
           :examples $ []
-          :schema $ quote $ Fn (-> js-ffi.browser/WindowHost) (:features :js-ffi)
+          :schema $ quote $ Fn (-> browser/WindowHost) (:features :js-ffi)
         'keyboard-code $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn keyboard-code (keyboard)
             let
@@ -2059,10 +2054,10 @@
         'tab-echo! $ %{} 'CodeEntry
           :doc "|Open the data in a new tab: :json or :edn as plain text, or by default in the EDN tree viewer. Moved from respo-ui.util so Reel no longer depends on respo-ui."
           :code $ quote $ defn tab-echo! (data format)
-            match (option:unwrap-or format :viewer)
+            match (format .unwrap-or :viewer)
               :json $ let
                   content $ js-ffi.contract/expect-string |JSON.stringify $ js/JSON.stringify (to-js-data data) js/undefined 2
-                option:fold (browser/window-open |about:blank)
+                (browser/window-open |about:blank) .fold
                   fn () &unit
                   fn (window)
                     let
@@ -2072,7 +2067,7 @@
                     , &unit
               :edn $ let
                   content $ format-cirru-edn data
-                option:fold (browser/window-open |about:blank)
+                (browser/window-open |about:blank) .fold
                   fn () &unit
                   fn (window)
                     let
@@ -2083,7 +2078,7 @@
               _ $ let
                   content $ format-cirru-edn $ :: :tab-echo data
                   app |https://r.tiye.me/Memkits/edn-tree-viewer/?mode=dev
-                option:fold (browser/window-open app)
+                (browser/window-open app) .fold
                   fn () &unit
                   fn (window)
                     browser/set-timeout!
@@ -2095,20 +2090,18 @@
                     , &unit
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Dynamic (calcit.core/Option Tag) (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn Dynamic (Option Tag) (-> Unit) (:features :js-ffi)
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
             if (.some? o) (.unwrap o) (raise "|unexpected none")
           :examples $ []
-          :schema $ quote $ Fn (calcit.core/Option T) (-> T) (:generics T)
+          :schema $ quote $ Fn (Option T) (-> T) (:generics T)
           :tests $ [] $ %{} 'TestEntry (:name |preserves-option-payload)
             :code $ quote $ let ()
-              assert= 8 $ + 1 $ unwrap-option (Option :some 7)
-              assert= |value $ unwrap-option $ Option :some |value
+              assert= 8 $ + 1 $ unwrap-option (Some 7)
+              assert= |value $ unwrap-option $ Some |value
               assert= "|unexpected none" $ try
-                let ()
-                  unwrap-option $ Option :none
-                  , |unexpected-success
+                let () (unwrap-option None) |unexpected-success
                 fn (error)
                   hint-fn $ Fn String $ -> String
                   , error
