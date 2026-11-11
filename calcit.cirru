@@ -448,6 +448,23 @@
             Fn reel.typed/Control $ -> Unit
             -> respo.schema/Component
             :generics T
+          :tests $ [] $ %{} 'TestEntry (:name |typed-record-and-mixed-action)
+            :code $ quote $ let
+                ignore-control $ fn (_)
+                  hint-fn $ Fn reel.typed/Control $ -> Unit
+                  , &unit
+                record $ assert-type ([] |typed-action |record-id) (List String)
+                row $ comp-record-item record false 1 ignore-control
+                pairs $ map-indexed ([] 7 9) render-action-item
+                html $ respo.render.html/make-string $ comp-action (:: :mixed 7 |seven false)
+              assert= true $ .includes? (respo.render.html/make-string row) |typed-action
+              assert= 2 $ .len pairs
+              assert= 1 $ :key $ .unwrap (last pairs)
+              assert= true $ .includes? html |:mixed
+              assert= true $ .includes? html |>7<
+              assert= true $ .includes? html |seven
+              assert= true $ .includes? html |false
+            :tags $ #{} :js-only :unit
         'comp-records $ %{} 'CodeEntry
           :doc "|逐条校验历史 List；memo 保留原 false/0/空串等记录 key，整组渲染坐标由 data-list-> 适配。需在 managed memo 帧内建树。nil key 的原拒绝行为及 memo bypass 保留。"
           :code $ quote $ defcomp comp-records (records pointer on-control)
