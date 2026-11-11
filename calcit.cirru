@@ -161,7 +161,7 @@
             match (reel.app.updater/decode-op op)
               (:some checked)
                 typed/record-op updater
-                  assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                  assert-type @*reel $ typed/State reel.app.updater/Op $ Map Tag Dynamic
                   , checked (generate-id!)
                     :timestamp $ host/date-now-snapshot
               (:none)
@@ -186,8 +186,8 @@
           :code $ quote $ defn main! () (load-console-formatter!) (render-app!)
             add-watch! *reel :changes $ fn (reel prev)
               hint-fn $ Fn
-                reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
-                reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                typed/State reel.app.updater/Op $ Map Tag Dynamic
+                typed/State reel.app.updater/Op $ Map Tag Dynamic
                 -> Unit
               render-app!
               , &unit
@@ -196,7 +196,7 @@
                   hint-fn $ Fn $ -> Unit
                   println |Dispatch! $ :: :reel/toggle
                   reset! *reel $ typed/apply-control updater
-                    assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                    assert-type @*reel $ typed/State reel.app.updater/Op $ Map Tag Dynamic
                     typed/Control :toggle
                   , &unit
               listen-devtools-toggle! |k toggle!
@@ -212,7 +212,7 @@
           :doc "|Apply a devtools Control to the Reel state; comp-reel calls it instead of dispatching :reel/* events."
           :code $ quote $ defn on-control! (control) (println |Control! control)
             reset! *reel $ typed/apply-control updater
-              assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+              assert-type @*reel $ typed/State reel.app.updater/Op $ Map Tag Dynamic
               , control
             , &unit
           :examples $ []
@@ -223,16 +223,16 @@
               do (remove-watch! *reel :changes) (clear-cache!)
                 add-watch! *reel :changes $ fn (reel prev)
                   hint-fn $ Fn
-                    reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
-                    reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                    typed/State reel.app.updater/Op $ Map Tag Dynamic
+                    typed/State reel.app.updater/Op $ Map Tag Dynamic
                     -> Unit
                   render-app!
                   , &unit
                 let
                     refreshed $ typed/refresh updater
-                      assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                      assert-type @*reel $ typed/State reel.app.updater/Op $ Map Tag Dynamic
                       , schema/store
-                  reset! *reel $ assert-type refreshed $ reel.typed/State reel.app.updater/Op (Map Tag Dynamic)
+                  reset! *reel $ assert-type refreshed $ typed/State reel.app.updater/Op (Map Tag Dynamic)
                 hud! |ok~ |Ok
               hud! |error build-errors
             , &unit
@@ -242,7 +242,7 @@
           :code $ quote $ defn render-app! ()
             render-with! mount-target
               fn () $ comp-container
-                assert-type @*reel $ reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
+                assert-type @*reel $ typed/State reel.app.updater/Op $ Map Tag Dynamic
                 , on-control!
               , dispatch!
           :examples $ []
@@ -1490,11 +1490,11 @@
           :examples $ []
           :schema $ quote EnumDef
         'Record $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defstruct Record ([] Op) (:op Op) (:id String) (:time Number)
+          :code $ quote $ defstruct Record (:generics Op) (:op Op) (:id String) (:time Number)
           :examples $ []
           :schema $ quote StructDef
         'State $ %{} 'CodeEntry (:doc |)
-          :code $ quote $ defstruct State ([] Op Store) (:base Store) (:store Store)
+          :code $ quote $ defstruct State (:generics Op Store) (:base Store) (:store Store)
             :records $ List $ reel.typed/Record Op
             :pointer $ Option Number
             :stopped? Bool
@@ -1540,7 +1540,7 @@
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base) (reel.typed/State Number String)
+                    assert-type (new-reel |base) (State Number String)
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1640,7 +1640,7 @@
                   str store op
                 live $ record-op updater
                   record-op updater
-                    assert-type (new-reel |base) (reel.typed/State Number String)
+                    assert-type (new-reel |base) (State Number String)
                     , 5 |one 10
                   , 7 |two 20
                 paused $ recall updater live 1
@@ -1676,7 +1676,7 @@
             :generics Op Store
           :tests $ [] $ %{} 'TestEntry (:name |empty-typed-state)
             :code $ quote $ let
-                reel $ assert-type (new-reel |initial) (reel.typed/State Number String)
+                reel $ assert-type (new-reel |initial) (State Number String)
               do
                 assert= |initial $ :base reel
                 assert= |initial $ :store reel
@@ -1730,7 +1730,7 @@
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 live $ record-op updater
-                  assert-type (new-reel |base) (reel.typed/State Number String)
+                  assert-type (new-reel |base) (State Number String)
                   , 5 |one 10
                 stopped $ recall updater live 0
                 queued $ record-op updater stopped 7 |two 20
@@ -1769,7 +1769,7 @@
                 updater $ fn (store op id time)
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
-                initial $ assert-type (new-reel |base) (reel.typed/State Number String)
+                initial $ assert-type (new-reel |base) (State Number String)
                 live $ record-op updater initial 5 |id-1 100
                 paused $ record-op updater
                   struct-with live $ :stopped? true
@@ -1835,7 +1835,7 @@
                 updater $ fn (store op id time)
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
-                initial $ assert-type (new-reel |base) (reel.typed/State Number String)
+                initial $ assert-type (new-reel |base) (State Number String)
                 live $ record-op updater (record-op updater initial 5 |one 10) 7 |two 20
                 paused $ recall updater live 1
                 reset-paused $ reset-reel paused
@@ -1898,7 +1898,7 @@
                   hint-fn $ Fn String Number String Number $ -> String
                   str store op
                 one $ record-op updater
-                  assert-type (new-reel |base) (reel.typed/State Number String)
+                  assert-type (new-reel |base) (State Number String)
                   , 5 |one 10
                 live $ record-op updater (record-op updater one 7 |two 20) 9 |three 30
                 zero $ recall updater live 0
@@ -1939,7 +1939,7 @@
               :store $ :store reel
               :records $ map (:records reel)
                 fn (record)
-                  hint-fn $ Fn (reel.typed/Record Op)
+                  hint-fn $ Fn (typed/Record Op)
                     -> $ List Dynamic
                   [] (:op record) (:id record) (:time record)
               :pointer $ :pointer reel
@@ -1953,7 +1953,7 @@
           :tests $ []
             %{} 'TestEntry (:name |legacy-view-shape)
               :code $ quote $ let
-                  initial $ assert-type (typed/new-reel |base) (reel.typed/State Number String)
+                  initial $ assert-type (typed/new-reel |base) (typed/State Number String)
                 assert=
                   {} (:base |base) (:store |base)
                     :records $ []
