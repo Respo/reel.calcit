@@ -1941,7 +1941,7 @@
               :records $ map (:records reel)
                 fn (record)
                   hint-fn $ Fn (typed/Record Op)
-                    -> $ List Dynamic
+                    -> $ Tuple Op String Number
                   [] (:op record) (:id record) (:time record)
               :pointer $ :pointer reel
               :stopped? $ :stopped? reel

@@ -4,7 +4,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.11.1
 
-配对正式 Calcit / `@calcit/procs` **0.42.0**，Respo 仍是 0.19.5。按 0.42.0 效果边界，`reel.core/reel-updater` 的 `Fn` schema 声明 `:state`；在应用里调用它的 updater / dispatch 函数也需要声明 `:state`，否则 0.42 会给出 `W_STATE_FEATURE_REQUIRED` 提示（`calcit fix --rule effect-features-v1` 可一次补齐）。Demo 的 `dispatch!`、`on-control!`、`render-app!` 等同时补了 `:io` / `:state`。
+配对正式 Calcit / `@calcit/procs` **0.42.1**，Respo 仍是 0.19.5。按 0.42.1 效果边界，`reel.core/reel-updater` 的 `Fn` schema 声明 `:state`；在应用里调用它的 updater / dispatch 函数也需要声明 `:state`，否则 0.42 会给出 `W_STATE_FEATURE_REQUIRED` 提示（`calcit fix --rule effect-features-v1` 可一次补齐）。Demo 的 `dispatch!`、`on-control!`、`render-app!` 等同时补了 `:io` / `:state`。
 
 ## 0.11.0
 
