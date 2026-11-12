@@ -2,6 +2,10 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
+## 0.11.1
+
+配对正式 Calcit / `@calcit/procs` **0.42.0**，Respo 仍是 0.19.5。按 0.42.0 效果边界，`reel.core/reel-updater` 的 `Fn` schema 声明 `:state`；在应用里调用它的 updater / dispatch 函数也需要声明 `:state`，否则 0.42 会给出 `W_STATE_FEATURE_REQUIRED` 提示（`calcit fix --rule effect-features-v1` 可一次补齐）。Demo 的 `dispatch!`、`on-control!`、`render-app!` 等同时补了 `:io` / `:state`。
+
 ## 0.11.0
 
 应用可以用 `reel.comp.reel/comp-controlled-reel reel styles on-control` 渲染开发面板。
@@ -20,7 +24,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 `reset! *reel $ reel.typed/apply-control updater @*reel control`，传给面板和 `listen-devtools!`。
 `decode-control` / `reel.core/reel-updater` 仍能处理应用自己派发的 `:reel/*` 操作，签名标 `(:open :reflect)`。
 Demo 的 Op 去掉了 `:reel/*` 变体。CI 的 respo-calcit-workflow 夹具指向其 main 上的 `208b7bb`（[模板 #69](https://github.com/calcit-lang/respo-calcit-workflow/pull/69)，使用具名操作和独立控制回调）。
-面板仍须在 managed memo 帧内构造。当前主线配对正式 Calcit / `@calcit/procs` **0.41.1**，升级后请重新安装依赖、生成 JS 并刷新。Demo 的 Store 顶层字段使用 Tag 键，组件状态值及公开历史数据保持原合同。
+面板仍须在 managed memo 帧内构造。0.11.0 配对正式 Calcit / `@calcit/procs` **0.41.1**，升级后请重新安装依赖、生成 JS 并刷新。Demo 的 Store 顶层字段使用 Tag 键，组件状态值及公开历史数据保持原合同。
 
 Demo 的任务交互发送具名 `Op`，任务列表使用 Respo 的 `ChildPair`。Enter 根据键名提交，热更新仍通过 HUD 报告结果。
 

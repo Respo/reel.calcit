@@ -171,12 +171,13 @@
           :examples $ []
           :schema $ quote $ Fn reel.app.updater/Op
             -> $ typed/State reel.app.updater/Op $ Map Tag Dynamic
+            :features :state
         'dispatch! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn dispatch! (op) (println |Dispatch! op)
             reset! *reel $ apply-control-op op
             , &unit
           :examples $ []
-          :schema $ quote $ Fn reel.app.updater/Op (-> Unit)
+          :schema $ quote $ Fn reel.app.updater/Op (-> Unit) (:features :io :state)
         'get-mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn get-mount-target ()
             .unwrap $ dom/query-selector |.app
@@ -203,7 +204,7 @@
               toggle!
             println "|App started!"
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'mount-target $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def mount-target (get-mount-target)
           :examples $ []
@@ -216,7 +217,7 @@
               , control
             , &unit
           :examples $ []
-          :schema $ quote $ Fn typed/Control (-> Unit)
+          :schema $ quote $ Fn typed/Control (-> Unit) (:features :io :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
             if (nil? build-errors)
@@ -237,7 +238,7 @@
               hud! |error build-errors
             , &unit
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
         'render-app! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-app! ()
             render-with! mount-target
@@ -246,7 +247,7 @@
                 , on-control!
               , dispatch!
           :examples $ []
-          :schema $ quote $ Fn (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn (-> Unit) (:features :io :js-ffi :state)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.main
           :require
@@ -1013,7 +1014,7 @@
             Map Tag Dynamic
             , Dynamic
               -> $ Map Tag Dynamic
-              :features :js-ffi
+              :features :js-ffi :state
           :tests $ []
             %{} 'TestEntry
               :name |legacy-control-reads-keep-optional-fields-and-eager-validation
