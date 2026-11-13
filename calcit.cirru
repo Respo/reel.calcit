@@ -2138,8 +2138,9 @@
                 f $ get checked-map k
                 raise "|update-map-dynamic expects a function"
           :examples $ []
-          :schema $ quote $ Fn Dynamic Dynamic Dynamic
+          :schema $ quote $ Fn Input Key Callback
             -> $ Map Dynamic Dynamic
+            :generics Input Key Callback
           :tests $ [] $ %{} 'TestEntry (:name |absence-migration-map-update-boundary)
             :code $ quote $ let
                 calls $ ref 0
