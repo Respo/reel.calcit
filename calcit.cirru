@@ -26,8 +26,9 @@
           :examples $ []
           :schema $ quote $ Fn
             reel.typed/State reel.app.updater/Op $ Map Tag Dynamic
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
+            :features :state
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.comp.container
           :require
@@ -446,7 +447,7 @@
                 (:none) (comp-action |)
           :examples $ []
           :schema $ quote $ Fn (List T) Bool Number
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
             :generics T
           :tests $ [] $ %{} 'TestEntry (:name |typed-record-and-mixed-action)
@@ -486,8 +487,9 @@
                           [] nil $ memo-comp-by nil comp-record-item checked-record pointed? idx on-control
           :examples $ []
           :schema $ quote $ Fn (List Dynamic) (Option Number)
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
+            :features :state
           :tests $ [] $ %{} 'TestEntry (:name |legacy-record-keys-and-memo-identity)
             :code $ quote $ let
                 ignore-control $ fn (control)
@@ -581,15 +583,17 @@
           :code $ quote $ defn control-handler (control on-control)
             fn (event dispatch!)
               hint-fn $ Fn respo.schema/RespoEvent
-                Fn *dispatch-op $ -> Unit
+                Fn *dispatch-op (-> Unit) (:features :io :state)
                 -> Unit
+                :features :io :state
               on-control control
           :examples $ []
           :schema $ quote $ Fn reel.typed/Control
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> $ Fn respo.schema/RespoEvent
-              Fn *dispatch-op $ -> Unit
+              Fn *dispatch-op (-> Unit) (:features :io :state)
               -> Unit
+              :features :io :state
         'css-record $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-record
             {}
@@ -612,10 +616,11 @@
             reel.comp.records/control-handler (reel.typed/Control :recall idx) on-control
           :examples $ []
           :schema $ quote $ Fn Number
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> $ Fn respo.schema/RespoEvent
-              Fn *dispatch-op $ -> Unit
+              Fn *dispatch-op (-> Unit) (:features :io :state)
               -> Unit
+              :features :io :state
             :features :js-ffi
         'render-action-item $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn render-action-item (idx item)
@@ -677,9 +682,10 @@
             comp-reel ({}) (typed-compat/view-data reel) user-styles on-control
           :examples $ []
           :schema $ quote $ Fn (reel.typed/State Op Store) (Map Dynamic Dynamic)
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
             :generics Op Store
+            :features :state
         'comp-operations $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-operations (stopped? on-control)
             div
@@ -703,7 +709,7 @@
                 not stopped?
           :examples $ []
           :schema $ quote $ Fn Bool
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles on-control)
@@ -768,8 +774,9 @@
               span $ {}
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic) (Map Dynamic Dynamic) (Map Dynamic Dynamic)
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
+            :features :state
         'comp-typed-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-typed-reel (states reel user-styles on-control)
             assert-type
@@ -777,9 +784,10 @@
               , respo.schema/Component
           :examples $ []
           :schema $ quote $ Fn (Map Dynamic Dynamic) (reel.typed/State Op Store) (Map Dynamic Dynamic)
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> respo.schema/Component
             :generics Op Store
+            :features :state
         'css-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defstyle css-reel
             {} $ |$0 $ {} (:width |60%) (:height |80%) (:right |0px) (:bottom |0px) (:position :fixed)
@@ -814,8 +822,9 @@
           :examples $ []
           :schema $ quote $ Fn String
             Fn respo.schema/RespoEvent
-              Fn *dispatch-op $ -> Unit
+              Fn *dispatch-op (-> Unit) (:features :io :state)
               -> Unit
+              :features :io :state
             , Bool (-> respo.schema/Element) (:features :js-ffi)
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.comp.reel
@@ -2012,13 +2021,13 @@
         'listen-devtools! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn listen-devtools! (keyboard on-control)
             listen-devtools-toggle! keyboard $ fn ()
-              hint-fn $ Fn $ -> Unit
+              hint-fn $ Fn (-> Unit) (:features :io :state)
               on-control $ reel.typed/Control :toggle
           :examples $ []
           :schema $ quote $ Fn String
-            Fn reel.typed/Control $ -> Unit
+            Fn reel.typed/Control (-> Unit) (:features :io :state)
             -> Unit
-            :features :js-ffi
+            :features :io :js-ffi :state
         'listen-devtools-toggle! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn listen-devtools-toggle! (keyboard toggle!)
             browser/add-event-listener! |keydown $ fn (event)
@@ -2032,9 +2041,9 @@
             , &unit
           :examples $ []
           :schema $ quote $ Fn String
-            Fn $ -> Unit
+            Fn (-> Unit) (:features :io :state)
             -> Unit
-            :features :js-ffi
+            :features :io :js-ffi :state
         'map-indexed-dynamic $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn map-indexed-dynamic (xs f) (map-indexed xs f)
           :examples $ []
