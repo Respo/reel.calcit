@@ -1198,8 +1198,9 @@
               assert-type value $ List Dynamic
               raise "|Reel records must be a List"
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ List Dynamic
+            :generics Input
           :tests $ [] $ %{} 'TestEntry (:name |checked-legacy-record-container)
             :code $ quote $ let ()
               assert= ([])
@@ -1250,8 +1251,9 @@
                     true $ Some v
                 (:none) None
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag
+          :schema $ quote $ Fn Input Tag
             -> $ Option Dynamic
+            :generics Input
           :tests $ []
             %{} 'TestEntry (:name |legacy-map-keeps-mixed-key-boundary)
               :code $ quote $ let
@@ -1344,8 +1346,9 @@
               (:some records) (checked-records records)
               (:none) (raise "|Reel records must be a List")
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ List Dynamic
+            :generics Input
         'reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def reel
             {}
@@ -1364,7 +1367,7 @@
               (:none)
                 raise $ str "|[reel] missing field " field
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag (-> Dynamic)
+          :schema $ quote $ Fn Input Tag (-> Dynamic) (:generics Input)
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
