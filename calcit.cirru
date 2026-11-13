@@ -1304,7 +1304,7 @@
               (:some v) v
               (:none) default
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag Dynamic (-> Dynamic)
+          :schema $ quote $ Fn Input Tag Fallback (-> Dynamic) (:generics Input Fallback)
           :tests $ [] $ %{} 'TestEntry (:name |defaults-only-absent-fields)
             :code $ quote $ do
               assert= 1 $ field-or
@@ -1325,8 +1325,9 @@
                 Some $ decode-map-as pointer 'Number
               (:none) None
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ Option Number
+            :generics Input
           :tests $ [] $ %{} 'TestEntry (:name |legacy-and-option-pointers)
             :code $ quote $ do
               assert= None $ pointer-of $ {} (:pointer nil)
