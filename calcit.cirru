@@ -311,8 +311,9 @@
                   if (struct? raw) (&struct:to-map raw) raw
               List Task
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic)
+          :schema $ quote $ Fn (Map Tag Field)
             -> $ List Task
+            :generics Field
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
