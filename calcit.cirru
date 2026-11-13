@@ -1583,9 +1583,9 @@
                   , None
               _ None
           :examples $ []
-          :schema $ quote $ Fn AnyEnum
+          :schema $ quote $ Fn Input
             -> $ Option Control
-            :open :reflect
+            :generics Input
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
