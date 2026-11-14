@@ -312,8 +312,9 @@
                   if (struct? raw) (&struct:to-map raw) raw
               List Task
           :examples $ []
-          :schema $ quote $ Fn (Map Tag Dynamic)
+          :schema $ quote $ Fn (Map Tag Field)
             -> $ List Task
+            :generics Field
         'updater $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn updater (store op op-id op-time)
             match op
@@ -1207,8 +1208,9 @@
               assert-type value $ List Dynamic
               raise "|Reel records must be a List"
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ List Dynamic
+            :generics Input
           :tests $ [] $ %{} 'TestEntry (:name |checked-legacy-record-container)
             :code $ quote $ let ()
               assert= ([])
@@ -1259,8 +1261,9 @@
                     true $ Some v
                 (:none) None
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag
+          :schema $ quote $ Fn Input Tag
             -> $ Option Dynamic
+            :generics Input
           :tests $ []
             %{} 'TestEntry (:name |legacy-map-keeps-mixed-key-boundary)
               :code $ quote $ let
@@ -1313,7 +1316,7 @@
               (:some v) v
               (:none) default
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag Dynamic (-> Dynamic)
+          :schema $ quote $ Fn Input Tag Fallback (-> Dynamic) (:generics Input Fallback)
           :tests $ [] $ %{} 'TestEntry (:name |defaults-only-absent-fields)
             :code $ quote $ do
               assert= 1 $ field-or
@@ -1334,8 +1337,9 @@
                 Some $ decode-map-as pointer 'Number
               (:none) None
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ Option Number
+            :generics Input
           :tests $ [] $ %{} 'TestEntry (:name |legacy-and-option-pointers)
             :code $ quote $ do
               assert= None $ pointer-of $ {} (:pointer nil)
@@ -1352,8 +1356,9 @@
               (:some records) (checked-records records)
               (:none) (raise "|Reel records must be a List")
           :examples $ []
-          :schema $ quote $ Fn Dynamic
+          :schema $ quote $ Fn Input
             -> $ List Dynamic
+            :generics Input
         'reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def reel
             {}
@@ -1372,7 +1377,7 @@
               (:none)
                 raise $ str "|[reel] missing field " field
           :examples $ []
-          :schema $ quote $ Fn Dynamic Tag (-> Dynamic)
+          :schema $ quote $ Fn Input Tag (-> Dynamic) (:generics Input)
         'store $ %{} 'CodeEntry (:doc |)
           :code $ quote $ def store
             {}
@@ -2118,7 +2123,7 @@
                     , &unit
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Dynamic (Option Tag) (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn Data (Option Tag) (-> Unit) (:generics Data) (:features :js-ffi)
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
             if (.some? o) (.unwrap o) (raise "|unexpected none")
@@ -2143,8 +2148,9 @@
                 f $ get checked-map k
                 raise "|update-map-dynamic expects a function"
           :examples $ []
-          :schema $ quote $ Fn Dynamic Dynamic Dynamic
+          :schema $ quote $ Fn Input Key Callback
             -> $ Map Dynamic Dynamic
+            :generics Input Key Callback
           :tests $ [] $ %{} 'TestEntry (:name |absence-migration-map-update-boundary)
             :code $ quote $ let
                 calls $ ref 0
