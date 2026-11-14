@@ -2114,7 +2114,7 @@
                     , &unit
             , &unit
           :examples $ []
-          :schema $ quote $ Fn Dynamic (Option Tag) (-> Unit) (:features :js-ffi)
+          :schema $ quote $ Fn Data (Option Tag) (-> Unit) (:generics Data) (:features :js-ffi)
         'unwrap-option $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn unwrap-option (o)
             if (.some? o) (.unwrap o) (raise "|unexpected none")
