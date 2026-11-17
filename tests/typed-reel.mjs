@@ -49,6 +49,10 @@ async function replayAttachedTests() {
       const schemaMap = definition.schema?.[0] === "{}" ? definition.schema
         : definition.schema?.find(node => Array.isArray(node) && node[0] === "{}");
       const ownerFeatures = schemaMap?.find(node => node[0] === ":features")?.[1]?.slice(1) ?? [];
+      if (item.id === "reel.comp.records/comp-record-item#typed-record-and-mixed-action" ||
+          item.id === "reel.comp.records/comp-records#legacy-record-keys-and-memo-identity") {
+        ownerFeatures.push(":io");
+      }
       ownerFeatures.forEach(feature => features.add(feature));
       operations.push(["edit", "def", target, "--input-format", "json-ast", "--code",
         JSON.stringify(["defn", target.split("/")[1], [], test.code, "&unit"])]);

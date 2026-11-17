@@ -63,13 +63,15 @@ jobs:
         calcit --entry test --check-only
         calcit --entry test
         calcit --init-fn reel.test-typed/main! --reload-fn reel.comp.reel/comp-typed-reel --emit-path test-js-out js
+        calcit --init-fn reel.test-typed/main! --reload-fn respo.render.html/make-string --emit-path test-js-out js
+        calcit --init-fn reel.test-typed/main! --reload-fn reel.core/reel-updater --emit-path test-js-out js
         yarn node tests/typed-reel.mjs
 
     - name: Check out an independent typed Reel consumer
       uses: actions/checkout@v7.0.1
       with:
         repository: calcit-lang/respo-calcit-workflow
-        ref: 208b7bb32d2cd93dd7229c9125c1dc808641dddc
+        ref: 26df12cc9f4ce32741b2ad30b22449ce42daf4b1
         path: .calcit/workflow-consumer
         persist-credentials: false
 
@@ -81,7 +83,7 @@ jobs:
         git rev-parse HEAD
         cp "$GITHUB_WORKSPACE/deps.cirru" "$GITHUB_WORKSPACE/package.json" "$GITHUB_WORKSPACE/yarn.lock" .
         # Reel no longer depends on respo-ui, but this consumer's own source still loads it.
-        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.15.3) #' deps.cirru
+        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.15.4) #' deps.cirru
         grep -q 'Respo/respo-ui.calcit' deps.cirru
         ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
         caps --strict --ci
