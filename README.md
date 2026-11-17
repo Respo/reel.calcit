@@ -2,7 +2,11 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.11.1
+## 0.11.2
+
+升级时请配对 Calcit 和 `@calcit/procs` 0.43.0、Respo 0.19.10 及 JS-FFI 0.2.18，重新生成 JS。Reel 的 typed control 和旧记录接口保持现有合同。
+
+## 历史 0.11.1
 
 配对正式 Calcit / `@calcit/procs` **0.42.1**，Respo 仍是 0.19.5。按 0.42.1 效果边界，`reel.core/reel-updater` 的 `Fn` schema 声明 `:state`；在应用里调用它的 updater / dispatch 函数也需要声明 `:state`，否则 0.42 会给出 `W_STATE_FEATURE_REQUIRED` 提示（`calcit fix --rule effect-features-v1` 可一次补齐）。Demo 的 `dispatch!`、`on-control!`、`render-app!` 等同时补了 `:io` / `:state`。
 
