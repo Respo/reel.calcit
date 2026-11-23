@@ -4,7 +4,7 @@ Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历�
 
 ## 0.11.6：对齐正式依赖
 
-重新安装并生成 JS，配对 Calcit 0.44.0、Respo 0.19.14 和 JS-FFI 0.2.20；typed control 与旧记录接口不变。正式 tag 发布前此版本为候选。
+重新安装并生成 JS，配对 Calcit 0.44.0、Respo 0.19.15 和 JS-FFI 0.2.22；typed control 与旧记录接口不变。正式 tag 发布前此版本为候选。
 
 ## 0.11.5
 
