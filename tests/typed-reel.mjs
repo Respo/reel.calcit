@@ -126,6 +126,12 @@ for (const source of [
   assert.deepEqual(to_js_data(noStep), to_js_data(unchanged));
 }
 assert.equal(legacyUpdates, 0);
+// Legacy maps may carry non-Bool values; only nil and false are falsey.
+for (const [value, expected] of [["nil", true], ["false", true], ["true", false], ["0", false], ["|", false]]) {
+  const input = parse_cirru_edn(`{} (:base |base) (:store |base) (:records $ []) (:pointer nil) (:stopped? false) (:display? ${value}) (:merged? false)`);
+  const toggled = reel_updater(legacyUpdater, input, parse_cirru_edn(":: :reel/toggle"));
+  assert.equal(to_js_data(toggled)["display?"], expected, `legacy display flag ${value}`);
+}
 console.log("legacy Reel JS: checked removal, zero-index/no-op controls, failed input ordering and immutable records passed");
 const updater = (store, op) => store + op;
 const initial = new_reel("base");
