@@ -33,11 +33,11 @@ jobs:
         corepack prepare yarn@4.18.0 --activate
         yarn --version
 
-    - uses: calcit-lang/setup-calcit@v1.5.1
+    - uses: calcit-lang/setup-calcit@v1.5.2
       with:
         tools: calcit,caps
         deps-file: deps.cirru
-        caps-version: "0.1.1"
+        caps-version: "0.1.2"
 
     - name: Validate Calcit snapshot and types
       run: |
@@ -83,7 +83,7 @@ jobs:
         git rev-parse HEAD
         cp "$GITHUB_WORKSPACE/deps.cirru" "$GITHUB_WORKSPACE/package.json" "$GITHUB_WORKSPACE/yarn.lock" .
         # Reel no longer depends on respo-ui, but this consumer's own source still loads it.
-        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.16.3) #' deps.cirru
+        sed -i 's#:dependencies \$ {} #:dependencies $ {} (|Respo/respo-ui.calcit |0.16.4) #' deps.cirru
         grep -q 'Respo/respo-ui.calcit' deps.cirru
         ln -s "$GITHUB_WORKSPACE/node_modules" node_modules
         caps --strict --ci

@@ -714,7 +714,8 @@
             -> respo.schema/Component
         'comp-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defcomp comp-reel (states reel user-styles on-control)
-            if (reel.schema/field-or reel :display? false)
+            if
+              reel.schema/legacy-truthy? $ reel.schema/field-or reel :display? false
               div
                 {}
                   :class-name $ str-spaced css/flex css/column css-reel
@@ -731,7 +732,8 @@
                     let
                         records $ reel.schema/records-of reel
                         pointer $ reel.schema/pointer-of reel
-                        record $ if (reel.schema/field-or reel :stopped? false)
+                        record $ if
+                          reel.schema/legacy-truthy? $ reel.schema/field-or reel :stopped? false
                           &let
                             stopped-pointer $ reel.util/unwrap-option pointer
                             if (> stopped-pointer 0)
@@ -849,9 +851,12 @@
               if (&= 0 pointer) store $ let
                   record-list $ reel.schema/checked-records records
                   record $ decode-map-as
-                    or
-                      .unwrap-or (first record-list) ([])
-                      []
+                    let
+                        value $ .unwrap-or (first record-list) ([])
+                      if
+                        or (nil? value) (= false value)
+                        []
+                        , value
                     , 'List
                 let[] (op op-id op-time) record $ &let
                   next-store $ updater store op op-id op-time
@@ -940,10 +945,11 @@
                         changes $ let
                             pointer $ reel.schema/pointer-of reel
                             records $ reel.schema/records-of reel
-                            stopped? $ reel.schema/field-or reel :stopped? false
+                            stopped? $ reel.schema/legacy-truthy? $ reel.schema/field-or reel :stopped? false
                           match op
                             (:reel/toggle)
-                              {} $ :display? $ not (reel.schema/field-or reel :display? false)
+                              {} $ :display? $ not
+                                reel.schema/legacy-truthy? $ reel.schema/field-or reel :display? false
                             (:reel/recall idx)
                               let
                                   new-store $ play-records (reel.schema/require-field reel :base) records updater idx
@@ -1012,7 +1018,8 @@
                       if (nil? changes) reel $ merge reel $ decode-map-as changes (Map Tag Dynamic)
                     let
                         data-pack $ [] op op-id op-time
-                      if (reel.schema/field-or reel :stopped? false)
+                      if
+                        reel.schema/legacy-truthy? $ reel.schema/field-or reel :stopped? false
                         .assoc reel :records $ conj (reel.schema/records-of reel) data-pack
                         -> reel
                           .assoc :store $ updater (reel.schema/require-field reel :store) op op-id op-time
@@ -1103,10 +1110,14 @@
         'refresh-reel $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn refresh-reel (reel base updater)
             let
-                next-base $ if (reel.schema/field-or reel :merged? false) (reel.schema/require-field reel :base) base
+                next-base $ if
+                  reel.schema/legacy-truthy? $ reel.schema/field-or reel :merged? false
+                  reel.schema/require-field reel :base
+                  , base
                 records $ reel.schema/records-of reel
               -> reel (assoc :base next-base)
-                assoc :store $ play-records next-base records updater $ if (reel.schema/field-or reel :stopped? false)
+                assoc :store $ play-records next-base records updater $ if
+                  reel.schema/legacy-truthy? $ reel.schema/field-or reel :stopped? false
                   reel.util/unwrap-option $ reel.schema/pointer-of reel
                   count records
           :examples $ []
@@ -1329,6 +1340,12 @@
                 {} $ :a |
                 , :a |x
             :tags $ #{} :unit
+        'legacy-truthy? $ %{} 'CodeEntry
+          :doc "|Preserve legacy Map truthiness: only nil and false are falsey."
+          :code $ quote $ defn legacy-truthy? (value)
+            not $ or (nil? value) (identical? false value)
+          :examples $ []
+          :schema $ quote $ Fn Value (-> Bool) (:generics Value)
         'pointer-of $ %{} 'CodeEntry
           :doc "|Pointer of a legacy reel map as an Option Number; a legacy number pointer counts as present."
           :code $ quote $ defn pointer-of (reel)
