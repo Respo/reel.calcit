@@ -2,9 +2,13 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
-## 0.11.9 候选：Calcit 0.45.1
+## 0.11.10 候选：修复旧状态真假值
 
-配对正式 Respo 0.19.18、JS-FFI 0.2.24 和 Calcit / `@calcit/procs` 0.45.1；重新安装依赖并生成 JS。typed control 与旧 Map 接口保持，正式标签发布前请勿作为已发布版本使用。
+恢复旧版 Map 状态中 `Unit` 的假值行为；`nil` 和 `false` 仍为假，数字 0 和空字符串仍为真。具名 Reel 状态接口不变。
+
+## 0.11.9：Calcit 0.45.1
+
+配对正式 Respo 0.19.18、JS-FFI 0.2.24 和 Calcit / `@calcit/procs` 0.45.1；重新安装依赖并生成 JS。typed control 与旧 Map 接口保持。
 
 ## 0.11.8 候选：Calcit 0.45.0
 

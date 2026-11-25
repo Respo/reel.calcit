@@ -5,7 +5,7 @@ import { join, resolve } from "node:path";
 import { pathToFileURL } from "node:url";
 import { main_$x_ } from "../test-js-out/reel.test-typed.mjs";
 import { Control, new_reel, record_op, recall, resume, reset_reel, refresh, toggle_display, merge_reel, step, remove_current, decode_control, apply_control } from "../test-js-out/reel.typed.mjs";
-import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_, listToArray, pairs_map, turn_tag } from "../test-js-out/calcit.core.mjs";
+import { to_js_data, parse_cirru_edn, option_$o_unwrap, option_$o_none_$q_, listToArray, pairs_map, turn_tag, assoc, to_tag } from "../test-js-out/calcit.core.mjs";
 import { view_data } from "../test-js-out/reel.typed-compat.mjs";
 import { map_indexed_dynamic } from "../test-js-out/reel.util.mjs";
 import { comp_controlled_reel, comp_typed_reel } from "../test-js-out/reel.comp.reel.mjs";
@@ -126,12 +126,14 @@ for (const source of [
   assert.deepEqual(to_js_data(noStep), to_js_data(unchanged));
 }
 assert.equal(legacyUpdates, 0);
-// Legacy maps may carry non-Bool values; only nil and false are falsey.
+// Legacy maps may carry non-Bool values; nil, Unit and false are falsey.
 for (const [value, expected] of [["nil", true], ["false", true], ["true", false], ["0", false], ["|", false]]) {
   const input = parse_cirru_edn(`{} (:base |base) (:store |base) (:records $ []) (:pointer nil) (:stopped? false) (:display? ${value}) (:merged? false)`);
   const toggled = reel_updater(legacyUpdater, input, parse_cirru_edn(":: :reel/toggle"));
   assert.equal(to_js_data(toggled)["display?"], expected, `legacy display flag ${value}`);
 }
+const unitFlag = assoc(legacyReel, to_tag("display?"), undefined);
+assert.equal(to_js_data(reel_updater(legacyUpdater, unitFlag, parse_cirru_edn(":: :reel/toggle")))["display?"], true);
 console.log("legacy Reel JS: checked removal, zero-index/no-op controls, failed input ordering and immutable records passed");
 const updater = (store, op) => store + op;
 const initial = new_reel("base");
