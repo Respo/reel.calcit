@@ -1341,11 +1341,21 @@
                 , :a |x
             :tags $ #{} :unit
         'legacy-truthy? $ %{} 'CodeEntry
-          :doc "|Preserve legacy Map truthiness: only nil and false are falsey."
+          :doc "|Legacy conditions treat nil, Unit and false as false; all other values remain true."
           :code $ quote $ defn legacy-truthy? (value)
-            not $ or (nil? value) (identical? false value)
+            if (bool? value) value $ not $ or (nil? value)
+              = (type-of value) :unit
           :examples $ []
           :schema $ quote $ Fn Value (-> Bool) (:generics Value)
+          :tests $ [] $ %{} 'TestEntry (:name |legacy-values)
+            :code $ quote $ do
+              assert= false $ legacy-truthy? nil
+              assert= false $ legacy-truthy? &unit
+              assert= false $ legacy-truthy? false
+              assert= true $ legacy-truthy? true
+              assert= true $ legacy-truthy? 0
+              assert= true $ legacy-truthy? |
+            :tags $ #{} :unit
         'pointer-of $ %{} 'CodeEntry
           :doc "|Pointer of a legacy reel map as an Option Number; a legacy number pointer counts as present."
           :code $ quote $ defn pointer-of (reel)
