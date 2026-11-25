@@ -2,6 +2,10 @@
 
 Reel 为 Respo 应用记录操作、回溯状态，并在热更新后重放历史。新应用推荐 typed API，旧 Map API 保留。Demo：<http://repo.respo-mvc.org/reel.calcit/>。
 
+## 0.11.9 候选：Calcit 0.45.1
+
+配对正式 Respo 0.19.18、JS-FFI 0.2.24 和 Calcit / `@calcit/procs` 0.45.1；重新安装依赖并生成 JS。typed control 与旧 Map 接口保持，正式标签发布前请勿作为已发布版本使用。
+
 ## 0.11.8 候选：Calcit 0.45.0
 
 配对正式 Respo 0.19.17、JS-FFI 0.2.23 和 Calcit / `@calcit/procs` 0.45.0；重新安装依赖并生成 JS。typed control 与旧 Map 记录接口继续沿用原合同，旧数据中的真假值按原规则处理；正式标签发布后再升级。
