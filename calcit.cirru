@@ -854,7 +854,8 @@
                     let
                         value $ .unwrap-or (first record-list) ([])
                       if
-                        or (nil? value) (= false value)
+                        or (nil? value)
+                          if (bool? value) (not value) false
                         []
                         , value
                     , 'List
@@ -1266,7 +1267,7 @@
                       , None
                     (and (enum? v) (= (&enum:definition v) (Some Option)))
                       if
-                        = :some $ &enum:nth v 0
+                        &= :some $ &enum:nth v 0
                         Some $ &enum:nth v 1
                         , None
                     true $ Some v
