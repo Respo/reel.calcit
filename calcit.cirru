@@ -265,9 +265,9 @@
     'reel.app.updater $ %{} 'FileEntry
       :defs $ {}
         'Op $ %{} 'CodeEntry
-          :doc "|Dispatch Op of the demo app, bound to the :dispatch-op type slot. Reel devtools controls go through on-control, not through this Op."
+          :doc "|Dispatch operations for the demo app. The :states payload is the text input String; Reel controls use the separate on-control callback."
           :code $ quote $ defenum Op
-            :states (List respo.schema/CoordKey) Dynamic
+            :states (List respo.schema/CoordKey) String
             :task/add String
             :task/toggle String
             :task/edit String String
@@ -398,6 +398,19 @@
                 assert= ([])
                   read-tasks $ :store without-add
               :tags $ #{} :unit
+            %{} 'TestEntry (:name |demo-string-state-preserves-cursor)
+              :code $ quote $ let
+                  initial $ {}
+                    :states $ {}
+                    :tasks $ []
+                  cursor $ decode-map-as ([] :form |entry 2) (List respo.schema/CoordKey)
+                  edited $ updater initial (Op :states cursor "|合成输入🐈") |edit 100
+                  cleared $ updater edited (Op :states cursor |) |clear 101
+                assert= (Result :ok "|合成输入🐈")
+                  get-in edited $ [] :states :form |entry 2 :data
+                assert= (Result :ok |)
+                  get-in cleared $ [] :states :form |entry 2 :data
+              :tags $ #{} :regression :unit
       :ns $ %{} 'NsEntry (:doc |)
         :code $ quote $ ns reel.app.updater
           :require
