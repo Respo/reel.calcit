@@ -118,6 +118,7 @@ jobs:
       run: |
         set -euo pipefail
         calcit calcit.cirru js
+        yarn node tests/legacy-tasks.mjs
         yarn vite build
 
     - name: Upload static assets to COS
