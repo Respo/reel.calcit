@@ -221,7 +221,7 @@
           :schema $ quote $ Fn typed/Control (-> Unit) (:features :io :state)
         'reload! $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn reload! ()
-            if (nil? build-errors)
+            if (js-nullish? build-errors)
               do (remove-watch! *reel :changes) (clear-cache!)
                 add-watch! *reel :changes $ fn (reel prev)
                   hint-fn $ Fn
@@ -305,12 +305,7 @@
         'read-tasks $ %{} 'CodeEntry
           :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
           :code $ quote $ defn read-tasks (store)
-            decode-map-as
-              .map
-                decode-map-as (reel.schema/require-field store :tasks) (List Dynamic)
-                fn (raw)
-                  if (struct? raw) (&struct:to-map raw) raw
-              List Task
+            decode-map-as (reel.schema/require-field store :tasks) (List Task)
           :examples $ []
           :schema $ quote $ Fn (Map Tag Field)
             -> $ List Task
@@ -622,7 +617,12 @@
           :schema $ quote String
         'literal? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn literal? (x)
-            or (tag? x) (number? x) (string? x) (symbol? x) (bool? x)
+            or
+              result:ok? $ try-decode-map-as x Tag
+              result:ok? $ try-decode-map-as x Number
+              result:ok? $ try-decode-map-as x String
+              result:ok? $ try-decode-map-as x Symbol
+              result:ok? $ try-decode-map-as x Bool
           :examples $ []
           :schema $ quote $ Fn T (-> Bool) (:generics T) (:features :js-ffi)
         'on-recall $ %{} 'CodeEntry (:doc |)
@@ -650,8 +650,16 @@
         'shallow-data? $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn shallow-data? (item)
             or (literal? item)
-              and (list? item) (every? item literal?)
-              and (map? item) (every? item shallow-data?)
+              match
+                try-decode-map-as item $ List Dynamic
+                (:ok xs) (every? xs literal?)
+                (:err _) false
+              match
+                try-decode-map-as item $ Map Dynamic Dynamic
+                (:ok m)
+                  every? m $ fn (entry)
+                    let[] (k v) entry $ and (literal? k) (literal? v)
+                (:err _) false
           :examples $ []
           :schema $ quote $ Fn T (-> Bool) (:generics T) (:features :js-ffi)
         'style-action-sep $ %{} 'CodeEntry (:doc |)
@@ -860,22 +868,18 @@
       :defs $ {}
         'play-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn play-records (store records updater pointer)
-            if (number? pointer)
-              if (&= 0 pointer) store $ let
+            let
+                ptr $ match (try-decode-map-as pointer Number)
+                  (:ok n) n
+                  (:err _) (raise "|play-records expected a Number pointer")
+              if (&= 0 ptr) store $ let
                   record-list $ reel.schema/checked-records records
                   record $ decode-map-as
-                    let
-                        value $ .unwrap-or (first record-list) ([])
-                      if
-                        or (nil? value)
-                          if (bool? value) (not value) false
-                        []
-                        , value
+                    .unwrap-or (first record-list) ([])
                     , 'List
                 let[] (op op-id op-time) record $ &let
                   next-store $ updater store op op-id op-time
-                  recur next-store (rest record-list) updater $ dec pointer
-              raise "|play-records expected a Number pointer"
+                  recur next-store (rest record-list) updater $ dec ptr
           :examples $ []
           :schema $ quote $ Fn Dynamic Dynamic Dynamic Dynamic (-> Dynamic) (:features :js-ffi)
           :tests $ []
@@ -962,24 +966,24 @@
                             stopped? $ reel.schema/legacy-truthy? $ reel.schema/field-or reel :stopped? false
                           match op
                             (:reel/toggle)
-                              {} $ :display? $ not
-                                reel.schema/legacy-truthy? $ reel.schema/field-or reel :display? false
+                              Some $ {} $ :display?
+                                not $ reel.schema/legacy-truthy? $ reel.schema/field-or reel :display? false
                             (:reel/recall idx)
                               let
                                   new-store $ play-records (reel.schema/require-field reel :base) records updater idx
-                                {}
+                                Some $ {}
                                   :pointer $ Some idx
                                   :stopped? true
                                   :store new-store
                             (:reel/run)
                               let
                                   new-store $ play-records (reel.schema/require-field reel :base) records updater $ count records
-                                {} (:store new-store) (:stopped? false) (:pointer None)
+                                Some $ {} (:store new-store) (:stopped? false) (:pointer None)
                             (:reel/step)
                               if stopped?
                                 if
                                   < (count records) 2
-                                  , nil $ &let
+                                  , None $ &let
                                     step-pointer $ reel.util/unwrap-option pointer
                                     if
                                       < step-pointer $ count records
@@ -987,15 +991,15 @@
                                           next-pointer $ inc step-pointer
                                           next-record $ &list:nth records step-pointer
                                         let[] (old-op old-id old-time) (decode-map-as next-record 'List)
-                                          {}
+                                          Some $ {}
                                             :pointer $ Some next-pointer
                                             :store $ updater (reel.schema/require-field reel :store) old-op old-id old-time
-                                      {}
+                                      Some $ {}
                                         :store $ reel.schema/require-field reel :base
                                         :pointer $ Some 0
-                                , nil
+                                , None
                             (:reel/merge)
-                              if stopped?
+                              Some $ if stopped?
                                 if
                                   = (Some 0) pointer
                                   {}
@@ -1012,7 +1016,7 @@
                                   :records $ []
                                   :merged? true
                             (:reel/reset)
-                              if stopped?
+                              Some $ if stopped?
                                 {} $ :records $ slice-records-until records (reel.util/unwrap-option pointer)
                                 {}
                                   :store $ reel.schema/require-field reel :base
@@ -1020,16 +1024,19 @@
                                   :records $ []
                                   :stopped? false
                             (:reel/remove idx)
-                              if (&= 0 idx) reel $ let
+                              if (&= 0 idx) None $ let
                                   remove-index $ decode-map-as idx 'Number
-                                -> reel
+                                Some $ -> reel
                                   .assoc :pointer $ .map pointer dec
                                   .assoc :records $ remove-record-at records remove-index
                                   .assoc :store $ play-records (reel.schema/require-field reel :base) records updater $ dec remove-index
                             _ $ do
                               host/console-warn! $ str "|Unknown reel/ op:" op
-                              , nil
-                      if (nil? changes) reel $ merge reel $ decode-map-as changes (Map Tag Dynamic)
+                              , None
+                      match changes
+                        (:none) reel
+                        (:some delta)
+                          merge reel $ decode-map-as delta $ Map Tag Dynamic
                     let
                         data-pack $ [] op op-id op-time
                       if
@@ -1229,9 +1236,10 @@
       :defs $ {}
         'checked-records $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn checked-records (value)
-            if (list? value)
-              assert-type value $ List Dynamic
-              raise "|Reel records must be a List"
+            match
+              try-decode-map-as value $ List Dynamic
+              (:ok records) records
+              (:err _) (raise "|Reel records must be a List")
           :examples $ []
           :schema $ quote $ Fn Input
             -> $ List Dynamic
@@ -1357,8 +1365,11 @@
         'legacy-truthy? $ %{} 'CodeEntry
           :doc "|Legacy conditions treat nil, Unit and false as false; all other values remain true."
           :code $ quote $ defn legacy-truthy? (value)
-            if (bool? value) value $ not $ or (nil? value)
-              = (type-of value) :unit
+            match (try-decode-map-as value Bool)
+              (:ok b) b
+              (:err _)
+                not $ or (nil? value)
+                  result:ok? $ try-decode-map-as value Unit
           :examples $ []
           :schema $ quote $ Fn Value (-> Bool) (:generics Value)
           :tests $ [] $ %{} 'TestEntry (:name |legacy-values)
@@ -1621,9 +1632,10 @@
               (:reel/toggle)
                 Some $ Control :toggle
               (:reel/recall pointer)
-                if (number? pointer)
-                  Some $ Control :recall pointer
-                  , None
+                match (try-decode-map-as pointer Number)
+                  (:ok n)
+                    Some $ Control :recall n
+                  (:err _) None
               (:reel/run)
                 Some $ Control :run
               (:reel/step)
@@ -1633,9 +1645,10 @@
               (:reel/reset)
                 Some $ Control :reset
               (:reel/remove pointer)
-                if (number? pointer)
-                  Some $ Control :remove pointer
-                  , None
+                match (try-decode-map-as pointer Number)
+                  (:ok n)
+                    Some $ Control :remove n
+                  (:err _) None
               _ None
           :examples $ []
           :schema $ quote $ Fn Input
