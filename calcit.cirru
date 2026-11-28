@@ -1602,19 +1602,19 @@
                 paused $ recall updater live 1
               do
                 assert= (toggle-display live)
-                  apply-control updater live $ %:: Control :toggle
-                assert= paused $ apply-control updater live $ %:: Control :recall 1
+                  apply-control updater live $ Control :toggle
+                assert= paused $ apply-control updater live $ Control :recall 1
                 assert= (resume updater paused)
-                  apply-control updater paused $ %:: Control :run
+                  apply-control updater paused $ Control :run
                 assert= (step updater paused)
-                  apply-control updater paused $ %:: Control :step
+                  apply-control updater paused $ Control :step
                 assert= (merge-reel updater paused)
-                  apply-control updater paused $ %:: Control :merge
+                  apply-control updater paused $ Control :merge
                 assert= (reset-reel paused)
-                  apply-control updater paused $ %:: Control :reset
+                  apply-control updater paused $ Control :reset
                 assert= (remove-current updater paused)
-                  apply-control updater paused $ %:: Control :remove 1
-                assert= paused $ apply-control updater paused $ %:: Control :remove 2
+                  apply-control updater paused $ Control :remove 1
+                assert= paused $ apply-control updater paused $ Control :remove 2
         'decode-control $ %{} 'CodeEntry (:doc |)
           :code $ quote $ defn decode-control (op)
             match op
@@ -1644,25 +1644,25 @@
           :tests $ [] $ %{} 'TestEntry (:name |control-decoding)
             :code $ quote $ do
               assert=
-                Some $ %:: Control :toggle
+                Some $ Control :toggle
                 decode-control $ :: :reel/toggle
               assert=
-                Some $ %:: Control :recall 2
+                Some $ Control :recall 2
                 decode-control $ :: :reel/recall 2
               assert=
-                Some $ %:: Control :run
+                Some $ Control :run
                 decode-control $ :: :reel/run
               assert=
-                Some $ %:: Control :step
+                Some $ Control :step
                 decode-control $ :: :reel/step
               assert=
-                Some $ %:: Control :merge
+                Some $ Control :merge
                 decode-control $ :: :reel/merge
               assert=
-                Some $ %:: Control :reset
+                Some $ Control :reset
                 decode-control $ :: :reel/reset
               assert=
-                Some $ %:: Control :remove 1
+                Some $ Control :remove 1
                 decode-control $ :: :reel/remove 1
               assert= None $ decode-control $ :: :app/update |text
               assert= None $ decode-control $ :: :reel/recall |bad
