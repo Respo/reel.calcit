@@ -305,7 +305,12 @@
         'read-tasks $ %{} 'CodeEntry
           :doc "|Demo 的既有开放 Map 状态入口：逐项验证任务字段后进入闭合 Task 列表，兼容旧 Map 与 Struct 数据；不推断外部名义身份。"
           :code $ quote $ defn read-tasks (store)
-            decode-map-as (reel.schema/require-field store :tasks) (List Task)
+            decode-map-as
+              .map
+                decode-map-as (reel.schema/require-field store :tasks) (List Dynamic)
+                fn (raw)
+                  if (struct? raw) (&struct:to-map raw) raw
+              List Task
           :examples $ []
           :schema $ quote $ Fn (Map Tag Field)
             -> $ List Task
